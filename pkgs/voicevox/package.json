@@ -1,0 +1,25 @@
+{
+  "name": "@mekuru/voicevox",
+  "version": "0.0.0",
+  "description": "The speech component <Voicevox> of Mekuru Movie Maker: lines of speech read by VOICEVOX",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.tsx"
+  },
+  "files": [
+    "src"
+  ],
+  "sideEffects": false,
+  "peerDependencies": {
+    "@mekuru/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@mekuru/core": "workspace:*"
+  },
+  "dependencies": {
+    "@mekuru/speech": "workspace:^"
+  },
+  "engines": {
+    "bun": ">=1.4"
+  }
+}

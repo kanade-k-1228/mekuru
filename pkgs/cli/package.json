@@ -1,0 +1,24 @@
+{
+  "name": "@mekuru/cli",
+  "version": "0.0.0",
+  "description": "The commands of Mekuru Movie Maker: mekuru-server (the viewer in the browser, which can run the script with --run) and mekuru-compiler (XML → video, a prebuilt binary for each platform)",
+  "type": "module",
+  "bin": {
+    "mekuru-server": "./src/mekuru-server.ts",
+    "mekuru-compiler": "./src/mekuru-compiler.ts"
+  },
+  "files": [
+    "src",
+    "viewer"
+  ],
+  "engines": {
+    "bun": ">=1.4"
+  },
+  "dependencies": {
+    "commander": "^14.0.3"
+  },
+  "exports": {
+    "./protocol": "./src/protocol.ts",
+    "./*": "./*"
+  }
+}
