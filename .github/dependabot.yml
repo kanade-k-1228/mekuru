@@ -1,0 +1,36 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      github-actions:
+        patterns: ['*']
+
+  # Bun workspaces (pkgs/*, example) are resolved from the root bun.lock
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      bun:
+        patterns: ['*']
+
+  # Cargo workspace (pkgs/compiler)
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      cargo:
+        patterns: ['*']

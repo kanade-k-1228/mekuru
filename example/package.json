@@ -1,0 +1,23 @@
+{
+  "name": "mekuru-tutorial",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "portrait": "bun scripts/portrait.ts",
+    "preview": "bun scripts/portrait.ts && mekuru-server --run 'bun --hot src/main.tsx' .mekuru/main.xml",
+    "build": "bun scripts/portrait.ts && bun src/main.tsx && mekuru-compiler .mekuru/main.xml -o tutorial.mp4",
+    "upload:youtube": "mekuru-youtube",
+    "upload:niconico": "mekuru-niconico"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.2",
+    "ag-psd": "31.0.3",
+    "@mekuru/core": "workspace:*",
+    "@mekuru/cli": "workspace:*",
+    "@mekuru/niconico": "workspace:*",
+    "@mekuru/portrait": "workspace:*",
+    "@mekuru/voicevox": "workspace:*",
+    "@mekuru/youtube": "workspace:*",
+    "typescript": "7.0.2"
+  }
+}
