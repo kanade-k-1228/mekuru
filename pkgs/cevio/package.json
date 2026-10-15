@@ -1,0 +1,29 @@
+{
+  "name": "@mekuru/cevio",
+  "version": "0.0.0",
+  "description": "The speech component <Cevio> of Mekuru Movie Maker: lines of speech read by CeVIO AI",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json && bun -e \"fs.copyFileSync('src/cevio.ps1', 'dist/cevio.ps1')\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@mekuru/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@mekuru/core": "workspace:*"
+  },
+  "dependencies": {
+    "@mekuru/speech": "workspace:^"
+  }
+}

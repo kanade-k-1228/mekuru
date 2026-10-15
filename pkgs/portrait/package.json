@@ -1,0 +1,26 @@
+{
+  "name": "@mekuru/portrait",
+  "version": "0.0.0",
+  "description": "立ち絵 for Mekuru Movie Maker made of parts (body, eyes, mouth, …) in the form of YukkuriMovieMaker4's 動く立ち絵: it blinks, changes its face, and moves its mouth with the speech",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@mekuru/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@mekuru/core": "workspace:*"
+  }
+}

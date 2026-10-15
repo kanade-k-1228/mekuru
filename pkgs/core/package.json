@@ -1,0 +1,32 @@
+{
+  "name": "@mekuru/core",
+  "version": "0.0.0",
+  "description": "The types of the XML of Mekuru Movie Maker, for writing videos in TSX with jsxImportSource @mekuru/core (the JSX runtime is Hono's); the viewer and the compiler are in @mekuru/cli",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./jsx-runtime": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./jsx-dev-runtime": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "bun test ./test"
+  },
+  "dependencies": {
+    "hono": "^4.13.0"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "my-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preview": "mekuru-server --run 'bun --hot src/main.tsx' .mekuru/main.xml",
+    "build": "bun src/main.tsx && mekuru-compiler .mekuru/main.xml -o video.mp4",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.2",
+    "@mekuru/core": "^0.2.0",
+    "@mekuru/cli": "^0.2.0",
+    "typescript": "7.0.2"
+  }
+}

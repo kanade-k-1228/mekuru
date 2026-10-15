@@ -1,0 +1,31 @@
+{
+  "name": "@mekuru/speech",
+  "version": "0.0.0",
+  "description": "What the speech components of Mekuru Movie Maker (@mekuru/voicevox, @mekuru/cevio) share: the text of a line, the cache of synthesized audio and the <audio> it becomes",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./engine": {
+      "types": "./dist/engine.d.ts",
+      "default": "./dist/engine.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "bun test ./test"
+  },
+  "peerDependencies": {
+    "@mekuru/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@mekuru/core": "workspace:*"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@mekuru/style-bert-vits2",
+  "version": "0.0.0",
+  "description": "The speech component <StyleBertVits2> of Mekuru Movie Maker: lines of speech read by Style-Bert-VITS2",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@mekuru/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@mekuru/core": "workspace:*"
+  },
+  "dependencies": {
+    "@mekuru/speech": "workspace:^"
+  }
+}

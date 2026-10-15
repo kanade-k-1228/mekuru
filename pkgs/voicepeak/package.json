@@ -1,0 +1,29 @@
+{
+  "name": "@mekuru/voicepeak",
+  "version": "0.0.0",
+  "description": "The speech component <Voicepeak> of Mekuru Movie Maker: lines of speech read by VOICEPEAK",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@mekuru/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@mekuru/core": "workspace:*"
+  },
+  "dependencies": {
+    "@mekuru/speech": "workspace:^"
+  }
+}

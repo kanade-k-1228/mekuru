@@ -1,0 +1,26 @@
+{
+  "name": "mekuru-monorepo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "pkgs/*",
+    "example"
+  ],
+  "scripts": {
+    "build": "bun run --filter './pkgs/*' build && cargo build --release",
+    "typecheck": "bun run --workspaces --if-present typecheck",
+    "check:ts": "biome check . && bun run typecheck",
+    "check:rs": "cargo fmt --check && cargo clippy --workspace --all-targets --locked -- -D warnings",
+    "test:ts": "bun run --workspaces --if-present test",
+    "test:rs": "cargo test --workspace --locked",
+    "check": "bun run check:ts && bun run check:rs",
+    "test": "bun run test:ts && bun run test:rs",
+    "fmt": "biome check --write . && cargo fmt"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/bun": "1.4.2",
+    "typescript": "7.0.2"
+  },
+  "packageManager": "bun@1.4.3"
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@mekuru/youtube",
+  "version": "0.0.0",
+  "description": "Uploads a video of Mekuru Movie Maker to YouTube with the title, description, ... written in youtube.yaml",
+  "type": "module",
+  "bin": {
+    "mekuru-youtube": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "bun": ">=1.4"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "commander": "^14.0.3",
+    "yaml": "2.9.1"
+  }
+}
