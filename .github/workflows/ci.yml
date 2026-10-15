@@ -1,0 +1,136 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["[0-9]+.[0-9]+.[0-9]+", "[0-9]+.[0-9]+.[0-9]+-*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  RELEASE: ${{ startsWith(github.ref, 'refs/tags/') }}
+
+jobs:
+  check:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@e9d7b9f1e587218970671bac74e5511ed9506e6a # v2
+      - run: bun ci
+      - run: bun run check
+      - run: bun run test
+      - run: bun run --cwd pkgs/viewer build
+
+  check-msrv:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          toolchain: '1.89.0'
+      - uses: Swatinem/rust-cache@e9d7b9f1e587218970671bac74e5511ed9506e6a # v2
+      - run: cargo check --workspace --all-targets --locked
+
+  build:
+    timeout-minutes: 60
+    needs: [check, check-msrv]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { platform: linux-x64, target: x86_64-unknown-linux-gnu, os: ubuntu-22.04 }
+          - { platform: linux-arm64, target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm }
+          - { platform: darwin-x64, target: x86_64-apple-darwin, os: macos-15-intel }
+          - { platform: darwin-arm64, target: aarch64-apple-darwin, os: macos-15 }
+          - { platform: win32-x64, target: x86_64-pc-windows-msvc, os: windows-latest }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - if: env.RELEASE == 'true'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@e9d7b9f1e587218970671bac74e5511ed9506e6a # v2
+        with:
+          key: ${{ matrix.target }}
+      - if: env.RELEASE == 'true'
+        run: bun scripts/release.ts stamp "$GITHUB_REF_NAME"
+      - name: Build and smoke-test the compiler
+        run: |
+          args=(--workspace --locked --target "${{ matrix.target }}")
+          build_profile=debug
+          if [[ "$RELEASE" == 'true' ]]; then
+            args+=(--release)
+            build_profile=release
+          fi
+          cargo build "${args[@]}"
+          "target/${{ matrix.target }}/$build_profile/mekuru-compiler${{ runner.os == 'Windows' && '.exe' || '' }}" --version
+      - if: env.RELEASE == 'true'
+        run: bun scripts/release.ts pack ${{ matrix.platform }} target/${{ matrix.target }}/release npm-out
+      - if: env.RELEASE == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: binaries-${{ matrix.platform }}
+          path: npm-out/*.tgz
+          if-no-files-found: error
+          compression-level: 0
+
+  release:
+    timeout-minutes: 30
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      DIST_TAG: ${{ contains(github.ref_name, '-') && 'next' || 'latest' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      - run: bun ci
+      - run: bun scripts/release.ts stamp "$GITHUB_REF_NAME"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: npm-out
+          pattern: binaries-*
+          merge-multiple: true
+      - name: prepare the packages
+        run: |
+          bun scripts/release.ts deps npm-out
+          bun run --cwd pkgs/viewer build
+      - name: publish the binary packages
+        run: |
+          for package in npm-out/*.tgz; do
+            bun publish "$package" --access public --tag "$DIST_TAG" --tolerate-republish
+          done
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: publish the packages of pkgs/
+        run: bun publish --recursive --access public --tag "$DIST_TAG" --tolerate-republish
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: create the GitHub release
+        run: |
+          gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 && exit 0
+          flags=(--verify-tag --generate-notes)
+          [[ "$GITHUB_REF_NAME" == *-* ]] && flags+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" "${flags[@]}"
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -1,0 +1,19 @@
+{
+  "name": "@mekuru/niconico",
+  "version": "0.0.0",
+  "description": "Posts a video of Mekuru Movie Maker to niconico with the title, description and tags written in niconico.yaml, through its upload page in a headless browser",
+  "type": "module",
+  "bin": {
+    "mekuru-niconico": "./src/cli.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "engines": {
+    "bun": ">=1.4"
+  },
+  "dependencies": {
+    "commander": "^14.0.3",
+    "playwright-core": "1.64.0"
+  }
+}
