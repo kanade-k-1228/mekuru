@@ -1,6 +1,5 @@
-import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, win32 } from "node:path";
+import { join } from "node:path";
 import type { Engine } from "./character.ts";
 import type { Site } from "./site.ts";
 
@@ -57,81 +56,6 @@ const http = async (name: string, env: string, url: string, path: string, start:
 
 const version = (body: unknown) => String(body);
 
-const isWsl = !!process.env.WSL_INTEROP || existsSync("/proc/sys/fs/binfmt_misc/WSLInterop");
-
-const local = async (path: string): Promise<string | undefined> => (isWsl ? (await output("wslpath", ["-u", path]))?.trim() : path);
-
-const programFiles = (...path: string[]) => win32.join((process.platform === "win32" && process.env.ProgramFiles) || "C:\\Program Files", ...path);
-
-const localAppData = async (): Promise<string | undefined> => {
-  if (process.platform === "win32") return process.env.LOCALAPPDATA;
-  const dir = (await output("cmd.exe", ["/d", "/c", "echo %LOCALAPPDATA%"]))?.trim();
-  return dir && !dir.includes("%") ? dir : undefined;
-};
-
-const find = async (paths: (string | undefined)[]): Promise<string | undefined> => {
-  for (const path of paths) {
-    if (!path) continue;
-    const at = /^[A-Za-z]:\\/.test(path) && process.platform !== "win32" ? isWsl && (await local(path)) : path;
-    if (at && (await Bun.file(at).exists())) return path;
-  }
-  return undefined;
-};
-
-const onWindows = process.platform === "win32" || isWsl;
-const windowsOnly = (name: string): Check => ({ name, ok: false, detail: "runs only on Windows (or from WSL)" });
-
-const cevio = async (): Promise<Check> => {
-  if (!onWindows) return windowsOnly("CeVIO AI");
-  const dll = programFiles("CeVIO", "CeVIO AI", "CeVIO.Talk.RemoteService2.dll");
-  if (!(await find([dll])))
-    return { name: "CeVIO AI", ok: false, detail: `not installed (${dll} is not found; install it, or set dll-dir on <Cevio> in src/character/)` };
-  return { name: "CeVIO AI", ok: true, detail: `${win32.dirname(dll)} (set the casts in src/character/ to ones you have)` };
-};
-
-const aivoice = async (): Promise<Check> => {
-  if (!onWindows) return windowsOnly("A.I.VOICE");
-  const dll = programFiles("AI", "AIVoice", "AIVoiceEditor", "AI.Talk.Editor.Api.dll");
-  if (!(await find([dll])))
-    return {
-      name: "A.I.VOICE",
-      ok: false,
-      detail: `not installed (${dll} is not found; install A.I.VOICE Editor, or set dll-dir on <Aivoice> in src/character/)`,
-    };
-  return { name: "A.I.VOICE", ok: true, detail: `${win32.dirname(dll)} (set the voices in src/character/ to ones you have)` };
-};
-
-const voicepeak = async (): Promise<Check> => {
-  const env = process.env.MEKURU_VOICEPEAK;
-  const path =
-    (await find([env])) ??
-    (onWindows ? await find([programFiles("VOICEPEAK", "voicepeak.exe")]) : undefined) ??
-    (process.platform === "darwin" ? await find(["/Applications/voicepeak.app/Contents/MacOS/voicepeak"]) : undefined) ??
-    (process.platform === "linux" && !isWsl ? (Bun.which("voicepeak") ?? undefined) : undefined);
-  if (!path) return { name: "VOICEPEAK", ok: false, detail: "not found (install VOICEPEAK, or set MEKURU_VOICEPEAK to its program)" };
-  return { name: "VOICEPEAK", ok: true, detail: `${path} (set the narrators in src/character/ to ones you have)` };
-};
-
-const aquestalk = async (): Promise<Check> => {
-  const appData = onWindows ? await localAppData() : undefined;
-  const path = await find([
-    process.env.MEKURU_AQUESTALKPLAYER,
-    appData && win32.join(appData, "AquesTalkPlayer", "AquesTalkPlayer.exe"),
-    onWindows ? programFiles("AquesTalkPlayer", "AquesTalkPlayer.exe") : undefined,
-    process.platform === "darwin" ? "/Applications/AquesTalkPlayer.app/Contents/MacOS/AquesTalkPlayer" : undefined,
-    process.platform === "darwin" ? join(homedir(), "Applications/AquesTalkPlayer.app/Contents/MacOS/AquesTalkPlayer") : undefined,
-  ]);
-  const presets = "make the presets れいむ (AquesTalk1 f1) and まりさ (f2) in it";
-  if (!path) {
-    return {
-      name: "AquesTalkPlayer",
-      ok: false,
-      detail: `not found: get it from https://www.a-quest.com/products/aquestalkplayer.html, ${presets},\nand set MEKURU_AQUESTALKPLAYER to AquesTalkPlayer.exe unless it is in %LOCALAPPDATA%\\AquesTalkPlayer`,
-    };
-  }
-  return { name: "AquesTalkPlayer", ok: true, detail: `${path} (${presets}; monetized videos need a licence: https://www.a-quest.com/licence_video.html)` };
-};
-
 const CHECKS: Record<Engine, () => Promise<Check>> = {
   voicevox: () =>
     http(
@@ -165,10 +89,6 @@ const CHECKS: Record<Engine, () => Promise<Check>> = {
       "Start its API server (python server_fastapi.py, or Server.bat).",
       (body) => `${Object.keys(body as object).length} models`,
     ),
-  aquestalk,
-  cevio,
-  aivoice,
-  voicepeak,
 };
 
 const youtube = async (): Promise<Check> => {

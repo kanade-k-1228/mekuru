@@ -16,15 +16,6 @@ export const ENGINES = {
     pkg: "@mekuru/voicevox",
   },
   "style-bert-vits2": { component: "StyleBertVits2", name: "Style-Bert-VITS2", hint: "free: its API server", pkg: "@mekuru/style-bert-vits2" },
-  aquestalk: {
-    component: "Aquestalk",
-    name: "ゆっくり (AquesTalk)",
-    hint: "AquesTalkPlayer on Windows, WSL or macOS; monetized videos need a licence",
-    pkg: "@mekuru/aquestalk",
-  },
-  cevio: { component: "Cevio", name: "CeVIO AI", hint: "on Windows or WSL, with the casts you have", pkg: "@mekuru/cevio" },
-  aivoice: { component: "Aivoice", name: "A.I.VOICE", hint: "on Windows or WSL, with the voices you have", pkg: "@mekuru/aivoice" },
-  voicepeak: { component: "Voicepeak", name: "VOICEPEAK", hint: "with the narrators you have", pkg: "@mekuru/voicepeak" },
 } as const;
 export type Engine = keyof typeof ENGINES;
 export const ENGINE_NAMES = Object.keys(ENGINES) as Engine[];
@@ -38,10 +29,6 @@ type CharacterDefinition = {
   | { engine: "voicevox" | "aivisspeech" | "sharevox"; voice: { speaker: number | string } }
   | { engine: "coeiroink"; voice: { speaker: number | string } }
   | { engine: "style-bert-vits2"; voice: { model: string } }
-  | { engine: "cevio"; voice: { cast: string } }
-  | { engine: "aivoice"; voice: { voice: string } }
-  | { engine: "aquestalk"; voice: { preset: string } }
-  | { engine: "voicepeak"; voice: { narrator: string } }
 );
 
 export const CHARACTERS = {
@@ -87,44 +74,6 @@ export const CHARACTERS = {
   suzuno: { name: "鈴乃", engine: "sharevox", component: "Suzuno", voice: { speaker: 25 }, stroke: "#B04A6A", x: "15%" },
   "koharune-ami": { name: "小春音アミ", engine: "style-bert-vits2", component: "KoharuneAmi", voice: { model: "koharune-ami" }, stroke: "#D25C8A", x: "85%" },
   amitaro: { name: "あみたろ", engine: "style-bert-vits2", component: "Amitaro", voice: { model: "amitaro" }, stroke: "#C46A1C", x: "15%" },
-  reimu: { name: "ゆっくり霊夢", engine: "aquestalk", component: "Reimu", voice: { preset: "れいむ" }, stroke: "#B71C1C", x: "85%" },
-  marisa: { name: "ゆっくり魔理沙", engine: "aquestalk", component: "Marisa", voice: { preset: "まりさ" }, stroke: "#5D4A00", x: "15%" },
-  sasara: { name: "さとうささら", engine: "cevio", component: "Sasara", voice: { cast: "さとうささら" }, stroke: "#A3346B", x: "85%" },
-  tsuzumi: { name: "すずきつづみ", engine: "cevio", component: "Tsuzumi", voice: { cast: "すずきつづみ" }, stroke: "#2E5E8C", x: "15%" },
-  takahashi: { name: "タカハシ", engine: "cevio", component: "Takahashi", voice: { cast: "タカハシ" }, stroke: "#4A5A3A", x: "85%" },
-  rikka: { name: "小春六花", engine: "cevio", component: "Rikka", voice: { cast: "小春六花" }, stroke: "#3F7FB5", x: "15%" },
-  karin: { name: "夏色花梨", engine: "cevio", component: "Karin", voice: { cast: "夏色花梨" }, stroke: "#C2571A", x: "85%" },
-  chifuyu: { name: "花隈千冬", engine: "cevio", component: "Chifuyu", voice: { cast: "花隈千冬" }, stroke: "#3C5A99", x: "15%" },
-  minato: { name: "双葉湊音", engine: "cevio", component: "Minato", voice: { cast: "双葉湊音" }, stroke: "#2E8B7A", x: "85%" },
-  yukari: { name: "結月ゆかり", engine: "aivoice", component: "Yukari", voice: { voice: "結月 ゆかり" }, stroke: "#6A3FA0", x: "15%" },
-  akane: { name: "琴葉茜", engine: "aivoice", component: "Akane", voice: { voice: "琴葉 茜" }, stroke: "#C2185B", x: "85%" },
-  aoi: { name: "琴葉葵", engine: "aivoice", component: "Aoi", voice: { voice: "琴葉 葵" }, stroke: "#1565C0", x: "15%" },
-  akari: { name: "紲星あかり", engine: "aivoice", component: "Akari", voice: { voice: "紲星 あかり" }, stroke: "#A07000", x: "85%" },
-  female1: { name: "女性1", engine: "voicepeak", component: "Female1", voice: { narrator: "Japanese Female 1" }, stroke: "#7B5EA7", x: "15%" },
-  female2: { name: "女性2", engine: "voicepeak", component: "Female2", voice: { narrator: "Japanese Female 2" }, stroke: "#B85C7A", x: "85%" },
-  female3: { name: "女性3", engine: "voicepeak", component: "Female3", voice: { narrator: "Japanese Female 3" }, stroke: "#4A7FA8", x: "15%" },
-  male1: { name: "男性1", engine: "voicepeak", component: "Male1", voice: { narrator: "Japanese Male 1" }, stroke: "#3D5A80", x: "85%" },
-  male2: { name: "男性2", engine: "voicepeak", component: "Male2", voice: { narrator: "Japanese Male 2" }, stroke: "#5A6B3D", x: "15%" },
-  male3: { name: "男性3", engine: "voicepeak", component: "Male3", voice: { narrator: "Japanese Male 3" }, stroke: "#6B4A3D", x: "85%" },
-  "female-child": { name: "女の子", engine: "voicepeak", component: "FemaleChild", voice: { narrator: "Japanese Female Child" }, stroke: "#D97A2B", x: "15%" },
-  "zunda-voicepeak": { name: "ずんだもん", engine: "voicepeak", component: "ZundaVoicepeak", voice: { narrator: "Zundamon" }, stroke: "#2E6B30", x: "85%" },
-  "zunko-voicepeak": { name: "東北ずん子", engine: "voicepeak", component: "ZunkoVoicepeak", voice: { narrator: "Tohoku Zunko" }, stroke: "#4F7A28", x: "15%" },
-  "kiritan-voicepeak": {
-    name: "東北きりたん",
-    engine: "voicepeak",
-    component: "KiritanVoicepeak",
-    voice: { narrator: "Tohoku Kiritan" },
-    stroke: "#8B3A2F",
-    x: "85%",
-  },
-  "itako-voicepeak": { name: "東北イタコ", engine: "voicepeak", component: "ItakoVoicepeak", voice: { narrator: "Tohoku Itako" }, stroke: "#7A3B6E", x: "15%" },
-  moca: { name: "宮舞モカ", engine: "voicepeak", component: "Moca", voice: { narrator: "Miyamai Moca" }, stroke: "#8E5A2B", x: "85%" },
-  "karin-voicepeak": { name: "夏色花梨", engine: "voicepeak", component: "KarinVoicepeak", voice: { narrator: "Natsuki Karin" }, stroke: "#C2571A", x: "15%" },
-  "rikka-voicepeak": { name: "小春六花", engine: "voicepeak", component: "RikkaVoicepeak", voice: { narrator: "Koharu Rikka" }, stroke: "#3F7FB5", x: "85%" },
-  frimomen: { name: "フリモメン", engine: "voicepeak", component: "Frimomen", voice: { narrator: "Frimomen" }, stroke: "#455A64", x: "15%" },
-  poron: { name: "ポロンちゃん", engine: "voicepeak", component: "Poron", voice: { narrator: "Poronchan" }, stroke: "#C77DAA", x: "85%" },
-  jashin: { name: "邪神ちゃん", engine: "voicepeak", component: "Jashin", voice: { narrator: "Jashinchan" }, stroke: "#6D2C8E", x: "15%" },
-  shuo: { name: "彩澄しゅお", engine: "voicepeak", component: "Shuo", voice: { narrator: "Asumi Shuo" }, stroke: "#2B8C8C", x: "85%" },
 } as const satisfies Record<string, CharacterDefinition>;
 export type Character = keyof typeof CHARACTERS;
 export const CHARACTER_NAMES = Object.keys(CHARACTERS) as Character[];

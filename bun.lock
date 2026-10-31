@@ -24,45 +24,6 @@
         "typescript": "7.0.2",
       },
     },
-    "pkgs/aivoice": {
-      "name": "@mekuru/aivoice",
-      "version": "0.0.0",
-      "dependencies": {
-        "@mekuru/speech": "workspace:^",
-      },
-      "devDependencies": {
-        "@mekuru/core": "workspace:*",
-      },
-      "peerDependencies": {
-        "@mekuru/core": "workspace:^",
-      },
-    },
-    "pkgs/aquestalk": {
-      "name": "@mekuru/aquestalk",
-      "version": "0.0.0",
-      "dependencies": {
-        "@mekuru/speech": "workspace:^",
-      },
-      "devDependencies": {
-        "@mekuru/core": "workspace:*",
-      },
-      "peerDependencies": {
-        "@mekuru/core": "workspace:^",
-      },
-    },
-    "pkgs/cevio": {
-      "name": "@mekuru/cevio",
-      "version": "0.0.0",
-      "dependencies": {
-        "@mekuru/speech": "workspace:^",
-      },
-      "devDependencies": {
-        "@mekuru/core": "workspace:*",
-      },
-      "peerDependencies": {
-        "@mekuru/core": "workspace:^",
-      },
-    },
     "pkgs/cli": {
       "name": "@mekuru/cli",
       "version": "0.0.0",
@@ -172,19 +133,6 @@
         "vite": "8.3.0",
       },
     },
-    "pkgs/voicepeak": {
-      "name": "@mekuru/voicepeak",
-      "version": "0.0.0",
-      "dependencies": {
-        "@mekuru/speech": "workspace:^",
-      },
-      "devDependencies": {
-        "@mekuru/core": "workspace:*",
-      },
-      "peerDependencies": {
-        "@mekuru/core": "workspace:^",
-      },
-    },
     "pkgs/voicevox": {
       "name": "@mekuru/voicevox",
       "version": "0.0.0",
@@ -242,12 +190,6 @@
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "3.1.2", "@jridgewell/sourcemap-codec": "1.6.0" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
-    "@mekuru/aivoice": ["@mekuru/aivoice@workspace:pkgs/aivoice"],
-
-    "@mekuru/aquestalk": ["@mekuru/aquestalk@workspace:pkgs/aquestalk"],
-
-    "@mekuru/cevio": ["@mekuru/cevio@workspace:pkgs/cevio"],
-
     "@mekuru/cli": ["@mekuru/cli@workspace:pkgs/cli"],
 
     "@mekuru/coeiroink": ["@mekuru/coeiroink@workspace:pkgs/coeiroink"],
@@ -265,8 +207,6 @@
     "@mekuru/style-bert-vits2": ["@mekuru/style-bert-vits2@workspace:pkgs/style-bert-vits2"],
 
     "@mekuru/viewer": ["@mekuru/viewer@workspace:pkgs/viewer"],
-
-    "@mekuru/voicepeak": ["@mekuru/voicepeak@workspace:pkgs/voicepeak"],
 
     "@mekuru/voicevox": ["@mekuru/voicevox@workspace:pkgs/voicevox"],
 
