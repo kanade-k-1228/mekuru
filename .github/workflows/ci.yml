@@ -92,6 +92,21 @@ jobs:
           if-no-files-found: error
           compression-level: 0
 
+  required:
+    if: always()
+    needs: [check, check-msrv, build]
+    timeout-minutes: 5
+    runs-on: ubuntu-slim
+    steps:
+      - name: Check that all jobs succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          for result in $RESULTS; do
+            [[ "$result" == success ]] || { echo "::error::some CI jobs did not succeed"; exit 1; }
+          done
+
   release:
     timeout-minutes: 30
     needs: build
