@@ -124,7 +124,7 @@ const create = () => (
   <stack id="create">
     <Step n="02">プロジェクトを作る</Step>
     <Terminal at={CREATE_TERM} w={1140}>
-      {"$ bun create mekuru-app my-video"}
+      {"$ bun create @mekuru my-video"}
     </Terminal>
     <Terminal at={PICK} w={800}>
       {[
@@ -166,7 +166,7 @@ const create = () => (
       <Sasara
         show={
           <Terminal at={OPTION_TERM} w={1140}>
-            {"$ bun create mekuru-app my-video \\\n    --voice zunda,metan --upload youtube,niconico --yes"}
+            {"$ bun create @mekuru my-video \\\n    --voice zunda,metan --upload youtube,niconico --yes"}
           </Terminal>
         }
       >

@@ -8,7 +8,7 @@ Responsive Time-Slicing Video Generator
 - [`example/`](example/)
 
 ```
-$ bun create mekuru-app
+$ bun create @mekuru
 $ cd my-video
 $ bun install
 $ bun preview     # Live Viewer http://localhost:3333

@@ -1,6 +1,6 @@
 # 動画の投稿
 
-- `bun create mekuru-app` でアップロード先を選ぶと、`upload:<先>` のスクリプトと設定のファイル（`configs/youtube.yaml`・`configs/niconico.yaml`）が入る（引数では `--upload youtube,niconico`）
+- `bun create @mekuru` でアップロード先を選ぶと、`upload:<先>` のスクリプトと設定のファイル（`configs/youtube.yaml`・`configs/niconico.yaml`）が入る（引数では `--upload youtube,niconico`）
 - あとから加えるときは `bun add -d @mekuru/youtube` などと、下のスクリプト・設定のファイルを書く
 - 設定のファイルとサムネイルは `configs/` に置く。設定の中のパスは、プロジェクトのフォルダ（`package.json` と同じ所）から書く
 

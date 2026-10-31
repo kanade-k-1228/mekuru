@@ -8,7 +8,7 @@ pkgs/
   compiler/          mekuru-compiler（Rust）: XML → 動画
   cli/               npm @mekuru/cli: mekuru-server（ビューアのサーバ）と mekuru-compiler の起動
   viewer/            ビューアの UI（React + Vite。pkgs/cli/viewer にビルドされる）
-  create/            npm create-mekuru-app
+  create/            npm @mekuru/create
   speech/            @mekuru/speech: 読み上げの部品の土台
   voicevox/ cevio/ coeiroink/ style-bert-vits2/ aquestalk/ aivoice/ voicepeak/
                      読み上げの部品（@mekuru/<名前>）

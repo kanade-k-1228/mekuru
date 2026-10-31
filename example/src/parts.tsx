@@ -19,7 +19,6 @@ const MONO = "DejaVu Sans Mono";
 const READING: Record<string, string> = {
   Mekuru: "めくる",
   mekuru: "めくる",
-  "mekuru-app": "めくるアップ",
   "my-video": "マイビデオ",
   "video.mp4": "ビデオ エムピーフォー",
   "youtube.yaml": "ユーチューブ ヤムル",

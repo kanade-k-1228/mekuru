@@ -105,7 +105,7 @@ const run = async (args: Args): Promise<number> => {
       return 1;
     }
   }
-  p.intro("create-mekuru-app");
+  p.intro("@mekuru/create");
   try {
     const answers = await ask(args);
     const target = await create(answers.dir, answers);
@@ -125,7 +125,7 @@ const run = async (args: Args): Promise<number> => {
   }
 };
 
-new Command("create-mekuru-app")
+new Command("create-mekuru")
   .description(
     "Creates a Mekuru Movie Maker video project. In a terminal, it asks for what the options do not give; " +
       "with --yes (or when the input is not a terminal), it uses the defaults.",

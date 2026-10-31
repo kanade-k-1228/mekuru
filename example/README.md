@@ -7,7 +7,7 @@
 Bun、ffmpeg / ffprobe（libx264 付き）、日本語フォントを用意し、VOICEVOX を起動します。Windows の準備は [Windows 環境構築](../docs/install/Windows.md) を参照してください。
 
 ```sh
-bun create mekuru-app my-video
+bun create @mekuru my-video
 cd my-video
 bun install
 ```
@@ -17,7 +17,7 @@ bun install
 同じ選択を引数で指定する場合は、最初のコマンドの代わりに次を使います。
 
 ```sh
-bun create mekuru-app my-video --voice zunda,metan --upload youtube,niconico --yes
+bun create @mekuru my-video --voice zunda,metan --upload youtube,niconico --yes
 ```
 
 | 手順          | 操作                                                          | 確認する結果                               |
