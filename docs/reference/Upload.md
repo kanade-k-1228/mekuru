@@ -1,6 +1,6 @@
 # 動画の投稿
 
-- `bun create mekuru-app` でアップロード先を選ぶと、`upload:<先>` のスクリプトと設定のファイル（`configs/youtube.yaml`・`configs/niconico.yaml`）が入る（引数では `--upload youtube,niconico`）
+- `bun create @mekuru` でアップロード先を選ぶと、`upload:<先>` のスクリプトと設定のファイル（`configs/youtube.yaml`・`configs/niconico.yaml`）が入る（引数では `--upload youtube,niconico`）
 - あとから加えるときは `bun add -d @mekuru/youtube` などと、下のスクリプト・設定のファイルを書く
 - 設定のファイルとサムネイルは `configs/` に置く。設定の中のパスは、プロジェクトのフォルダ（`package.json` と同じ所）から書く
 
@@ -22,7 +22,7 @@ title: "Mekuru Movie Maker 入門: 最初の動画を作るチュートリアル
 description: |
   Mekuru Movie Maker で最初の動画を作る手順を、ずんだもん・四国めたんと一緒に進めます。
   プロジェクトの作成、台本の編集、プレビュー、声と立ち絵の調整、書き出し、任意の投稿まで。
-  手順と完成した台本: https://github.com/kanade-k-1228/sasara/tree/main/example
+  手順と完成した台本: https://github.com/kanade-k-1228/mekuru/tree/main/example
 
   音声: VOICEVOX:ずんだもん / VOICEVOX:四国めたん
 tags: [MekuruMovieMaker, VOICEVOX, 解説動画]
@@ -37,7 +37,7 @@ title: "Mekuru Movie Maker 入門: 最初の動画を作るチュートリアル
 description: |
   Mekuru Movie Maker で最初の動画を作る手順を、ずんだもん・四国めたんと一緒に進めます。
   プロジェクトの作成、台本の編集、プレビュー、声と立ち絵の調整、書き出し、任意の投稿まで。
-  手順と完成した台本: https://github.com/kanade-k-1228/sasara/tree/main/example
+  手順と完成した台本: https://github.com/kanade-k-1228/mekuru/tree/main/example
 
   音声: VOICEVOX:ずんだもん / VOICEVOX:四国めたん
 tags: [MekuruMovieMaker, VOICEVOX, 解説動画]

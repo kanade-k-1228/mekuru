@@ -95,10 +95,10 @@
       },
     },
     "pkgs/create": {
-      "name": "create-mekuru-app",
+      "name": "@mekuru/create",
       "version": "0.0.0",
       "bin": {
-        "create-mekuru-app": "./src/index.ts",
+        "create-mekuru": "./src/index.ts",
       },
       "dependencies": {
         "@clack/core": "^1.5.1",
@@ -254,6 +254,8 @@
 
     "@mekuru/core": ["@mekuru/core@workspace:pkgs/core"],
 
+    "@mekuru/create": ["@mekuru/create@workspace:pkgs/create"],
+
     "@mekuru/niconico": ["@mekuru/niconico@workspace:pkgs/niconico"],
 
     "@mekuru/portrait": ["@mekuru/portrait@workspace:pkgs/portrait"],
@@ -393,8 +395,6 @@
     "clsx": ["clsx@2.1.1", "", {}, "sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA=="],
 
     "commander": ["commander@14.0.3", "", {}, "sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw=="],
-
-    "create-mekuru-app": ["create-mekuru-app@workspace:pkgs/create"],
 
     "csstype": ["csstype@3.2.3", "", {}, "sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ=="],
 

@@ -12,7 +12,7 @@ src/main.tsx ──bun──▶ .mekuru/main.xml ──mekuru-compiler──▶ 
 ## プロジェクトを作る
 
 ```
-$ bun create mekuru-app my-video --voice zunda,cevio
+$ bun create @mekuru my-video --voice zunda,cevio
 ```
 
 - 指定しなかったもの（フォルダ・キャラクター・アップロード先）は対話で聞く

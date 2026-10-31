@@ -1,10 +1,10 @@
 {
-  "name": "create-mekuru-app",
+  "name": "@mekuru/create",
   "version": "0.0.0",
-  "description": "Create a Mekuru Movie Maker video project: `bun create mekuru-app my-video`",
+  "description": "Create a Mekuru Movie Maker video project: `bun create @mekuru my-video`",
   "type": "module",
   "bin": {
-    "create-mekuru-app": "./src/index.ts"
+    "create-mekuru": "./src/index.ts"
   },
   "files": [
     "src",

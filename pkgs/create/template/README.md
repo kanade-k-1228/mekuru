@@ -1,6 +1,6 @@
 # my-video
 
-[Mekuru Movie Maker](https://github.com/kanade-k-1228/sasara) で作る動画のプロジェクトです。台本は `src/main.tsx` です。
+[Mekuru Movie Maker](https://github.com/kanade-k-1228/mekuru) で作る動画のプロジェクトです。台本は `src/main.tsx` です。
 
 ```
 bun install
@@ -19,5 +19,5 @@ bun run build   # video.mp4 に書き出す
 - VOICEPEAK: VOICEPEAK を入れてください（見つからないときは環境変数 `MEKURU_VOICEPEAK` に場所を書きます）。`<Voicepeak>` の `narrator` は、持っているナレーターにしてください。東北ずん子は商用に使えないなど、キャラクターごとの利用規約を確認してください。 <!-- #if voicepeak -->
 - `assets/character/` の立ち絵はダミーです。 <!-- #if voicevox aivisspeech coeiroink sharevox style-bert-vits2 aquestalk cevio aivoice voicepeak -->
 - 書き出しには ffmpeg が必要です。
-- YouTube: `bun run upload:youtube` で、`configs/youtube.yaml` の動画・タイトル・説明文などでアップロードします（別のパターンは `configs/` にファイルを増やし、`bun run upload:youtube configs/<ファイル>.yaml`）。初回は Google Cloud で OAuth クライアントを作る準備が必要です（[手順](https://github.com/kanade-k-1228/sasara/blob/main/docs/reference/Upload.md)）。 <!-- #if youtube -->
+- YouTube: `bun run upload:youtube` で、`configs/youtube.yaml` の動画・タイトル・説明文などでアップロードします（別のパターンは `configs/` にファイルを増やし、`bun run upload:youtube configs/<ファイル>.yaml`）。初回は Google Cloud で OAuth クライアントを作る準備が必要です（[手順](https://github.com/kanade-k-1228/mekuru/blob/main/docs/reference/Upload.md)）。 <!-- #if youtube -->
 - ニコニコ動画: `bun run upload:niconico` で、`configs/niconico.yaml` の動画・タイトル・説明文・タグを投稿ページに入力して投稿します（ニコニコには投稿の API がないので、ヘッドレスブラウザを使います）。初回は `bunx playwright-core install chromium` と `bunx mekuru-niconico login`（ブラウザでログイン）が必要です。 <!-- #if niconico -->
