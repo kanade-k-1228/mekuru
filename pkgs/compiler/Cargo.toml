@@ -7,15 +7,15 @@ license.workspace = true
 description = "The compiler of Mekuru Movie Maker: compiles an XML script (rendered from TSX by the `@mekuru/core` npm package) into a video"
 
 [dependencies]
-roxmltree = "=0.20.0"
-taffy = "=0.14.0"
-tiny-skia = { version = "0.11.4", default-features = false, features = ["std", "simd"] }
+roxmltree = "=0.21.2"
+taffy = "=0.15.1"
+tiny-skia = { version = "0.12.0", default-features = false, features = ["std", "simd"] }
 cosmic-text = { version = "0.19.0", default-features = false, features = ["std", "fontconfig"] }
 image = { version = "0.25.5", default-features = false, features = ["png", "jpeg", "webp"] }
 rayon = "1.11.0"
 serde_json = { workspace = true }
 serde = { version = "1", features = ["derive"] }
-sha2 = "0.10.9"
+sha2 = "0.11.1"
 anyhow = { workspace = true }
 clap = { workspace = true }
 env_logger = { workspace = true }
