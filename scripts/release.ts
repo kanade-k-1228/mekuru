@@ -33,13 +33,13 @@ const stamp = async (version: string): Promise<void> => {
   }
   const cargoToml = join(root, "Cargo.toml");
   const toml = await Bun.file(cargoToml).text();
-  const nextToml = toml.replace(/(\[workspace\.package\][^[]*?\nversion = )"[^"]*"/, `$1"${version}"`);
+  const nextToml = toml.replace(/(\[workspace\.package\][^[]*?\r?\nversion = )"[^"]*"/, `$1"${version}"`);
   if (nextToml === toml && !toml.includes(`version = "${version}"`)) throw new Error("no version in [workspace.package] of Cargo.toml");
   await Bun.write(cargoToml, nextToml);
   // the workspace's own crates have no `source` line in Cargo.lock
   const cargoLock = join(root, "Cargo.lock");
   const lock = await Bun.file(cargoLock).text();
-  await Bun.write(cargoLock, lock.replace(/(\[\[package\]\]\nname = "[^"]+"\nversion = )"[^"]*"\n(?!source = )/g, `$1"${version}"\n`));
+  await Bun.write(cargoLock, lock.replace(/(\[\[package\]\]\r?\nname = "[^"]+"\r?\nversion = )"[^"]*"(\r?\n)(?!source = )/g, `$1"${version}"$2`));
   console.log(`stamped ${version}`);
 };
 
