@@ -6,6 +6,7 @@ import { isSite, SITE_NAMES, SITES, type Site } from "./site.ts";
 
 const pkgDir = join(import.meta.dir, "..");
 const TEMPLATE = join(pkgDir, "template");
+const DUMMY = join(pkgDir, "dummy.png");
 export const VERSION: string = (await Bun.file(join(pkgDir, "package.json")).json()).version;
 
 export interface CreateOptions {
@@ -44,11 +45,6 @@ const copy = async (from: string, to: string, chosen: readonly string[]): Promis
   for (const file of readdirSync(from, { recursive: true, encoding: "utf8" })) {
     const src = join(from, file);
     if (statSync(src).isDirectory()) continue;
-    if (basename(dirname(file)) === "character") {
-      const name = basename(file, extname(file));
-      if (!isCharacter(name)) throw new Error(`the template has ${file}: not a character`);
-      if (!chosen.includes(name)) continue;
-    }
     const dest = join(to, dirname(file), basename(file) === "_gitignore" ? ".gitignore" : basename(file));
     if (![".md", ".ts", ".tsx"].includes(extname(file))) await Bun.write(dest, Bun.file(src));
     else await Bun.write(dest, keepLines(await Bun.file(src).text(), chosen));
@@ -67,8 +63,8 @@ export const create = async (dir: string, { force = false, mekuru = `^${VERSION}
   const sites = SITE_NAMES.filter((s) => upload.includes(s));
   await copy(TEMPLATE, target, [...selected, ...engines, ...sites]);
   for (const id of selected) {
-    const file = join(target, "src", "character", `${id}.tsx`);
-    await Bun.write(file, characterSource(id));
+    await Bun.write(join(target, "src", "character", `${id}.tsx`), characterSource(id));
+    await Bun.write(join(target, "assets", "character", `${id}.png`), Bun.file(DUMMY));
   }
   const main = join(target, "src", "main.tsx");
   await Bun.write(main, (await Bun.file(main).text()).replace("// #characters", selected.map(characterImport).join("\n")));

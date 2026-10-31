@@ -10,7 +10,7 @@ pkgs/
   viewer/            ビューアの UI（React + Vite。pkgs/cli/viewer にビルドされる）
   create/            npm @mekuru/create
   speech/            @mekuru/speech: 読み上げの部品の土台
-  voicevox/ cevio/ coeiroink/ style-bert-vits2/ aquestalk/ aivoice/ voicepeak/
+  voicevox/ coeiroink/ style-bert-vits2/ voisona/
                      読み上げの部品（@mekuru/<名前>）
   portrait/          @mekuru/portrait: 立ち絵
   youtube/           @mekuru/youtube: YouTube へのアップロード
@@ -85,8 +85,8 @@ $ git push origin 0.3.0
 
 - 時間の木と描画順（枝をまたぐ `z` も）はコンパイル時に決める
 - 文字: `cosmic-text` でフォント選択・文字組み・折り返し、同ライブラリが公開する `Skrifa` で輪郭を取得し、`tiny-skia` で描画する。配置は論理座標で計算し、プレビューと動画で同じ輪郭を使う。中央揃えの改行バランス調整は mekuru-compiler 側で行う
-- `@mekuru/speech/engine`: `httpClient`（HTTP 通信と接続エラー）・`limit`（同時実行数）・`run`（Bun の子プロセス）・`windowsEngine`（CeVIO / A.I.VOICE のバッチと PowerShell）
-- キャラクター: `pkgs/create/src/character.ts` のカタログから TSX を生成する。立ち絵は `template/assets/character/<id>.png`
+- `@mekuru/speech/engine`: `httpClient`（HTTP 通信と接続エラー）・`limit`（同時実行数）
+- キャラクター: `pkgs/create/src/character.ts` のカタログから TSX を生成する。立ち絵は共通のダミー（`pkgs/create/dummy.png`）を `assets/character/<id>.png` にコピーする
 - ビューア（`pkgs/viewer/src/`）: `main.tsx`（入口）・`view/`（React の部品と画面の操作）・`logic/`（状態と計算。`view/` を読まない）
 - ビューアの表示: `view/App.tsx`（接続待ちと画面構成）・`view/preview/`（Preview と Stage）・`view/timeline/`（Timeline・TimelineRuler・TimelineContent・ResizeHandle）・`view/status/`（StatusBar・Transport・ZoomSlider）。共通の Tooltip は `view/components/`、クラス名の結合は `clsx`
 - ビューアのロジックは `logic/` の jotai の atom にまとめ、カスタムフックは使わない。部品は atom を読み書きするだけ

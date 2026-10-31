@@ -1,5 +1,5 @@
 import type { JSX } from "@mekuru/core";
-import { httpClient, limit } from "@mekuru/speech/engine";
+import { httpClient, limit, splitText } from "@mekuru/speech/engine";
 import { joinWavs, line, voiceOf, type SpeechProps } from "@mekuru/speech";
 
 const DEFAULT_URL = "http://127.0.0.1:5000";
@@ -19,20 +19,6 @@ export interface StyleBertVits2Props extends SpeechProps {
   "max-chars"?: number;
   url?: string;
 }
-
-const parts = (text: string, max: number): string[] => {
-  const limit = Math.max(1, Math.floor(max));
-  const out: string[] = [];
-  let rest = [...text];
-  while (rest.length > limit) {
-    const head = rest.slice(0, limit);
-    const cut = head.findLastIndex((c) => "。！？!?」』".includes(c)) + 1 || head.findLastIndex((c) => "、，, ".includes(c)) + 1 || limit;
-    out.push(rest.slice(0, cut).join("").trim());
-    rest = rest.slice(cut);
-  }
-  out.push(rest.join("").trim());
-  return out.filter((p) => p);
-};
 
 interface ModelInfo {
   model_path: string;
@@ -73,7 +59,7 @@ class Server {
   private async write(props: StyleBertVits2Props, text: string, out: string): Promise<void> {
     await this.check(props);
     const wavs: Buffer[] = [];
-    for (const part of parts(text, props["max-chars"] ?? 100)) {
+    for (const part of splitText(text, props["max-chars"] ?? 100)) {
       const query = new URLSearchParams({ text: part, model_name: props.model, language: props.language ?? "JP" });
       const set = (key: string, value: number | string | undefined) => {
         if (value !== undefined) query.set(key, String(value));

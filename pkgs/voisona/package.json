@@ -1,7 +1,7 @@
 {
-  "name": "@mekuru/cevio",
+  "name": "@mekuru/voisona",
   "version": "0.0.0",
-  "description": "The speech component <Cevio> of Mekuru Movie Maker: lines of speech read by CeVIO AI",
+  "description": "The speech component <Voisona> of Mekuru Movie Maker: lines of speech read by VoiSona Talk, through its REST API",
   "type": "module",
   "exports": {
     ".": "./src/index.tsx"

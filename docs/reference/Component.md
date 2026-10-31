@@ -12,11 +12,11 @@ src/main.tsx ──bun──▶ .mekuru/main.xml ──mekuru-compiler──▶ 
 ## プロジェクトを作る
 
 ```
-$ bun create @mekuru my-video --voice zunda,cevio
+$ bun create @mekuru my-video --voice zunda,tsukuyomi
 ```
 
 - 指定しなかったもの（フォルダ・キャラクター・アップロード先）は対話で聞く
-- `--voice`: キャラクター（`zunda`・`metan` など。一覧は `--help`）かエンジン（`voicevox`・`cevio` など）。既定は選ばない
+- `--voice`: キャラクター（`zunda`・`metan` など。一覧は `--help`）かエンジン（`voicevox`・`coeiroink` など）。既定は選ばない
 - `--yes`: 何も聞かずに既定値を使う（端末から実行していないときも同じ）
 - `--upload`: アップロード先（`youtube`・`niconico`）。`upload:<先>` のスクリプトと設定のファイル（`configs/youtube.yaml` など）が入る（[動画の投稿](Upload.md)）
 - `--force`: 空でないフォルダに作る

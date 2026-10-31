@@ -1,7 +1,7 @@
 {
   "name": "@mekuru/speech",
   "version": "0.0.0",
-  "description": "What the speech components of Mekuru Movie Maker (@mekuru/voicevox, @mekuru/cevio) share: the text of a line, the cache of synthesized audio and the <audio> it becomes",
+  "description": "What the speech components of Mekuru Movie Maker (@mekuru/voicevox, @mekuru/coeiroink, ...) share: the text of a line, the cache of synthesized audio and the <audio> it becomes",
   "type": "module",
   "exports": {
     ".": "./src/index.tsx",
