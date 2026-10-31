@@ -25,3 +25,17 @@ export const limit = (concurrency: number) => {
     }
   };
 };
+
+export const splitText = (text: string, max: number): string[] => {
+  const size = Math.max(1, Math.floor(max));
+  const out: string[] = [];
+  let rest = [...text];
+  while (rest.length > size) {
+    const head = rest.slice(0, size);
+    const cut = head.findLastIndex((c) => "。！？!?」』".includes(c)) + 1 || head.findLastIndex((c) => "、，, ".includes(c)) + 1 || size;
+    out.push(rest.slice(0, cut).join("").trim());
+    rest = rest.slice(cut);
+  }
+  out.push(rest.join("").trim());
+  return out.filter((p) => p);
+};

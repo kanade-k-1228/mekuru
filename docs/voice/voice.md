@@ -8,6 +8,7 @@
 | VOICEVOX（AivisSpeech・SHAREVOX など同じ API も） | `@mekuru/voicevox`         | `<Voicevox>`       | Windows・macOS・Linux      |
 | COEIROINK（v2）                                  | `@mekuru/coeiroink`        | `<Coeiroink>`      | Windows・macOS・Linux      |
 | Style-Bert-VITS2                                 | `@mekuru/style-bert-vits2` | `<StyleBertVits2>` | API サーバーを動かせる所   |
+| VoiSona Talk                                     | `@mekuru/voisona`          | `<Voisona>`        | Windows・macOS             |
 
 ```tsx
 // example/src/parts.tsx（抜粋）
@@ -87,6 +88,20 @@ export const Sasara = ({ children, face, show, ...time }: Line) => (
 - `url`: 既定 `http://127.0.0.1:5000`（環境変数 `MEKURU_STYLE_BERT_VITS2_URL`）
 - サーバーは `python server_fastapi.py`（Windows は `Server.bat`）で起動する
 - モデルごとの利用規約を確認する
+
+## `<Voisona>`
+
+- `voice`（必須）: ボイスライブラリの名前（`"tanaka-san_ja_JP"`）か表示名（`"田中傘"`）。一覧は `/api/talk/v1/voices`
+- `version`: ボイスライブラリのバージョン（既定は入っている一番新しいもの）
+- `language`: 既定はボイスライブラリの最初の言語（`"ja_JP"` など）
+- `speed`・`pitch`・`volume`・`alp`・`huskiness`・`intonation`: 標準は 1・0（セント）・0（dB）・0・0・1
+- `style`: スタイルの名前と強さ（`{ <名前>: 0.5 }`。名前は `/api/talk/v1/voices/<voice>/<version>` の `style_names`。書かなかったスタイルは既定のまま）
+- `max-chars`: 既定 500（API の上限）
+- `url`: 既定 `http://localhost:32766`（環境変数 `MEKURU_VOISONA_URL`）
+- 環境変数 `MEKURU_VOISONA_USER`（サインインのメールアドレス）と `MEKURU_VOISONA_PASSWORD`（API のパスワード）が必要
+- VoiSona Talk 1.3.7 以降の REST API を使う。アプリにサインインし、環境設定の「API」タブで「REST APIを有効にする」をオンにする
+- WSL2 からは mirrored ネットワークにする（API は Windows の `localhost` でしか待ち受けないことがある）
+- 田中傘は無料で、商用にも使える。ほかのボイスライブラリは、それぞれの利用規約を確認する
 
 ## キャッシュ
 

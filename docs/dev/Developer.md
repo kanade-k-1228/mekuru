@@ -10,7 +10,7 @@ pkgs/
   viewer/            ビューアの UI（React + Vite。pkgs/cli/viewer にビルドされる）
   create/            npm @mekuru/create
   speech/            @mekuru/speech: 読み上げの部品の土台
-  voicevox/ coeiroink/ style-bert-vits2/
+  voicevox/ coeiroink/ style-bert-vits2/ voisona/
                      読み上げの部品（@mekuru/<名前>）
   portrait/          @mekuru/portrait: 立ち絵
   youtube/           @mekuru/youtube: YouTube へのアップロード

@@ -56,6 +56,31 @@ const http = async (name: string, env: string, url: string, path: string, start:
 
 const version = (body: unknown) => String(body);
 
+const voisona = async (): Promise<Check> => {
+  const name = "VoiSona Talk";
+  const at = (process.env.MEKURU_VOISONA_URL || "http://localhost:32766").replace(/\/+$/, "");
+  const user = process.env.MEKURU_VOISONA_USER;
+  const password = process.env.MEKURU_VOISONA_PASSWORD;
+  const credentials = "set MEKURU_VOISONA_USER (the email you sign in with) and MEKURU_VOISONA_PASSWORD (the API password in its preferences)";
+  if (!user || !password) return { name, ok: false, detail: credentials };
+  try {
+    const res = await fetch(`${at}/api/talk/v1/voices`, {
+      headers: { Authorization: `Basic ${Buffer.from(`${user}:${password}`).toString("base64")}` },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (res.status === 401) return { name, ok: false, detail: `the email or the API password is wrong: ${credentials}` };
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { items } = (await res.json()) as { items: { voice_name: string }[] };
+    return { name, ok: true, detail: `${new Set(items.map((v) => v.voice_name)).size} voices at ${at} (set the voices in src/character/ to ones you have)` };
+  } catch {
+    return {
+      name,
+      ok: false,
+      detail: `the REST API is not running at ${at}. Start VoiSona Talk (1.3.7 or later) and turn on its REST API in the preferences\n(if it runs elsewhere, as on Windows from WSL2 without mirrored networking, set MEKURU_VOISONA_URL)`,
+    };
+  }
+};
+
 const CHECKS: Record<Engine, () => Promise<Check>> = {
   voicevox: () =>
     http(
@@ -89,6 +114,7 @@ const CHECKS: Record<Engine, () => Promise<Check>> = {
       "Start its API server (python server_fastapi.py, or Server.bat).",
       (body) => `${Object.keys(body as object).length} models`,
     ),
+  voisona,
 };
 
 const youtube = async (): Promise<Check> => {

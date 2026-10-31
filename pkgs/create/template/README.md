@@ -13,7 +13,8 @@ bun run build   # video.mp4 に書き出す
 - COEIROINK: COEIROINK（v2）のアプリを起動してください。つくよみちゃん以外は、アプリの「キャラクターダウンロード」で入れます。動画には「COEIROINK:つくよみちゃん」のようなクレジットが必要です。 <!-- #if coeiroink -->
 - SHAREVOX: アプリを起動してください。動画には「SHAREVOX:小春音アミ」のようなクレジットが必要です（キャラクターごとの利用規約も確認してください）。 <!-- #if sharevox -->
 - Style-Bert-VITS2: API サーバー（`python server_fastapi.py`。Windows は `Server.bat`）を起動してください。小春音アミ・あみたろの声には「Style-BertVITS2モデル: 小春音アミ、あみたろの声素材工房 (https://amitaro.net/)」のようなクレジットが必要です。 <!-- #if style-bert-vits2 -->
-- `assets/character/` の立ち絵はダミーです。 <!-- #if voicevox aivisspeech coeiroink sharevox style-bert-vits2 -->
+- VoiSona Talk: アプリ（1.3.7 以降）にサインインし、環境設定の「API」タブで「REST APIを有効にする」をオンにしてください。環境変数 `MEKURU_VOISONA_USER` にサインインのメールアドレス、`MEKURU_VOISONA_PASSWORD` にそこで決めた API のパスワードを書きます。`<Voisona>` の `voice` は、持っているボイスライブラリにしてください（田中傘は無料）。ボイスライブラリごとの利用規約も確認してください。 <!-- #if voisona -->
+- `assets/character/` の立ち絵はダミーです。 <!-- #if voicevox aivisspeech coeiroink sharevox style-bert-vits2 voisona -->
 - 書き出しには ffmpeg が必要です。
 - YouTube: `bun run upload:youtube` で、`configs/youtube.yaml` の動画・タイトル・説明文などでアップロードします（別のパターンは `configs/` にファイルを増やし、`bun run upload:youtube configs/<ファイル>.yaml`）。初回は Google Cloud で OAuth クライアントを作る準備が必要です（[手順](https://github.com/kanade-k-1228/mekuru/blob/main/docs/reference/Upload.md)）。 <!-- #if youtube -->
 - ニコニコ動画: `bun run upload:niconico` で、`configs/niconico.yaml` の動画・タイトル・説明文・タグを投稿ページに入力して投稿します（ニコニコには投稿の API がないので、ヘッドレスブラウザを使います）。初回は `bunx playwright-core install chromium` と `bunx mekuru-niconico login`（ブラウザでログイン）が必要です。 <!-- #if niconico -->

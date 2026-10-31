@@ -146,6 +146,19 @@
         "@mekuru/core": "workspace:^",
       },
     },
+    "pkgs/voisona": {
+      "name": "@mekuru/voisona",
+      "version": "0.0.0",
+      "dependencies": {
+        "@mekuru/speech": "workspace:^",
+      },
+      "devDependencies": {
+        "@mekuru/core": "workspace:*",
+      },
+      "peerDependencies": {
+        "@mekuru/core": "workspace:^",
+      },
+    },
     "pkgs/youtube": {
       "name": "@mekuru/youtube",
       "version": "0.0.0",
@@ -209,6 +222,8 @@
     "@mekuru/viewer": ["@mekuru/viewer@workspace:pkgs/viewer"],
 
     "@mekuru/voicevox": ["@mekuru/voicevox@workspace:pkgs/voicevox"],
+
+    "@mekuru/voisona": ["@mekuru/voisona@workspace:pkgs/voisona"],
 
     "@mekuru/youtube": ["@mekuru/youtube@workspace:pkgs/youtube"],
 

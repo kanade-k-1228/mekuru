@@ -16,6 +16,12 @@ export const ENGINES = {
     pkg: "@mekuru/voicevox",
   },
   "style-bert-vits2": { component: "StyleBertVits2", name: "Style-Bert-VITS2", hint: "free: its API server", pkg: "@mekuru/style-bert-vits2" },
+  voisona: {
+    component: "Voisona",
+    name: "VoiSona Talk",
+    hint: "the app on Windows or macOS, with its REST API on; 田中傘 is free",
+    pkg: "@mekuru/voisona",
+  },
 } as const;
 export type Engine = keyof typeof ENGINES;
 export const ENGINE_NAMES = Object.keys(ENGINES) as Engine[];
@@ -29,6 +35,7 @@ type CharacterDefinition = {
   | { engine: "voicevox" | "aivisspeech" | "sharevox"; voice: { speaker: number | string } }
   | { engine: "coeiroink"; voice: { speaker: number | string } }
   | { engine: "style-bert-vits2"; voice: { model: string } }
+  | { engine: "voisona"; voice: { voice: string } }
 );
 
 export const CHARACTERS = {
@@ -74,6 +81,15 @@ export const CHARACTERS = {
   suzuno: { name: "鈴乃", engine: "sharevox", component: "Suzuno", voice: { speaker: 25 }, stroke: "#B04A6A", x: "15%" },
   "koharune-ami": { name: "小春音アミ", engine: "style-bert-vits2", component: "KoharuneAmi", voice: { model: "koharune-ami" }, stroke: "#D25C8A", x: "85%" },
   amitaro: { name: "あみたろ", engine: "style-bert-vits2", component: "Amitaro", voice: { model: "amitaro" }, stroke: "#C46A1C", x: "15%" },
+  tanaka: { name: "田中傘", engine: "voisona", component: "Tanaka", voice: { voice: "tanaka-san_ja_JP" }, stroke: "#2F6F8F", x: "85%" },
+  chisa: { name: "知声", engine: "voisona", component: "Chisa", voice: { voice: "chis-a_ja_JP" }, stroke: "#B04F7A", x: "15%" },
+  sasara: { name: "さとうささら", engine: "voisona", component: "Sasara", voice: { voice: "sato-sasara_ja_JP" }, stroke: "#A3346B", x: "85%" },
+  tsuzumi: { name: "すずきつづみ", engine: "voisona", component: "Tsuzumi", voice: { voice: "suzuki-tsudumi_ja_JP" }, stroke: "#2E5E8C", x: "15%" },
+  takahashi: { name: "タカハシ", engine: "voisona", component: "Takahashi", voice: { voice: "takahashi_ja_JP" }, stroke: "#4A5A3A", x: "85%" },
+  rikka: { name: "小春六花", engine: "voisona", component: "Rikka", voice: { voice: "koharu-rikka_ja_JP" }, stroke: "#3F7FB5", x: "15%" },
+  karin: { name: "夏色花梨", engine: "voisona", component: "Karin", voice: { voice: "natsuki-karin_ja_JP" }, stroke: "#C2571A", x: "85%" },
+  chifuyu: { name: "花隈千冬", engine: "voisona", component: "Chifuyu", voice: { voice: "hanakuma-chifuyu_ja_JP" }, stroke: "#3C5A99", x: "15%" },
+  minato: { name: "双葉湊音", engine: "voisona", component: "Minato", voice: { voice: "futaba-minato_ja_JP" }, stroke: "#2E8B7A", x: "85%" },
 } as const satisfies Record<string, CharacterDefinition>;
 export type Character = keyof typeof CHARACTERS;
 export const CHARACTER_NAMES = Object.keys(CHARACTERS) as Character[];
