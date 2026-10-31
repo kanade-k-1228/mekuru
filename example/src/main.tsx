@@ -659,7 +659,7 @@ const outro = () => (
       <Sasara
         show={
           <Label x={420} y={790} size={36} color={COLOR.blue}>
-            github.com/kanade-k-1228/sasara
+            github.com/kanade-k-1228/mekuru
           </Label>
         }
       >

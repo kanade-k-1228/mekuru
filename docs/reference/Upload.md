@@ -22,7 +22,7 @@ title: "Mekuru Movie Maker 入門: 最初の動画を作るチュートリアル
 description: |
   Mekuru Movie Maker で最初の動画を作る手順を、ずんだもん・四国めたんと一緒に進めます。
   プロジェクトの作成、台本の編集、プレビュー、声と立ち絵の調整、書き出し、任意の投稿まで。
-  手順と完成した台本: https://github.com/kanade-k-1228/sasara/tree/main/example
+  手順と完成した台本: https://github.com/kanade-k-1228/mekuru/tree/main/example
 
   音声: VOICEVOX:ずんだもん / VOICEVOX:四国めたん
 tags: [MekuruMovieMaker, VOICEVOX, 解説動画]
@@ -37,7 +37,7 @@ title: "Mekuru Movie Maker 入門: 最初の動画を作るチュートリアル
 description: |
   Mekuru Movie Maker で最初の動画を作る手順を、ずんだもん・四国めたんと一緒に進めます。
   プロジェクトの作成、台本の編集、プレビュー、声と立ち絵の調整、書き出し、任意の投稿まで。
-  手順と完成した台本: https://github.com/kanade-k-1228/sasara/tree/main/example
+  手順と完成した台本: https://github.com/kanade-k-1228/mekuru/tree/main/example
 
   音声: VOICEVOX:ずんだもん / VOICEVOX:四国めたん
 tags: [MekuruMovieMaker, VOICEVOX, 解説動画]

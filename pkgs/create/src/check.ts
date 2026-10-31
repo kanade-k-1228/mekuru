@@ -182,7 +182,7 @@ const youtube = async (): Promise<Check> => {
   return {
     name: "YouTube",
     ok: false,
-    detail: `no OAuth client: make one (a desktop app) in your Google Cloud project, and save its JSON as ${file}\n(https://github.com/kanade-k-1228/sasara/blob/main/docs/reference/Upload.md)`,
+    detail: `no OAuth client: make one (a desktop app) in your Google Cloud project, and save its JSON as ${file}\n(https://github.com/kanade-k-1228/mekuru/blob/main/docs/reference/Upload.md)`,
   };
 };
 

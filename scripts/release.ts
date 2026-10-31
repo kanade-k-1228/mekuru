@@ -59,7 +59,7 @@ const pack = async (platform: string, binDir: string, outDir: string): Promise<v
     version,
     description: `The compiler of Mekuru Movie Maker (XML → video) for ${platform}; installed by the @mekuru/cli package`,
     license: "MIT",
-    repository: { type: "git", url: "git+https://github.com/kanade-k-1228/sasara.git" },
+    repository: { type: "git", url: "git+https://github.com/kanade-k-1228/mekuru.git" },
     os: [os],
     cpu: [cpu],
     files: ["bin"],
