@@ -8,7 +8,8 @@
   },
   "files": [
     "src",
-    "template"
+    "template",
+    "dummy.png"
   ],
   "engines": {
     "bun": ">=1.4"
