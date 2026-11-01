@@ -13,13 +13,13 @@ bun add -d @mekuru/portrait
 プロジェクト内に、同じ寸法の画像部品を配置します。PNG・JPEG・WebP に対応し、重ねる部分には透過画像を使います。PSD は部品ごとにレイヤーを合成して PNG に書き出してください。
 
 ```text
-assets/character/sasara/
-  体/    基本.png  指差し.png
-  目/    基本.png  基本.0.png  基本.1.png  笑い.png
-  口/    基本.png  基本.0.png  基本.1.png  笑い.png
+assets/character/pikao-tsuzumi/
+  体/    基本.png  説明.png
+  目/    基本.png  基本.0.png  基本.1.png  笑顔.png
+  口/    基本.png  基本.0.png  基本.1.png  にこ.png
   眉/    基本.png
-  顔色/  ほんのり.png
-  他/    ハート.png
+  顔色/  基本.png
+  他/    音符.png
 ```
 
 - 描画順は奥から `後 → 体 → 顔色 → 髪 → 口 → 目 → 眉 → 他`。
@@ -29,22 +29,23 @@ assets/character/sasara/
 
 ## 使い方
 
-`src/parts.tsx` などで部品を定義し、台本の `<mekuru>` 内に `<Scene />` を置きます。以下は [example の素材](../../example/README.md#解説役の立ち絵)を使う例です。
+`src/parts.tsx` などで部品を定義し、台本の `<mekuru>` 内に `<Scene />` を置きます。以下は [example の素材の準備スクリプト](../../example/scripts/portrait.ts)で取り込んだ部品を使う例です。
 
 ```tsx
 import { portrait } from "@mekuru/portrait";
-import { Voicevox } from "@mekuru/voicevox";
+import { Voisona } from "@mekuru/voisona";
 
 const actor = portrait({
-  src: "assets/character/sasara",
-  faces: { 笑顔: { 目: "笑い", 口: "笑い" } },
+  src: "assets/character/pikao-tsuzumi",
+  face: { 体: "基本", 髪: null, 目: "基本", 口: "基本", 眉: "基本", 顔色: "基本" },
+  faces: { 笑顔: { 目: "笑顔", 口: "にこ" } },
 });
 
 export const Scene = () => (
   <stack>
     <actor.Stand />
     <actor.Talk face="笑顔">
-      <Voicevox speaker="冥鳴ひまり">こんにちは。</Voicevox>
+      <Voisona voice="suzuki-tsudumi_ja_JP">こんにちは。</Voisona>
     </actor.Talk>
   </stack>
 );

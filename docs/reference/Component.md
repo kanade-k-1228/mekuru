@@ -39,18 +39,18 @@ This component combines speech, a portrait, and subtitles into one line. Types a
 
 ```tsx
 // Excerpt from example/src/parts.tsx
-export const Sasara = ({ children, face, show, ...time }: Line) => (
+export const Tsuzumi = ({ children, face, show, ...time }: Line) => (
   <stack {...time}>
-    <sasara.Talk face={face}>
-      <Voicevox {...voice}>{children}</Voicevox>
-    </sasara.Talk>
+    <tsuzumi.Talk face={face}>
+      <Voisona {...voice}>{children}</Voisona>
+    </tsuzumi.Talk>
     <Subtitle>{children}</Subtitle>
     {show}
   </stack>
 );
 ```
 
-Audio inside `<stack>` sets the duration; subtitles, the portrait, and elements passed as `show` appear together. See [Voicevox](../../pkgs/voicevox/README.md) for speech and [portraits](Portrait.md) for animation.
+Audio inside `<stack>` sets the duration; subtitles, the portrait, and elements passed as `show` appear together. See [VoiSona Talk](../../pkgs/voisona/README.md) for speech and [portraits](Portrait.md) for animation.
 
 ### Displaying code
 

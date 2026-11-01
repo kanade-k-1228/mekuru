@@ -39,18 +39,18 @@ bun install
 
 ```tsx
 // example/src/parts.tsx（抜粋）
-export const Sasara = ({ children, face, show, ...time }: Line) => (
+export const Tsuzumi = ({ children, face, show, ...time }: Line) => (
   <stack {...time}>
-    <sasara.Talk face={face}>
-      <Voicevox {...voice}>{children}</Voicevox>
-    </sasara.Talk>
+    <tsuzumi.Talk face={face}>
+      <Voisona {...voice}>{children}</Voisona>
+    </tsuzumi.Talk>
     <Subtitle>{children}</Subtitle>
     {show}
   </stack>
 );
 ```
 
-`<stack>` 内の音声が長さを決め、字幕・立ち絵・`show` に渡した要素を同時に表示します。声は [Voicevox](../../pkgs/voicevox/README.jp.md)、立ち絵は [portrait](Portrait.jp.md) を参照してください。
+`<stack>` 内の音声が長さを決め、字幕・立ち絵・`show` に渡した要素を同時に表示します。声は [VoiSona Talk](../../pkgs/voisona/README.jp.md)、立ち絵は [portrait](Portrait.jp.md) を参照してください。
 
 ### コードを表示する
 
