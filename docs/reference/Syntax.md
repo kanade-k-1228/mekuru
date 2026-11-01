@@ -1,85 +1,65 @@
-# 組み込みの要素
+# Built-in elements
 
-- 18 種類のタグで動画を表す。[TSX の台本](Component.md) に小文字の要素として書く
-- `writeXml` が部品を展開し、組み込みの要素だけの XML（[中間形式](#xml中間形式)）にする
-- 素材の相対パスは、プロジェクトのフォルダが基準（[コマンド](Component.md#コマンド)）
-- 基本例は [チュートリアルの完成形](../../example/tutorial/main.tsx) と [解説動画の台本](../../example/src/main.tsx) から引く。応用例では example の素材・部品を使う
-  - 大文字の要素は部品。`<Zunda>`・`<Metan>` は新規プロジェクトで選んだキャラクター、`<Sasara>`・`<Step>` などは example の部品（解説役の読み上げと字幕、左上の見出しなど）
+[日本語](Syntax.jp.md)
 
-| 種類       | タグ                                                                                                 |
-| ---------- | ---------------------------------------------------------------------------------------------------- |
-| 全体       | `<mekuru>`                                                                                           |
-| 入れ物     | `<seq>`・`<row>`・`<column>`・`<stack>`                                                              |
-| 時間       | `<dur>`（長さを決める）・`<repeat>`（繰り返す）。空間では何もしない                                  |
-| 表示       | `<text>`（中で `<br/>`）・`<image>`・`<video>`・`<rect>`・`<circle>`・`<line>`                       |
-| 音         | `<audio>`                                                                                            |
-| 素材の再生 | `<hold>`（一時停止）・`<speed>`（倍速・スロー）・`<cut>`（カット）。どれも `<video>`・`<audio>` の中 |
+- Express videos with 18 tags, written as lowercase elements in a [TSX script](Component.md).
+- `writeXml` expands components into XML containing only built-in elements (the [intermediate format](#xml-intermediate-format)).
+- Relative media paths are resolved from the project folder ([commands](Component.md#commands)).
+- Examples are TSX fragments placed inside `<mekuru>`. See the [tutorial](../../example/tutorial/main.tsx) and [explainer video](../../example/src/main.tsx) for complete scripts.
 
-## 規則
+Tags:
 
-- 入れ物は、子を 1 つの軸に並べ、ほかの軸では重ねる
+- Root: `<mekuru>`
+- Containers: `<seq>`, `<row>`, `<column>`, `<stack>`
+- Timing: `<dur>` (set duration), `<repeat>` (repeat). Neither affects spatial layout
+- Visuals: `<text>` (with `<br/>`), `<image>`, `<video>`, `<rect>`, `<circle>`, `<line>`
+- Sound: `<audio>`
+- Media playback: `<hold>` (pause), `<speed>` (change speed), `<cut>` (skip). All go inside `<video>` or `<audio>`
 
-| 入れ物     | 時間           | 横     | 縦     |
-| ---------- | -------------- | ------ | ------ |
-| `<seq>`    | 並べる         | 重ねる | 重ねる |
-| `<row>`    | 重ねる         | 並べる | 重ねる |
-| `<column>` | 重ねる         | 重ねる | 並べる |
-| `<stack>`  | 重ねる         | 重ねる | 重ねる |
+## Rules
 
-- 並べる: 長さ・大きさを足し合わせる。重ねる: いちばん長い・大きいものに合わせる
-- [`<dur>`](#dur)・[`<repeat>`](#repeat) は時間だけを変える。空間では何もせず、中のものは親の子として並ぶ
-- 要素は、長さのあるものとないものに分かれる（[長さ](#長さ)）。長さのないものは、親の終わりまで続く。大きさを書かないものは、重ねる向きに親いっぱいに伸びる
-- どの要素にも、時間の属性（`at`・`fadein` など）と見た目の属性（`x`・`w`・`opacity`・`z` など）を付けられる
-- 時間は、すべて整数のフレーム数で書く（`fps={30}` なら 30 で 1 秒）
-- 位置は動画全体で一度だけ決める。`<seq>` の大きさは、中身がすべて収まる大きさ
+Containers arrange children along one axis and overlap them along the others.
 
-```tsx
-// example/src/main.tsx（抜粋）
-<mekuru size="1920x1080" fps={30} font="Rounded Mplus 1c">
-  <rect w="100%" h="100%" fill="#FFFFFF" />
-  <repeat fadein={30} fadeout={60}>
-    <audio src="assets/bgm.mp3" volume={0.06} />
-  </repeat>
-  <stack>
-    <SasaraStand />
-    <seq>
-      {intro()}
-      <Jingle>ささらぼ！</Jingle>
-      …
-    </seq>
-  </stack>
-  …
-</mekuru>
-```
+| Container  | Time       | Horizontal | Vertical   |
+| ---------- | ---------- | ---------- | ---------- |
+| `<seq>`    | Sequential | Overlap    | Overlap    |
+| `<row>`    | Overlap    | Sequential | Overlap    |
+| `<column>` | Overlap    | Overlap    | Sequential |
+| `<stack>`  | Overlap    | Overlap    | Overlap    |
+
+- Sequential: add durations or sizes. Overlap: use the longest or largest.
+- [`<dur>`](#dur) and [`<repeat>`](#repeat) affect only time. For spatial layout, their children act as children of their parent.
+- Elements either have a [duration](#duration) or have none. Those without one last until their parent ends. Unspecified dimensions stretch to the parent along overlapping axes.
+- Any element can take timing attributes such as `at` and `fadein`, and appearance attributes such as `x`, `w`, `opacity`, and `z`.
+- All times use integer frames: at `fps={30}`, 30 frames equal one second.
+- Positions are resolved once for the whole video. A `<seq>` is sized to fit all its children.
 
 ## `<mekuru>`
 
-- 動画全体を囲む。画面の大きさの `<seq>`（XML では、中身を 1 つの `<seq>` に入れて書き出す）
-- `size`: 画面の大きさ（`"1920x1080"`）
-- `fps`: フレームレート。時間はすべて、このフレームの数で書く（既定 30）
-- `font`: フォント名か、フォントファイルのパス
-- 背景は、画面全体の `<rect>` を最初に置いて描く。何もない所は黒
+- Wraps the whole video. Acts as a screen-sized `<seq>`; XML output wraps its children in one `<seq>`.
+- `size`: screen dimensions, such as `"1920x1080"`.
+- `fps`: frame rate, default 30. All times use frames at this rate.
+- `font`: font name or font file path.
+- For a background, place a full-screen `<rect>` first. Empty areas are black.
 
-## 時間
+## Timing
 
-### 長さ
+### Duration
 
-- 要素は、長さのあるものとないものに分かれる。どちらになるかは、タグと中身で決まる
-- 長さのないものは、親の終わりまで続く。親の長さにも、`<seq>` の並びにも効かない
+Whether an element has a duration depends on its tag and children. Elements without a duration last until their parent ends. They do not determine the parent's duration or advance a `<seq>`.
 
-| 要素                                                | 長さ                                                                                     |
-| --------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `<video>`・`<audio>`                                | ある。素材の長さ（中の `<hold>`・`<speed>`・`<cut>` も効く）                             |
-| `<text>`・`<image>`・`<rect>`・`<circle>`・`<line>` | ない                                                                                     |
-| `<seq>`・`<stack>`・`<row>`・`<column>`             | 長さのある子があればある（`<seq>` は足し合わせ、ほかは最後に終わる子まで）。なければない |
-| `<repeat>`                                          | ない。中に長さのあるものが要る                                                           |
-| `<dur len={90}>`                                    | ある。90 フレーム。中のものの長さも 90 フレームにする                                    |
+- `<video>`, `<audio>`: Media duration, including `<hold>`, `<speed>`, and `<cut>`
+- `<text>`, `<image>`, `<rect>`, `<circle>`, `<line>`: None
+- `<seq>`, `<stack>`, `<row>`, `<column>`: Has a duration if any child does. `<seq>` adds durations; others last until the last child ends
+- `<repeat>`: None; requires content with a duration
+- `<dur len={90}>`: 90 frames; also sets its children's duration to 90 frames
 
-- 長さを変えるのは 2 つだけ: [`<dur>`](#dur) は長さのないものに長さを与え、[`<repeat>`](#repeat) は長さのあるものを繰り返して、長さのないものにする
-- 文字や図形だけの場面は `<dur>` で包む。何もない `<dur len={9} />` は間になる
+Two elements change whether content has a duration: [`<dur>`](#dur) gives it one; [`<repeat>`](#repeat) loops content that has one, producing an element without one.
+
+Wrap scenes containing only text or shapes in `<dur>`. An empty `<dur len={9} />` creates a pause.
 
 ```tsx
-// example/tutorial/main.tsx（抜粋）
+// Excerpt from example/tutorial/main.tsx
 <stack>
   <text x="50%" y="35%" anchor="center" size={90}>
     はじめての動画
@@ -91,385 +71,228 @@
 </stack>
 ```
 
-- `<seq>` が２つのセリフを順に読む
-- 見出しは長さがないので、`<seq>` が終わるまで表示される
+- `<seq>` plays the two spoken lines in order.
+- The heading has no duration, so it stays visible until `<seq>` ends.
 
-### 時刻の決まり方
+### Timing attributes
 
-- すべての要素の始まり `s` と終わり `e` は、次の式で決まる。長さのないものは `e` を持たない
-
-```
-s(X) = max( p(X) + a,  T(Y, q) )     at={a} か at="Y:q"。書かない a は 0、書かない T の項はない
-p(X) = s(親)                         親が <seq> 以外か、X が最初の子
-     = max( p(前), e(前) )           親が <seq>（前は直前の兄弟。前に長さがなければ p(前)）
-e(X) = s(X) + d                      <dur len={d}> と、その直下の子
-     = T(X, to)                      動画・音声（to の位置の <hold> も待つ）
-     = max( s(X), e(C) … )           入れ物と <hold>（C は長さのある子）
-T(Y, q) = s(Y) + q                   動画・音声以外
-        = max( s(Y) + ⌈u(from, q)⌉,  e(H) + ⌈u(q_H, q)⌉ … )
-                                     動画・音声（H は位置 q_H < q の <hold>）
-u(a, b) = ∫ dq / r(q)  （a から b）   素材の a から b を再生するフレーム数（r は速さ）
-s(H) = T(M, q_H)                     <hold at={q_H}>（M はそれを持つ動画・音声）
-表示の終わり E(X) = min( e(X), E(親) )   長さがなければ E(親)。<hold> の親は、それを持つ動画・音声
-表示される区間 = [ s(X), E(X) )
-```
-
-- 時刻・長さ・位置は、すべて整数（フレーム）。実数になるのは `u` だけで、`⌈ ⌉` で切り上げる
-  - `s`・`e` は整数なので、`⌈max(a, b)⌉ = max(⌈a⌉, ⌈b⌉)`・`⌈n + x⌉ = n + ⌈x⌉` から、`T(Y, q)` は「素材が `q` に着く最初のフレーム」になる
-  - 素材の長さ（秒）は `fps` を掛けてフレームにする。`to` を省くと、素材はその長さで終わる。切り上げるので、音声の終わりは切れない
-- `T(Y, q)`: `Y` の時計が `q` に着く時刻。動画・音声の時計は素材の時刻で、[`<hold>`](#hold) で止まった分だけ遅れる。それ以外は始まりからのフレーム数
-- `r(q)`: 素材の `q` を再生する速さ。ふつうは 1、[`<speed>`](#speedcut) の中は `rate`（重なれば掛け合わせる）、[`<cut>`](#speedcut) の中は ∞（時間を使わない）。速さを変えなければ `u(a, b) = b − a` で、整数のまま
-- 動画・音声の時計は、素材と `<hold>` を交互に並べた `<seq>` と同じ（`from` から `q₁` まで再生 → `<hold>` → `q₂` まで再生 → …）。再生する部分の長さが `u`
-- 整数の上の `max` と `+` しか使わないので、時刻は依存関係をたどった最長路で決まる。どこかを遅らせて、ほかが早まることはない。輪になると決まらない（エラー E510）
-
-### 時間の属性
-
-- `id="intro"`: 参照用の名前（文書内で一意）
-- `at`: 始まる時
-  - `at={60}`: 並びの位置から 60 フレーム後（`<seq>` の中では直前の長さを持つ子の終わりから、ほかでは親の始まりから）
-  - `at="intro"`: `intro` と同時（`at="intro:0"` と同じ）。`<seq>` の中では、直前の子の終わりと `intro` の始まりの遅いほう
-  - `at="clip:150"`: `clip` の時計が 150 フレームになった時（例は [`<hold>`](#hold)）
-    - 動画・音声は素材内の時刻。`from` から `to` の範囲で指す。[`<cut>`](#speedcut) で飛ばした位置は、飛ばす時を指す
-    - `<repeat>` は始まりからのフレーム数。周ごとに戻らない
-- エラー E504: 指定位置に達する前に対象が終わる、対象が表示されない、素材の範囲の外を指した
-- エラー E510: `at` が輪になって、互いを待つ
-- 警告 W550: すでに過ぎた時刻を参照した（並びの位置ですぐに始まる）
-
-```tsx
-// example の素材・部品を使った応用例
-<rect at="rect" x={600} y={250} w={320} h={220} stroke={COLOR.red} stroke-width={8} radius={12} fadein={0.3} />
-…
-<seq>
-  <Sasara>x と y を付けたタグは、その位置に置かれます。</Sasara>
-  <Sasara id="rect" face="指差し">これが四角形です。</Sasara>
-```
-
-- 四角形は、セリフ `id="rect"` が始まる時に出る
+- `id="intro"`: a reference name, unique within the document.
+- `at`: start time.
+  - `at={60}`: 60 frames after its position in the sequence. Inside `<seq>`, this follows the previous child with a duration; otherwise, it follows the parent's start.
+  - `at="intro"`: start with `intro`, equivalent to `at="intro:0"`. Inside `<seq>`, use the later of the preceding child's end and `intro`'s start.
+  - `at="clip:150"`: when `clip`'s clock reaches frame 150; see [`<hold>`](#hold).
+    - For video and audio, this is source time within `from` to `to`. Positions skipped by [`<cut>`](#speedcut) refer to the instant of the cut.
+    - For `<repeat>`, this counts frames from its start, without resetting each cycle.
+- E504: the target ends before reaching the position, is not displayed, or the reference is outside the source range.
+- E510: cyclic `at` references wait on each other.
+- W550: the referenced time has already passed; start immediately at the sequence position.
 
 ### `<dur>`
 
-- `len` フレームの長さを決める。中のもの（直下の子）の長さも `len` フレームにする
-  - 長さのないもの（文字・画像・図形など）は、`len` フレームだけ表示する
-  - 長さのあるものは、長ければ切り、短ければ延ばす。動画は最後のコマを表示し、音声は無音になる
-  - 子がいくつあっても、どれも `len` フレームになって重なる
-- 空間では何もしない。中のものは `<dur>` の親の子として並ぶ（`<row>` の中で包んでも、並びや `grow` は変わらない）
-- 何も入れなければ間になる（`<dur len={9} />`）。`<hold>` の中に置けば、そのフレーム数だけ止める
-- エラー E302: `len` がない
-
-```tsx
-// example/src/parts.tsx（抜粋）: ジングル
-<seq>
-  <dur len={9} />
-  <big.Talk face="決め">
-    <Voicevox {...voice}>{children}</Voicevox>
-  </big.Talk>
-  <dur len={21} />
-</seq>
-```
-
-- セリフの前に 9 フレーム（0.3 秒）、後に 21 フレーム（0.7 秒）の間を置く
+- Sets a duration of `len` frames for itself and each direct child.
+  - Content without a duration, such as text, images, or shapes, appears for `len` frames.
+  - Content with a duration is trimmed or extended. Extended video holds its last frame; extended audio is silent.
+  - All direct children overlap for `len` frames.
+- Does not affect spatial layout. Its children act as children of its parent; wrapping items inside a `<row>` does not change their arrangement or `grow`.
+- An empty `<dur len={9} />` creates a pause. Inside `<hold>`, it pauses the media for that many frames.
+- E302: missing `len`.
 
 ### `<repeat>`
 
-- 時間では中身を `<stack>` と同じく重ね、最後に終わるものまでを 1 周として、親の終わりまで繰り返す
-- 長さはない。`<dur>` で包むと、そのフレーム数だけ繰り返す（長さのあるものになる）
-- 空間では何もしない（`<dur>` と同じ）
-- 動画・音声を入れると素材を、`<seq>` を入れると並びを繰り返す。`<hold>`・`<speed>`・`<cut>` を入れた素材も、毎周同じに再生する
-- `fadein`・`fadeout` は、`<repeat>` に付けると全体に、中のものに付けると毎周かかる
-- 入れ子にしてもよい。音声も毎回鳴る
-- エラー E321
-  - 中に長さのあるものがない
-  - 中では名前を使えない（`id`・`slot`・`at="id"`）。どの周も同じになる。`<repeat>` 自体には付けられる
-
-```xml
-<!-- example が書き出す .mekuru/main.xml から（抜粋）: 解説役のまばたき -->
-<repeat>
-  <seq>
-    <dur len="123"><image src="assets/character/sasara/目/基本.png" …/></dur>
-    <dur len="1"><image src="assets/character/sasara/目/基本.1.png" …/></dur>
-    <dur len="2"><image src="assets/character/sasara/目/基本.0.png" …/></dur>
-    <dur len="1"><image src="assets/character/sasara/目/基本.1.png" …/></dur>
-    …
-  </seq>
-</repeat>
-```
-
-- 立ち絵（[@mekuru/portrait](Portrait.md)）が書き出すもの。開いた目・半分の目・閉じた目を繰り返す
+- Overlaps its contents in time like `<stack>`. One cycle lasts until the last child ends, then repeats until the parent ends.
+- Has no duration. Wrap it in `<dur>` to repeat for a fixed number of frames and give it a duration.
+- Does not affect spatial layout, like `<dur>`.
+- Repeats media placed inside it, or the sequence inside a `<seq>`. Media with `<hold>`, `<speed>`, or `<cut>` plays the same way each cycle.
+- `fadein` and `fadeout` on `<repeat>` apply to the entire run; on its contents, they apply each cycle.
+- Repeats can be nested. Audio plays each cycle.
+- E321:
+  - No content has a duration.
+  - Names are used inside the repeat: `id`, `slot`, or `at="id"`. Each cycle must behave identically. These attributes are allowed on `<repeat>` itself.
 
 ### `slot`
 
-- どの要素にも付けられる名前
-- 同じ `slot` の要素が重なると、後から始まったもの（同時なら後に書いたもの）だけを描く
-- 音声は隠れない
-
-```xml
-<!-- example の立ち絵が書き出す XML の構造例 -->
-<stack slot="portrait:assets/character/sasara">  <!-- <SasaraStand />: 長さがないので最後まで立つ -->
-  <image src="assets/character/sasara/体/基本.png" …/>
-  …
-</stack>
-…
-<stack>
-  <dur len="24"><audio src=".mekuru/cache/tts/b5/b592ff….wav" label="sasara: はーい！"/></dur>
-  <stack slot="portrait:assets/character/sasara">  <!-- このセリフの間だけ差し替わる: 笑顔で口パク -->
-    …
-  </stack>
-</stack>
-```
+- A name available on any element.
+- When elements with the same `slot` overlap, only the latest-starting element is drawn. Ties use the later element in document order.
+- Audio is unaffected.
 
 ### `<hold>`
 
-- `<video>`・`<audio>` の中に置く。素材は `at` フレームの位置で、`<hold>` の中身が終わるまで止まる
-- 止まっている間、動画は同じコマを表示し、音声は無音
-- 止まった分だけ、その先の素材の時計と終わりが遅れる（`<dur>` で長さを決めた素材は、その時間で終わる）
-- 長さは入れ物と同じで、中で最後に終わるものまで。長さが要るので、中に長さのあるものを入れる。決まったフレーム数だけ止めるなら `<hold at={150}><dur len={60} /></hold>`
-- 中身は、素材の親の上に `<stack>` と同じく重ねて置く。位置（字幕など）も見た目（`z`・`opacity`・フェード）も、素材ではなく親が基準
-- 同じ位置の `<hold>` は同時に始まり、素材はいちばん長いものが終わるまで止まる
-- 素材が親に切られれば、`<hold>` の中身も一緒に切れる
-- `at="clip:150"` は、150 フレームの位置の `<hold>` が始まる時を指す
-- エラー E320: 長さがない（中に長さのあるものがない）
-- エラー E504: 素材の `from` から `to` の範囲の外を指した
-- エラー E510: 中身が、素材がこの `<hold>` より先に進むのを待つ
+- Goes inside `<video>` or `<audio>`. Pauses the source at frame `at` until the hold's contents end.
+- During the pause, video displays the same frame and audio is silent.
+- The pause delays subsequent source positions and the media's end. Media with a duration set by `<dur>` still ends at that time.
+- Like a container, it lasts until its last child ends and requires content with a duration. For a fixed pause, use `<hold at={150}><dur len={60} /></hold>`.
+- Contents overlap like `<stack>` on the media's parent. Positioning, such as subtitles, and appearance, including `z`, `opacity`, and fades, are relative to the parent rather than the media.
+- Holds at the same source position start together; playback resumes when the longest ends.
+- If the parent trims the media, it also trims the hold's contents.
+- `at="clip:150"` refers to the instant a hold at source frame 150 starts.
+- E320: no duration; no child has one.
+- E504: the position is outside the media's `from`–`to` range.
+- E510: the contents wait for the media to advance beyond this hold.
+
+Paths are relative to the project folder. This example pauses for 60 frames at source frame 150.
 
 ```tsx
-// example の素材・部品を使った応用例
-<stack>
-  <Step>動画と時刻</Step>
-  <video id="life" src="assets/life.mp4" x={640} y={500} w={1100} anchor="center">
-    <hold at={285}>
-      <Label x={640} y={200}>一時停止中</Label>
-      <Sasara face="驚き">hold を使うと、説明している間、動画が止まります。</Sasara>
-    </hold>
-  </video>
-  <seq>
-    <Sasara>動画も置けます。これはライフゲームの動画です。</Sasara>
-    <Sasara at="life:135">at を付けると、動画の時刻に合わせてセリフを始められます。</Sasara>
-    <Sasara at="life:300">説明が終わると、続きから再生されます。</Sasara>
-  </seq>
-</stack>
+<video id="life" src="assets/life.mp4">
+  <hold at={150}>
+    <dur len={60}><text>一時停止中</text></dur>
+  </hold>
+</video>
 ```
-
-- 2 つ目のセリフは、動画が 135 フレーム（4.5 秒）の位置に来た時に始まる
-- 動画は 285 フレームの位置で、`<hold>` の中のセリフが終わるまで止まる。そのあと続きから再生され、300 フレームの位置で 3 つ目のセリフが始まる
 
 ### `<speed>`・`<cut>`
 
-- `<video>`・`<audio>` の中に置く。素材の `from` から `to` まで（フレーム）を、`<speed>` は `rate` 倍の速さで再生し、`<cut>` は飛ばす
-- `rate`: 速さ。`2` で倍速、`0.5` でスロー。音声は音程を保つ
-- `from`・`to` は素材の時刻。省くと、素材を使う範囲（`<video>`・`<audio>` の `from`・`to`）の始まり・終わり。`<speed rate={2} />` は全体を倍速にする
-- 重なった部分は、速さを掛け合わせる。`<cut>` は速さ ∞ と同じで、重なった部分も飛ばす
-- 素材の長さ（`<dur>` で決めない場合）と、`at="clip:q"`・`<hold at>` が指す時は、変えた速さで決まる（[式](#時刻の決まり方) の `u`）。整数のフレームにならなければ切り上げる
-- `<cut>` の中の位置は、飛ばす時を指す。そこに置いた `<hold>` は、カットの後のコマ（続きから再生するコマ）で止まる
-- エラー E303: `rate` が 0 以下
-- エラー E314: `to` が `from` 以下
-- エラー E504: 素材を使う範囲と重ならない
+- Go inside `<video>` or `<audio>`. Over the source range `from` to `to` in frames, `<speed>` plays at `rate` times the normal speed; `<cut>` skips it.
+- `rate`: playback speed. `2` is double speed; `0.5` is half speed. Audio retains its pitch.
+- `from` and `to` use source time. If omitted, they default to the start and end of the media's selected range. `<speed rate={2} />` doubles the speed of that entire range.
+- Overlapping speeds multiply. A cut acts as infinite speed and skips overlapping regions too.
+- The adjusted speed determines media duration unless `<dur>` overrides it, as well as times referenced by `at="clip:q"` and `<hold at>`. See `u` in the [formulas](#timing-calculation). Fractional frames round up.
+- A position within a cut refers to the instant of the cut. A hold there freezes the first frame after the cut, where playback resumes.
+- E303: `rate` is zero or negative.
+- E314: `to` is less than or equal to `from`.
+- E504: the range does not overlap the media's selected range.
 
 ```tsx
-// example の素材を使った応用例
+// Extended example using the example project's media
 <video id="life" src="assets/life.mp4">
   <speed from={60} to={180} rate={2} />
   <cut from={240} to={300} />
 </video>
 ```
 
-- 60〜180 フレームを 60 フレームで再生し、240〜300 フレームを飛ばす。420 フレーム（14 秒）の素材が 300 フレームになる
-- `at="life:330"` は、動画の始まりから 210 フレーム後（60 + 60 + 60 + 30）
+- Frames 60–180 play in 60 frames; frames 240–300 are skipped. A 420-frame (14-second) source becomes 300 frames.
+- `at="life:330"` is 210 frames after the video's start: 60 + 60 + 60 + 30.
 
-### フェード・不透明度・重なり
+### Fades, opacity, and layering
 
-- `fadein`・`fadeout`: フェードのフレーム数。入れ物に付けると、中のすべて（音声も）にかかる。親子で掛け合わせる
-- `opacity`: 不透明度（`0`〜`1` か `"50%"`）。親子で掛け合わせる
-- `z`: 重なり順。大きいほど手前。省くと親の値。同じなら後に書いたものが手前
+- `fadein` and `fadeout`: fade duration in frames. On containers, they affect all contents, including audio. Parent and child fades multiply.
+- `opacity`: a value from `0` to `1` or a percentage such as `"50%"`. Parent and child values multiply.
+- `z`: stacking order; larger values are in front. Defaults to the parent's value. Ties use document order, with later elements in front.
 
-```tsx
-// example/src/parts.tsx（抜粋）
-// 解説役が消える: 背景と同じ白の幕を、立ち絵の上にだんだん重ねる
-export const Exit = () => (
-  <dur len={36}>
-    <rect x={1150} w={770} h="100%" fill="#FFFFFF" fadein={24} z={15} />
-  </dur>
-);
-```
+## Layout
 
-## 空間
+### Container attributes
 
-### 入れ物の属性
-
-- `gap`: 子の間隔（`<row>`・`<column>`）
-- `justify`: 並ぶ方向の揃え（`<row>`・`<column>`）
-- `wrap="true"`: 折り返す（`<row>`・`<column>`）
-- `align`: 重ねる方向の揃え。既定は `stretch`（親いっぱいに伸ばす）。`<stack>`・`<seq>` では縦横の両方
-- `padding`: 内側の余白（1・2・4 個の値）
-- `fill`・`stroke`・`stroke-width`・`radius`: 背景と枠
-- 子の `grow="true"`: 余った空間を使う。空きを埋めるだけなら `<stack grow/>`
-- 位置は先に決まるので、後から出る子があっても他は動かない
+- `gap`: spacing between children in `<row>` and `<column>`.
+- `justify`: alignment along the arranged axis in `<row>` and `<column>`.
+- `wrap`: wrapping in `<row>` and `<column>`.
+- `align`: alignment along overlapping axes. Defaults to `stretch`, filling the parent. Applies to both axes in `<stack>` and `<seq>`.
+- `padding`: inner spacing, with one, two, or four values.
+- `fill`, `stroke`, `stroke-width`, `radius`: background and border.
+- Child `grow`: use remaining space. Use `<stack grow/>` to fill a gap.
+- Layout is resolved in advance, so later-appearing children do not move other elements.
 
 ```tsx
-// example の素材・部品を使った応用例
-const Block = ({ size = 80 }: { size?: number }) => <rect w={size} h={size} fill="#7FD1AE" radius={10} />;
-
-const Layout = ({ name, what, children }: { name: string; what: string; children: Node }) => (
-  <column w={0} grow fill="#20304A" radius={16} padding={[48, 0]} align="center" gap={20}>
-    <text size={64} color="#7FD1AE">
-      {name}
-    </text>
-    <text size={40} color="#C8D3DE">
-      {what}
-    </text>
-    <column grow w="100%" justify="center" align="center">
-      {children}
-    </column>
-  </column>
-);
-…
-<row h={600} gap={40}>
-  <Layout name="row" what="横に並べる">
-    <row gap={16}>
-      <Block />
-      <Block />
-      <Block />
-    </row>
-  </Layout>
-  …
-  <Layout name="stack" what="重ねる">
-    <stack align="center">
-      <Block size={176} />
-      <circle w={112} h={112} fill="#E8A33D" />
-    </stack>
-  </Layout>
-  <Layout name="seq" what="順番に出す">
-    <seq>
-      <dur len={30}>
-        <Block size={176} />
-      </dur>
-      <dur len={30}>
-        <circle w={112} h={112} fill="#E8A33D" />
-      </dur>
-    </seq>
-  </Layout>
+<row gap={16}>
+  <rect w={80} h={80} fill="#7FD1AE" />
+  <circle w={80} h={80} fill="#E8A33D" />
 </row>
 ```
 
-### 表示する要素
+### Visual elements
 
-- `<text>`: 文字
-  - 文字は必ず `<text>` の中に書く（`<`・`&` は `&lt;`・`&amp;`）
-  - `<br/>` で改行する
-  - `w`・`max-w` で折り返す。`align="center"` で中央揃え
-  - `color`: 文字の色。`stroke`・`stroke-width`: 文字の縁取り。`background`・`radius`・`padding`: 文字の背景
-  - `pre="true"`: ソースの改行をそのまま表示する
-- `<image src>`: 画像。`w`・`h` の片方だけなら縦横比を保つ。両方なら中に収める
-- `<rect>`: 四角形
-- `<circle>`: 円（`w`・`h` が違えば楕円）
-- `<line p>`: 点を結ぶ線（`p="0:0,100:50,50%:100%"`。`x:y` を px か `%` で、`,` で区切る）
-  - `closed="true"`: 最後の点と最初の点を結ぶ（多角形）
-  - `fill` で内側を塗る。`closed` に `fill` だけを付けると枠線なし
-  - `head`: 矢じり（`start`・`end`・`both`）
-  - `dashed`・`dotted`: 破線・点線
-- 図形は `fill` も `stroke` もなければ白い線で描く
-
-```tsx
-// example の素材・部品を使った応用例
-<rect at="rect" x={1080} y={250} w={320} h={220} stroke="#7FD1AE" stroke-width={8} radius={12} fadein={0.3} />
-<circle at="circle" x={1700} y={360} w={220} h={220} anchor="center" stroke="#E8A33D" stroke-width={8} fadein={0.3} />
-<line at="line" p="1400:360,1590:360" dashed stroke="#C8D3DE" stroke-width={6} fadein={0.3} />
-<line at="polygon" p="1500:700,1570:560,1640:700" closed fill="#E8A33D" fadein={0.3} />
-<line at="polygon" p="1680:690,1730:590,1780:660,1830:570" stroke="#7FD1AE" stroke-width={8} fadein={0.3} />
-<stack at="arrow" fadein={0.3}>
-  <line p="1240:620,1240:490" head="end" stroke="#FFFFFF" stroke-width={8} />
-  <text x={1240} y={640} anchor="t" align="center" size={56}>
-    ここが
-    <br />
-    四角形
-  </text>
-</stack>
-```
-
-### 位置と大きさの属性
-
-- `x`・`y`: 親の `padding` の内側の左上からの位置。付けると自動の並びから外れる
-- `anchor`: `x`・`y` に合わせる点（`tl` 左上・`c` 中央・`b` 下中央）
-- `w`・`h`: 幅・高さ。`min-w`・`max-w`・`min-h`・`max-h`: 最小・最大
-- `rotate`: 回す角度（度。正の値で時計回り）。要素の中心で回し、中身も一緒に回る。並びには影響しない
-  - `<line>` は、回した入れ物の中に置く
-  - エラー E322: `<video>`（と、それを含む入れ物）は回せない
-- 値の書き方
-  - 長さ: px（`{100}`）か `%`（親の内側に対して）
-  - 時間: フレーム数（0 以上の整数。`{45}` は `fps={30}` なら 1.5 秒）
-  - 色: `#7FD1AE` や `white`
-  - 真偽値: `closed` と書けば `true`
+- `<text>`: text.
+  - Place text inside `<text>`. Escape `<` and `&` as `&lt;` and `&amp;`.
+  - Use `<br/>` for a line break.
+  - `w` and `max-w` set wrapping width. `align="center"` centers text.
+  - `color`: text color. `stroke` and `stroke-width`: text outline. `background`, `radius`, and `padding`: text background.
+  - `pre`: preserve source line breaks.
+- `<image src>`: image. Setting only `w` or `h` preserves aspect ratio; setting both fits the image inside that box.
+- `<rect>`: rectangle.
+- `<circle>`: circle, or an ellipse when `w` and `h` differ.
+- `<line p>`: connected points, such as `p="0:0,100:50,50%:100%"`. Use comma-separated `x:y` pairs in pixels or percentages.
+  - `closed`: connect the last point to the first, making a polygon.
+  - `fill`: fill the interior. A closed line with only `fill` has no outline.
+  - `head`: arrowheads at `start`, `end`, or `both`.
+  - `dashed` and `dotted`: dashed or dotted lines.
+- Shapes without `fill` or `stroke` use a white outline.
 
 ```tsx
-// example/src/parts.tsx（抜粋）: ジングルの傾いた文字
-<text x="30%" y="47%" anchor="c" size={180} weight="bold" color="#FFFFFF" stroke={COLOR.magenta} stroke-width={18} rotate={-9} z={21}>
-  {children}
-</text>
+<line p="0:0,100:50,50%:100%" head="end" stroke="#FFFFFF" />
 ```
+
+### Position and size
+
+- `x` and `y`: position from the top-left corner inside the parent's padding. Setting them removes the element from automatic arrangement.
+- `anchor`: the point placed at `x` and `y`, such as `tl` (top left), `c` (center), or `b` (bottom center).
+- `w` and `h`: width and height. `min-w`, `max-w`, `min-h`, and `max-h` set limits.
+- `rotate`: angle in degrees, positive clockwise. Rotates the element and its contents around its center without affecting layout.
+  - To rotate a `<line>`, place it inside a rotated container.
+  - E322: `<video>` and containers holding it cannot be rotated.
+- Value formats:
+  - Dimensions: pixels, such as `{100}`, or `%` of the parent's inner size.
+  - Time: nonnegative integer frames. `{45}` is 1.5 seconds at `fps={30}`.
+  - Colors: `#7FD1AE` or `white`.
+  - Booleans: a bare attribute such as `closed` means `true`.
 
 ## `<video>`・`<audio>`
 
-- `src`（必須）
-- `from`・`to`: 素材の使う範囲（フレーム）
-- `volume`: 音量（`0.5` か `"50%"`。`0` で消す）
-- 繰り返すには [`<repeat>`](#repeat) に入れる
-- [`<dur>`](#dur) で延ばすと、動画は最後のコマを表示し、音声は無音になる
-- 途中で止めるには、中に [`<hold>`](#hold) を置く。一部を速く・遅く再生したり飛ばしたりするには、[`<speed>`・`<cut>`](#speedcut) を置く
-- `label`: タイムラインに出す説明（`<audio>`）
-- `<video>` の大きさは `<image>` と同じ: 素材の縦横比で、`w`・`h` を省くと素材の大きさ（入りきらなければ縮める）
-- `<audio>` は場所を取らない（`<row>` の中でも並ばない）
-- 読み上げの音声も `<audio>` になる（[声の設定](../voice/voice.md)）
+- `src`: required source path.
+- `from` and `to`: selected source range in frames.
+- `volume`: audio volume, such as `0.5` or `"50%"`. `0` mutes it.
+- To loop, wrap in [`<repeat>`](#repeat).
+- Extending with [`<dur>`](#dur) holds the video's last frame and adds silence to audio.
+- Place [`<hold>`](#hold) inside to pause, or [`<speed>` and `<cut>`](#speedcut) to change speed or skip sections.
+- `label`: timeline description for `<audio>`.
+- `<video>` sizing follows `<image>`: preserve the source aspect ratio; without `w` or `h`, use the source dimensions, shrinking to fit if necessary.
+- `<audio>` takes no space, including in a `<row>`.
+- Speech components also produce `<audio>`: [VOICEVOX](../../pkgs/voicevox/README.md), [COEIROINK](../../pkgs/coeiroink/README.md), [Style-Bert-VITS2](../../pkgs/style-bert-vits2/README.md), and [VoiSona Talk](../../pkgs/voisona/README.md).
 
 ```tsx
-// example の素材・部品を使った応用例
+// Excerpt from example/src/main.tsx
 <repeat fadein={30} fadeout={60}>
   <audio src="assets/bgm.mp3" volume={0.06} />
 </repeat>
-…
-<seq>
-  <Sasara>audio タグで、音も入れられます。</Sasara>
-  <Sasara>repeat で囲むと、動画の最後まで繰り返し流れます。今流れている音楽がそうです。</Sasara>
-  <audio src="assets/chime.wav" />
-  <Sasara face="笑顔">
-    今のが効果音です。
-    <br />
-    seq の中に置いた音は、前のセリフが終わってから鳴ります。
-  </Sasara>
-</seq>
 ```
 
-- BGM は `<repeat>` で動画の最後まで繰り返す（長さがない）。フェードは `<repeat>` に付けて全体にかける
-- 効果音は長さを持つので、`<seq>` の中では前のセリフが終わってから鳴り、次のセリフを待たせる
+- Background music in `<repeat>` has no duration and loops until the video ends. Put fades on `<repeat>` to apply them to the whole run.
+- Sound effects have a duration. Inside `<seq>`, they play after the preceding line and delay the next one.
 
-## XML（中間形式）
+## XML (intermediate format)
 
-- `writeXml` が書き出し、`mekuru-compiler` が読む（`.mekuru/main.xml`）。人が書くことは想定しない
-- TSX で省いたものを補い、値の書き方を 1 通りにする。ほかの書き方はエラーになる（黙って直さない）
-- 属性名は TSX と同じ（`stroke-width` など）
+- `writeXml` writes `.mekuru/main.xml`; `mekuru-compiler` reads it. It is not intended for manual authoring.
+- XML fills in TSX omissions and uses one canonical form for values. Other forms are errors, without silent correction.
+- Attribute names match TSX, including `stroke-width`.
 
-|                             | TSX                                           | XML                                                              |
-| --------------------------- | --------------------------------------------- | ---------------------------------------------------------------- |
-| 全体                        | `<mekuru>` の中を順に                         | `<mekuru>` の中に `<seq>` が 1 つ                                |
-| 始まり                      | `at={60}`・`at="intro"`・`at="clip:150"`      | `delay="60"`・`at="intro:0"`・`at="clip:150"`（両方あれば遅いほう） |
-| 時間（フレーム）            | `{45}`                                        | `45`                                                             |
-| 割合（`opacity`・`volume`） | `{0.5}`・`"50%"`                              | `0.5`                                                            |
-| 色                          | `white`・`#7FD1AE`                            | `#FFFFFF`・`#7FD1AE`（16 進だけ）                                |
-| 真偽値                      | `closed`                                      | `closed="true"`（`false` は書かない）                            |
-| `anchor`                    | `center`・`top`・`bottom`・`left`・`right` も | `tl`・`t`・`tr`・`l`・`c`・`r`・`bl`・`b`・`br`                  |
-| `grow`                      | `grow`・数値                                  | 数値                                                             |
-| `padding`                   | `{[0, 80]}`                                   | `"0 80"`                                                         |
-| 下書きの音声                | 読み上げの部品が出す                          | `<dur len="…"><audio draft="true" label="…"/></dur>`。長さのない `<audio>` を見積もりの長さで包む。プレビューだけが読む |
+TSX → XML:
 
-```xml
-<!-- example が書き出す .mekuru/main.xml から（抜粋） -->
-<mekuru size="1920x1080" fps="30" font="Rounded Mplus 1c">
-  <seq>
-    <rect w="100%" h="100%" fill="#FFFFFF"/>
-    <repeat fadein="30" fadeout="60">
-      <audio src="assets/bgm.mp3" volume="0.06"/>
-    </repeat>
-    <stack>
-      …
-    </stack>
-  </seq>
-</mekuru>
+- Root: Children of `<mekuru>` run in order → One `<seq>` inside `<mekuru>`
+- Start: `at={60}`, `at="intro"`, `at="clip:150"` → `delay="60"`, `at="intro:0"`, `at="clip:150"`; if delay and reference are both present, use the later time
+- Time (frames): `{45}` → `45`
+- Fractions (`opacity`, `volume`): `{0.5}`, `"50%"` → `0.5`
+- Color: `white`, `#7FD1AE` → `#FFFFFF`, `#7FD1AE`; hexadecimal only
+- Boolean: `closed` → `closed="true"`; omit `false`
+- `anchor`: Also accepts `center`, `top`, `bottom`, `left`, `right` → `tl`, `t`, `tr`, `l`, `c`, `r`, `bl`, `b`, `br`
+- `grow`: Bare `grow` or a number → Number
+- `padding`: `{[0, 80]}` → `"0 80"`
+- Draft speech: Emitted by speech components → `<dur len="…"><audio draft="true" label="…"/></dur>` wraps durationless audio in an estimated duration. Preview only
+
+## Timing calculation
+
+Each element's start `s` and end `e` follow these formulas. Elements without a duration have no `e`.
+
+```text
+s(X) = max( p(X) + a, T(Y, q) )      at={a} or at="Y:q"; omitted a is 0; omit the T term if absent
+p(X) = s(parent)                     parent is not <seq>, or X is its first child
+     = max( p(prev), e(prev) )        parent is <seq>; prev is the preceding sibling
+                                     use p(prev) if prev has no duration
+e(X) = s(X) + d                      <dur len={d}> and its direct children
+     = T(X, to)                      video/audio; also wait for holds at to
+     = max( s(X), e(C) … )           containers and <hold>; C has a duration
+T(Y, q) = s(Y) + q                   non-media elements
+        = max( s(Y) + ⌈u(from, q)⌉, e(H) + ⌈u(q_H, q)⌉ … )
+                                     video/audio; H is a hold at q_H < q
+u(a, b) = ∫ dq / r(q), from a to b    frames to play source range a–b; r is playback speed
+s(H) = T(M, q_H)                     <hold at={q_H}>; M is its video/audio
+Visible end E(X) = min( e(X), E(parent) )
+                                     use E(parent) if X has no duration
+                                     a hold's parent is its video/audio
+Visible interval = [ s(X), E(X) )
 ```
+
+- Times, durations, and source reference positions are integer frames. Only `u` is real-valued; `⌈ ⌉` rounds up.
+  - Since `s` and `e` are integers, `⌈max(a, b)⌉ = max(⌈a⌉, ⌈b⌉)` and `⌈n + x⌉ = n + ⌈x⌉` make `T(Y, q)` the first frame at which the source reaches `q`.
+  - Convert source duration in seconds to frames by multiplying by `fps`. If `to` is omitted, the media ends at that duration. Rounding up preserves the end of the audio.
+- `T(Y, q)`: the time when `Y`'s clock reaches `q`. Video and audio use source time, delayed by [`<hold>`](#hold). Other elements count frames from their start.
+- `r(q)`: playback speed at source position `q`. Normally 1; inside [`<speed>`](#speedcut), use `rate` and multiply overlaps; inside [`<cut>`](#speedcut), use ∞, consuming no time. Without speed changes, `u(a, b) = b − a` remains an integer.
+- A media clock behaves like a `<seq>` alternating source playback and holds: play from `from` to `q₁` → hold → play to `q₂` → … . Each playback segment has duration `u`.
+- With only integer `max` and `+` operations, timing is the longest path through the dependency graph. Delaying one event cannot make another earlier. Cycles prevent resolution and produce E510.
