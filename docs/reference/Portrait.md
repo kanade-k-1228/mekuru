@@ -13,13 +13,13 @@ bun add -d @mekuru/portrait
 Place image parts of the same dimensions inside the project. PNG, JPEG, and WebP are supported; use transparent images for overlays. For PSD files, merge the layers for each part and export them as PNG.
 
 ```text
-assets/character/sasara/
-  体/    基本.png  指差し.png
-  目/    基本.png  基本.0.png  基本.1.png  笑い.png
-  口/    基本.png  基本.0.png  基本.1.png  笑い.png
+assets/character/pikao-tsuzumi/
+  体/    基本.png  説明.png
+  目/    基本.png  基本.0.png  基本.1.png  笑顔.png
+  口/    基本.png  基本.0.png  基本.1.png  にこ.png
   眉/    基本.png
-  顔色/  ほんのり.png
-  他/    ハート.png
+  顔色/  基本.png
+  他/    音符.png
 ```
 
 - Draw order, back to front: `後 → 体 → 顔色 → 髪 → 口 → 目 → 眉 → 他` (back, body, face tint, hair, mouth, eyes, eyebrows, extras). Use these Japanese folder names.
@@ -29,22 +29,23 @@ assets/character/sasara/
 
 ## Usage
 
-Define a component in `src/parts.tsx` and place `<Scene />` inside the script's `<mekuru>`. This example uses the [example assets](../../example/README.md#解説役の立ち絵) (Japanese guide).
+Define a component in `src/parts.tsx` and place `<Scene />` inside the script's `<mekuru>`. This example uses parts copied by the [example asset preparation script](../../example/scripts/portrait.ts).
 
 ```tsx
 import { portrait } from "@mekuru/portrait";
-import { Voicevox } from "@mekuru/voicevox";
+import { Voisona } from "@mekuru/voisona";
 
 const actor = portrait({
-  src: "assets/character/sasara",
-  faces: { 笑顔: { 目: "笑い", 口: "笑い" } },
+  src: "assets/character/pikao-tsuzumi",
+  face: { 体: "基本", 髪: null, 目: "基本", 口: "基本", 眉: "基本", 顔色: "基本" },
+  faces: { 笑顔: { 目: "笑顔", 口: "にこ" } },
 });
 
 export const Scene = () => (
   <stack>
     <actor.Stand />
     <actor.Talk face="笑顔">
-      <Voicevox speaker="冥鳴ひまり">こんにちは。</Voicevox>
+      <Voisona voice="suzuki-tsudumi_ja_JP">こんにちは。</Voisona>
     </actor.Talk>
   </stack>
 );

@@ -1,6 +1,6 @@
 import type { At, Length, Node } from "@mekuru/core";
 import { portrait, type Face } from "@mekuru/portrait";
-import { Voicevox } from "@mekuru/voicevox";
+import { Voisona } from "@mekuru/voisona";
 
 type Children = { children?: Node };
 
@@ -22,7 +22,7 @@ const READING: Record<string, string> = {
   "my-video": "マイビデオ",
   "video.mp4": "ビデオ エムピーフォー",
   "youtube.yaml": "ユーチューブ ヤムル",
-  "Upload.md": "アップロード エムディー",
+  "Upload.jp.md": "アップロード ジェイピー エムディー",
   "main.tsx": "メイン ティーエスエックス",
   "parts.tsx": "パーツ ティーエスエックス",
   README: "リードミー",
@@ -31,8 +31,11 @@ const READING: Record<string, string> = {
   bun: "バン",
   ffmpeg: "エフエフエムペグ",
   WSL: "ダブリューエスエル",
-  VOICEVOX: "ボイスボックス",
-  Voicevox: "ボイスボックス",
+  "VoiSona Talk": "ボイソナトーク",
+  Voisona: "ボイソナ",
+  "tsuzumi.tsx": "つづみ ティーエスエックス",
+  API: "エーピーアイ",
+  REST: "レスト",
   YouTube: "ユーチューブ",
   OK: "オーケー",
   import: "インポート",
@@ -50,7 +53,7 @@ const READING: Record<string, string> = {
   stack: "スタック",
   seq: "シーク",
   column: "カラム",
-  speed: "スピード",
+  gap: "ギャップ",
   READING: "リーディング",
   x: "エックス",
   h: "エイチ",
@@ -91,34 +94,34 @@ const Subtitle = ({ children }: Children) => (
   </>
 );
 
-const SRC = "assets/character/sasara";
-const BASE: Face = { 体: "基本", 目: "基本", 口: "基本", 眉: "基本", 顔色: "ほんのり" };
+const SRC = "assets/character/pikao-tsuzumi";
+const BASE: Face = { 体: "基本", 髪: null, 目: "基本", 口: "基本", 眉: "基本", 顔色: "基本" };
 const FACES = {
-  笑顔: { 目: "笑い", 口: "笑い" },
-  ウインク: { 目: "ウインク", 口: "笑い", 他: "ハート" },
-  指差し: { 体: "指差し" },
-  決め: { 体: "指差し", 目: "ウインク", 口: "笑い", 他: "ハート" },
-  驚き: { 目: "驚き", 眉: "上がり", 口: "お", 他: "ビックリ" },
-  困り: { 眉: "困り", 口: "困り", 他: "汗" },
-  はてな: { 体: "考え", 眉: "困り", 口: "お", 他: "はてな" },
-  ドヤ: { 体: "腕組み", 目: "ジト目", 眉: "上がり", 口: "笑い", 他: "キラキラ" },
-  照れ: { 目: "笑い", 口: "笑い", 顔色: "照れ" },
+  笑顔: { 体: "喜び", 髪: "両手頬", 目: "笑顔", 口: "にこ", 他: "音符" },
+  ウインク: { 体: "説明", 目: "ウインク", 口: "にこ" },
+  指差し: { 体: "説明" },
+  決め: { 体: "説明", 目: "ウインク", 口: "にこ" },
+  驚き: { 体: "驚き", 目: "驚き", 眉: "上げ", 口: "お", 他: "びっくり" },
+  困り: { 眉: "困り" },
+  はてな: { 体: "考え", 眉: "困り", 他: "はてな" },
+  ドヤ: { 体: "腕組", 目: "ジト目", 眉: "上げ", 口: "にこ" },
+  照れ: { 体: "喜び", 髪: "両手頬", 目: "笑顔", 口: "にこ" },
 } satisfies Record<string, Face>;
 export type FaceName = keyof typeof FACES;
 
-const sasara = portrait({ src: SRC, x: "84%", y: "116%", h: "132%", z: 10, face: BASE, faces: FACES });
-const big = portrait({ src: SRC, x: "81%", y: "138%", h: "165%", z: 30, slot: "portrait:big", face: BASE, faces: FACES });
-export const SasaraStand = sasara.Stand;
+const tsuzumi = portrait({ src: SRC, x: 1525, y: 1330, h: 1100, z: 10, face: BASE, faces: FACES });
+const big = portrait({ src: SRC, x: 1470, y: 1435, h: 1240, z: 30, slot: "portrait:big", face: BASE, faces: FACES });
+export const TsuzumiStand = tsuzumi.Stand;
 
-const voice = { name: "sasara", speaker: "冥鳴ひまり", speed: 1.15, intonation: 1.25, gap: 6, reading: READING };
+const voice = { name: "tsuzumi", voice: "suzuki-tsudumi_ja_JP", gap: 6, reading: READING };
 
 type Line = Children & { id?: string; at?: At; face?: FaceName; show?: Node };
 
-export const Sasara = ({ children, face, show, ...time }: Line) => (
+export const Tsuzumi = ({ children, face, show, ...time }: Line) => (
   <stack {...time}>
-    <sasara.Talk face={face}>
-      <Voicevox {...voice}>{children}</Voicevox>
-    </sasara.Talk>
+    <tsuzumi.Talk face={face}>
+      <Voisona {...voice}>{children}</Voisona>
+    </tsuzumi.Talk>
     <Subtitle>{children}</Subtitle>
     {show}
   </stack>
@@ -135,7 +138,7 @@ export const Jingle = ({ children }: { children: string }) => (
     <seq>
       <dur len={9} />
       <big.Talk face="決め">
-        <Voicevox {...voice}>{children}</Voicevox>
+        <Voisona {...voice}>{children}</Voisona>
       </big.Talk>
       <dur len={21} />
     </seq>

@@ -11,8 +11,8 @@ import {
   Label,
   Mark,
   Point,
-  Sasara,
-  SasaraStand,
+  Tsuzumi,
+  TsuzumiStand,
   Shot,
   Step,
   Terminal,
@@ -27,8 +27,8 @@ import { FIRST_SCRIPT, PORTRAITS, SECOND_SCENE } from "./lesson";
 const FLOW = `<stack>
   <text>はじめての動画</text>
   <seq>
-    <Zunda>こんにちは</Zunda>
-    <Metan>今日は…</Metan>
+    <Tsuzumi>こんにちは</Tsuzumi>
+    <Tsuzumi>今日は…</Tsuzumi>
   </seq>
 </stack>`;
 
@@ -39,10 +39,9 @@ const intro = () => (
         <Shot x={70} y={110} src="assets/lesson.png" w={780} />
         <Shot x={560} y={420} src="assets/viewer.png" w={600} />
         <seq>
-          <Sasara face="笑顔">はーい！</Sasara>
-          <Sasara face="決め">ささらちゃんだよー！</Sasara>
-          <Sasara face="指差し">動画、作ってますか〜？</Sasara>
-          <Sasara face="困り">解説動画って、セリフに合わせて絵を並べるだけなのに、編集ソフトだと意外と大変ですよね。</Sasara>
+          <Tsuzumi face="笑顔">こんにちは。すずきつづみです。</Tsuzumi>
+          <Tsuzumi face="指差し">今日は、Mekuru で解説動画を作る手順を紹介します。</Tsuzumi>
+          <Tsuzumi face="困り">解説動画って、セリフに合わせて絵を並べるだけなのに、編集ソフトだと意外と大変ですよね。</Tsuzumi>
         </seq>
       </stack>
       <stack>
@@ -59,8 +58,8 @@ const intro = () => (
         </Keyword>
         <Shot x={900} y={385} src="assets/lesson.png" w={330} />
         <seq>
-          <Sasara face="ドヤ">そこで Mekuru！ TSX で書いた台本から、そのまま動画を作れます。</Sasara>
-          <Sasara
+          <Tsuzumi face="ドヤ">そこで Mekuru！ テキストで書いた台本から、そのまま動画を作れます。</Tsuzumi>
+          <Tsuzumi
             face="指差し"
             show={
               <Label x={708} y={650} size={44}>
@@ -69,14 +68,14 @@ const intro = () => (
             }
           >
             セリフは音声合成で読み上げて、動画の長さも、セリフに合わせて自動で決まります。
-          </Sasara>
+          </Tsuzumi>
         </seq>
       </stack>
       <stack>
         <Shot x={70} y={70} src="assets/lesson.png" w={1120} />
         <seq>
-          <Sasara face="笑顔">今回は、ずんだもんと四国めたんが話す、こんな動画を作ってみましょう！</Sasara>
-          <Sasara face="ウインク">コードを打ちながら見る人は、こまめに止めてね。</Sasara>
+          <Tsuzumi face="笑顔">今回は、私が一人で話す、こんな動画を作ってみましょう。</Tsuzumi>
+          <Tsuzumi face="ウインク">コードを打ちながら見る人は、こまめに止めてね。</Tsuzumi>
         </seq>
       </stack>
     </seq>
@@ -89,18 +88,29 @@ const tools = () => (
   <stack id="tools">
     <Step n="01">道具をそろえる</Step>
     <column x={80} y={170} gap={20}>
-      <Point>Bun — 台本を動かす</Point>
-      <Point>ffmpeg / ffprobe — 動画の書き出し</Point>
+      <Point>Bun 1.4 以上 — 台本を動かす</Point>
+      <Point>ffmpeg（libx264 付き）/ ffprobe — 書き出し</Point>
       <Point>日本語フォント — Rounded Mplus 1c など</Point>
-      <Point>VOICEVOX — 読み上げ</Point>
+      <Point>VoiSona Talk — すずきつづみの読み上げ</Point>
     </column>
     <Terminal at={TOOLS_TERM} w={760}>
       {"$ bun --version\n$ ffmpeg -version\n$ ffprobe -version"}
     </Terminal>
     <seq>
-      <Sasara>まずは道具をそろえます。</Sasara>
-      <Sasara face="指差し">必要なのは、Bun、ffmpeg、日本語のフォント、それから VOICEVOX です。</Sasara>
-      <Sasara
+      <Tsuzumi>まずは道具をそろえます。</Tsuzumi>
+      <Tsuzumi face="指差し">Bun は 1.4 以上、ffmpeg は動画をエンコードできるものを用意します。</Tsuzumi>
+      <Tsuzumi>日本語フォントを入れ、VoiSona Talk ですずきつづみのライブラリを取得します。</Tsuzumi>
+      <Tsuzumi>環境設定の API タブで、REST API を有効にします。</Tsuzumi>
+      <Tsuzumi
+        show={
+          <Label x={640} y={820} size={34} color={COLOR.blue}>
+            pkgs/voisona/README.jp.md
+          </Label>
+        }
+      >
+        認証情報の設定は、この手順を確認してください。アプリは起動したまま使います。
+      </Tsuzumi>
+      <Tsuzumi
         show={
           <Label x={1020} y={600} color={COLOR.blue} size={48}>
             Windows → WSL
@@ -108,10 +118,10 @@ const tools = () => (
         }
       >
         Windows の人は、WSL の中で動かしてね。
-      </Sasara>
-      <Sasara face="笑顔" show={<TermMark term={TOOLS_TERM} from={1} to={3} w={740} />}>
+      </Tsuzumi>
+      <Tsuzumi face="笑顔" show={<TermMark term={TOOLS_TERM} from={1} to={3} w={740} />}>
         ターミナルでこの三つを実行して、バージョンが出たら OK です！
-      </Sasara>
+      </Tsuzumi>
     </seq>
   </stack>
 );
@@ -127,23 +137,16 @@ const create = () => (
       {"$ bun create @mekuru my-video"}
     </Terminal>
     <Terminal at={PICK} w={800}>
-      {[
-        "◆ Characters (You can add characters later)",
-        "│ ▾ VOICEVOX (2)",
-        "│   ◼ ずんだもん",
-        "│   ◼ 四国めたん",
-        "│   ◻ 春日部つむぎ",
-        "│ ▸ COEIROINK",
-        "◇ Upload to (You can add it later)",
-        "│   ◻ YouTube   ◻ niconico",
-      ].join("\n")}
+      {["◆ Speech engines (You can add them later)", "│ …", "│ ◼ VoiSona Talk", "│ …", "◇ Upload to (You can add it later)", "│   ◻ YouTube   ◻ niconico"].join(
+        "\n",
+      )}
     </Terminal>
     <seq>
-      <Sasara>次は、プロジェクトを作ります。</Sasara>
-      <Sasara face="指差し" show={<TermMark term={PICK} from={3} to={4} w={400} />}>
-        選ぶ画面になったら、VOICEVOX を開いて、ずんだもんと四国めたんを選びます。
-      </Sasara>
-      <Sasara
+      <Tsuzumi>次は、プロジェクトを作ります。</Tsuzumi>
+      <Tsuzumi face="指差し" show={<TermMark term={PICK} from={3} w={440} />}>
+        選ぶ画面になったら、音声エンジンに VoiSona Talk を選びます。
+      </Tsuzumi>
+      <Tsuzumi
         show={
           <column x={910} y={330} gap={18}>
             <Label x={0} y={0} anchor="tl" color={COLOR.blue} size={44}>
@@ -158,20 +161,20 @@ const create = () => (
           </column>
         }
       >
-        矢印キーで移動、スペースで選んで、エンターで決定です。
-      </Sasara>
-      <Sasara face="ウインク" show={<TermMark term={PICK} from={7} to={8} w={740} />}>
+        上下で移動、スペースで選んで、エンターで決定です。
+      </Tsuzumi>
+      <Tsuzumi face="ウインク" show={<TermMark term={PICK} from={5} to={6} w={740} />}>
         投稿先も選べるけど、動画を作るだけなら、選ばなくて大丈夫！
-      </Sasara>
-      <Sasara
+      </Tsuzumi>
+      <Tsuzumi
         show={
           <Terminal at={OPTION_TERM} w={1140}>
-            {"$ bun create @mekuru my-video \\\n    --voice zunda,metan --upload youtube,niconico --yes"}
+            {"$ bun create @mekuru my-video \\\n    --engine voisona --upload youtube,niconico --yes"}
           </Terminal>
         }
       >
         同じ選択は、オプションでまとめて指定することもできます。
-      </Sasara>
+      </Tsuzumi>
     </seq>
   </stack>
 );
@@ -186,22 +189,22 @@ const install = () => (
         "Created a Mekuru Movie Maker project in my-video",
         "",
         "Tools:",
-        "  ✓ ffmpeg: 7.0.2-static",
-        "  ✓ VOICEVOX: 0.26.0 at http://127.0.0.1:50021",
+        "  ✓ ffmpeg: 8.1",
+        "  ✓ VoiSona Talk: 1 voices at http://localhost:32766",
         "",
         "$ cd my-video",
         "$ bun install",
       ].join("\n")}
     </Terminal>
     <seq>
-      <Sasara show={<TermMark term={INSTALL_TERM} from={3} to={5} w={1110} />}>プロジェクトができると、道具がそろっているかのチェック結果が出ます。</Sasara>
-      <Sasara face="困り" show={<TermMark term={INSTALL_TERM} from={5} w={1110} />}>
-        VOICEVOX につながらないって出たら、アプリが起動しているか確かめてね。
-      </Sasara>
-      <Sasara face="指差し" show={<TermMark term={INSTALL_TERM} from={7} to={8} w={400} />}>
+      <Tsuzumi show={<TermMark term={INSTALL_TERM} from={3} to={5} w={1110} />}>プロジェクトができると、道具がそろっているかのチェック結果が出ます。</Tsuzumi>
+      <Tsuzumi face="困り" show={<TermMark term={INSTALL_TERM} from={5} w={1110} />}>
+        VoiSona Talk につながらない場合は、アプリの起動と API の設定を確認してください。
+      </Tsuzumi>
+      <Tsuzumi face="指差し" show={<TermMark term={INSTALL_TERM} from={7} to={8} w={400} />}>
         問題なければ、フォルダに移って、bun install です。
-      </Sasara>
-      <Sasara
+      </Tsuzumi>
+      <Tsuzumi
         show={
           <Label x={640} y={760} size={50}>
             ここから先は my-video の中で
@@ -209,7 +212,7 @@ const install = () => (
         }
       >
         ここから先のコマンドは、全部このフォルダの中で実行します。
-      </Sasara>
+      </Tsuzumi>
     </seq>
   </stack>
 );
@@ -220,9 +223,8 @@ const ENTRIES: readonly Entry[] = [
   [1, "src/"],
   [2, "main.tsx", "台本"],
   [2, "parts.tsx", "字幕・読み方"],
-  [2, "character/"],
-  [3, "zunda.tsx", "ずんだもん"],
-  [3, "metan.tsx", "四国めたん"],
+  [2, "character/", "サンプルからコピー"],
+  [3, "tsuzumi.tsx", "すずきつづみ"],
   [1, "assets/", "画像・音声"],
   [1, "package.json"],
 ];
@@ -232,16 +234,18 @@ const files = () => (
   <stack id="files">
     <Step n="04">ファイルを開く</Step>
     <Tree at={FILES} w={760} entries={ENTRIES} />
-    <Code at={IMPORTS}>{'import { Zunda, ZundaPortrait } from "./character/zunda";\nimport { Metan, MetanPortrait } from "./character/metan";'}</Code>
+    <Code at={IMPORTS}>{'import { Tsuzumi, TsuzumiPortrait } from "./character/tsuzumi";'}</Code>
     <seq>
-      <Sasara>エディタでプロジェクトを開くと、こんなファイルができています。</Sasara>
-      <Sasara face="指差し" show={<TreeMark tree={FILES} from={3} w={500} />}>
+      <Tsuzumi>エディタでプロジェクトを開きます。まず、サンプルの部品を追加しましょう。</Tsuzumi>
+      <Tsuzumi face="指差し" show={<TreeMark tree={FILES} from={3} w={500} />}>
         台本は src の main.tsx。動画の中身は、ここに書いていきます。
-      </Sasara>
-      <Sasara show={<TreeMark tree={FILES} from={5} to={7} w={600} />}>選んだキャラクターの声と立ち絵は、character フォルダに一人ずつ入っています。</Sasara>
-      <Sasara face="笑顔" show={<CodeMark code={IMPORTS} from={1} to={2} w={1000} />}>
-        main.tsx の先頭には、そのキャラクターを読み込む import が、もう書いてあります。
-      </Sasara>
+      </Tsuzumi>
+      <Tsuzumi show={<TreeMark tree={FILES} from={5} to={6} w={740} />}>
+        example の tutorial にある character フォルダを src に、assets フォルダをプロジェクト直下にコピーしてね。
+      </Tsuzumi>
+      <Tsuzumi face="笑顔" show={<CodeMark code={IMPORTS} from={1} w={1110} />}>
+        すずきつづみの声と立ち絵の部品は、この import で読み込みます。
+      </Tsuzumi>
     </seq>
   </stack>
 );
@@ -252,39 +256,39 @@ const firstScript = () => (
   <stack id="first-script">
     <seq>
       <stack>
-        <Step n="05">最初の会話を書く</Step>
+        <Step n="05">最初の台本を書く</Step>
         <Code at={SCRIPT}>{FIRST_SCRIPT.trimEnd()}</Code>
         <seq>
-          <Sasara>それでは、main.tsx をこのコードに置き換えて、保存してね。</Sasara>
-          <Sasara
+          <Tsuzumi>それでは、main.tsx をこのコードに置き換えて、保存してね。</Tsuzumi>
+          <Tsuzumi
             face="指差し"
             show={
               <>
-                <CodeMark code={SCRIPT} from={7} w={760} />
-                <Label x={1110} y={384} anchor="l">
+                <CodeMark code={SCRIPT} from={6} w={760} />
+                <Label x={1110} y={350} anchor="l">
                   背景
                 </Label>
-                <CodeMark code={SCRIPT} from={9} to={11} w={870} />
-                <Label x={1110} y={489} anchor="l">
+                <CodeMark code={SCRIPT} from={8} to={10} w={870} />
+                <Label x={1110} y={455} anchor="l">
                   見出し
                 </Label>
               </>
             }
           >
             最初の rect が背景、text が見出しです。
-          </Sasara>
-          <Sasara
+          </Tsuzumi>
+          <Tsuzumi
             show={
               <>
-                <CodeMark code={SCRIPT} from={13} to={14} w={700} />
-                <Label x={1110} y={610} anchor="l">
+                <CodeMark code={SCRIPT} from={12} to={13} w={880} />
+                <Label x={1110} y={576} anchor="l">
                   セリフ
                 </Label>
               </>
             }
           >
-            そして、二人のセリフ。字幕も自動で付きます。
-          </Sasara>
+            続く二行が、私のセリフです。字幕も自動で付きます。
+          </Tsuzumi>
         </seq>
       </stack>
       <stack>
@@ -301,20 +305,20 @@ const firstScript = () => (
         <Label x={156} y={420} anchor="l" size={44}>
           seq
         </Label>
-        <rect x={150} y={440} w={430} h={100} fill="#CDEBC5" stroke="#6FAE62" stroke-width={3} radius={10} />
-        <text x={365} y={490} anchor="c" size={42} weight="bold" color="#2E6B30">
-          ずんだもん
+        <rect x={150} y={440} w={430} h={100} fill="#D4E5F5" stroke="#5C87B0" stroke-width={3} radius={10} />
+        <text x={365} y={490} anchor="c" size={42} weight="bold" color="#2E5E8C">
+          つづみ：あいさつ
         </text>
-        <rect x={590} y={440} w={540} h={100} fill="#F7D0DF" stroke="#C9608A" stroke-width={3} radius={10} />
-        <text x={860} y={490} anchor="c" size={42} weight="bold" color="#8E2457">
-          四国めたん
+        <rect x={590} y={440} w={540} h={100} fill="#D4E5F5" stroke="#5C87B0" stroke-width={3} radius={10} />
+        <text x={860} y={490} anchor="c" size={42} weight="bold" color="#2E5E8C">
+          つづみ：今日のテーマ
         </text>
         <line p="150:650,1150:650" head="end" stroke="#555555" stroke-width={6} />
         <text x={1150} y={680} anchor="tr" size={36} color={COLOR.sub}>
           時間
         </text>
         <seq>
-          <Sasara
+          <Tsuzumi
             show={
               <>
                 <Label x={330} y={250} anchor="l" size={44} color={COLOR.blue}>
@@ -327,9 +331,9 @@ const firstScript = () => (
             }
           >
             stack は「同時に」重ねて、seq は「順番に」再生するまとまりです。
-          </Sasara>
-          <Sasara face="指差し">だから、見出しを出したまま、ずんだもん、めたんの順に話します。</Sasara>
-          <Sasara
+          </Tsuzumi>
+          <Tsuzumi face="指差し">見出しを出したまま、私のセリフを上から順番に読み上げます。</Tsuzumi>
+          <Tsuzumi
             face="ドヤ"
             show={
               <Label x={640} y={760} size={52}>
@@ -338,7 +342,7 @@ const firstScript = () => (
             }
           >
             秒数は書かなくて大丈夫。場面の長さは、セリフの長さで決まるんです！
-          </Sasara>
+          </Tsuzumi>
         </seq>
       </stack>
     </seq>
@@ -356,8 +360,8 @@ const preview = () => (
     </Terminal>
     <Shot x={VIEWER.x} y={VIEWER.y} src="assets/viewer.png" w={VIEWER.w} />
     <seq>
-      <Sasara show={<TermMark term={PREVIEW_TERM} from={1} w={520} />}>保存したら、ターミナルで bun preview を実行します。</Sasara>
-      <Sasara
+      <Tsuzumi show={<TermMark term={PREVIEW_TERM} from={1} w={520} />}>保存したら、ターミナルで bun preview を実行します。</Tsuzumi>
+      <Tsuzumi
         face="指差し"
         show={
           <>
@@ -369,8 +373,8 @@ const preview = () => (
         }
       >
         ブラウザでビューアが開きます。上が動画のプレビューで、
-      </Sasara>
-      <Sasara
+      </Tsuzumi>
+      <Tsuzumi
         face="指差し"
         show={
           <>
@@ -382,19 +386,19 @@ const preview = () => (
         }
       >
         下がタイムラインです。
-      </Sasara>
-      <Sasara
+      </Tsuzumi>
+      <Tsuzumi
         show={
           <Label x={1090} y={VIEWER.y + 150} color={COLOR.blue}>
             Space 再生
           </Label>
         }
       >
-        スペースキーで再生して、二人が順番に話すか確かめてね。
-      </Sasara>
-      <Sasara show={<Mark x={VIEWER.x + 4} y={VIEWER.y + VIEWER.h * 0.6} w={VIEWER.w * 0.45} h={VIEWER.h * 0.04} />}>
+        スペースキーで再生して、セリフが順番に流れるか確かめてね。
+      </Tsuzumi>
+      <Tsuzumi show={<Mark x={VIEWER.x + 4} y={VIEWER.y + VIEWER.h * 0.6} w={VIEWER.w * 0.45} h={VIEWER.h * 0.04} />}>
         タイムラインの区間を押すと、そこへ移動できます。
-      </Sasara>
+      </Tsuzumi>
     </seq>
   </stack>
 );
@@ -405,18 +409,18 @@ const AFTER: CodeAt = { x: 70, y: 430, size: 30 };
 const edit = () => (
   <stack id="edit">
     <Step n="07">セリフを変えてみる</Step>
-    <Code at={BEFORE}>{"<Zunda>こんにちは、ずんだもんなのだ。</Zunda>"}</Code>
+    <Code at={BEFORE}>{"<Tsuzumi>こんにちは、すずきつづみです。</Tsuzumi>"}</Code>
     <Arrow x1={400} y1={315} x2={400} y2={415} />
-    <Code at={AFTER}>{"<Zunda>今日は、はじめての解説動画を作っているのだ。</Zunda>"}</Code>
+    <Code at={AFTER}>{"<Tsuzumi>今日は、はじめての解説動画を作っています。</Tsuzumi>"}</Code>
     <column x={80} y={600} gap={20}>
       <Point>保存すると、プレビューが更新される</Point>
       <Point>合成が終わると、本当の長さになる</Point>
     </column>
     <seq>
-      <Sasara>ビューアを開いたまま、エディタに戻って、ずんだもんのセリフを長くしてみます。</Sasara>
-      <Sasara face="笑顔">保存すると、プレビューが勝手に更新されます。</Sasara>
-      <Sasara>新しいセリフは、まず見積もりの長さで出て、合成が終わると、ほんとの長さになります。</Sasara>
-      <Sasara face="ウインク">タイムラインが伸びたのを確かめたら、セリフを元に戻しておいてね。</Sasara>
+      <Tsuzumi>ビューアを開いたまま、エディタに戻って、最初のセリフを長くしてみます。</Tsuzumi>
+      <Tsuzumi face="笑顔">保存すると、プレビューが勝手に更新されます。</Tsuzumi>
+      <Tsuzumi>新しいセリフは、まず見積もりの長さで出て、合成が終わると、ほんとの長さになります。</Tsuzumi>
+      <Tsuzumi face="ウインク">タイムラインが伸びたのを確かめたら、セリフを元に戻しておいてね。</Tsuzumi>
     </seq>
   </stack>
 );
@@ -436,12 +440,12 @@ const errors = () => (
       {"$ bun run typecheck"}
     </Terminal>
     <seq>
-      <Sasara face="困り">もし更新されなかったら、ここをチェック！</Sasara>
-      <Sasara face="はてな">保存したファイルは合ってる？ プレビューのターミナルは、動いてる？</Sasara>
-      <Sasara>台本にエラーがあると、ビューアは前の画面のままで、上にエラーが出ます。</Sasara>
-      <Sasara face="指差し" show={<TermMark term={CHECK_TERM} from={1} w={660} />}>
+      <Tsuzumi face="困り">もし更新されなかったら、ここをチェック！</Tsuzumi>
+      <Tsuzumi face="はてな">保存したファイルは合ってる？ プレビューのターミナルは、動いてる？</Tsuzumi>
+      <Tsuzumi>台本にエラーがあると、ビューアは前の画面のままで、上にエラーが出ます。</Tsuzumi>
+      <Tsuzumi face="指差し" show={<TermMark term={CHECK_TERM} from={1} w={660} />}>
         タグや属性の書き間違いは、型チェックでも見つけられます。
-      </Sasara>
+      </Tsuzumi>
     </seq>
   </stack>
 );
@@ -451,22 +455,31 @@ const READ: CodeAt = { x: 70, y: 480, size: 28 };
 
 const voice = () => (
   <stack id="voice">
-    <Step n="09">声と読み方を調整する</Step>
+    <Step n="09">間と読み方を調整する</Step>
     <text x={76} y={152} size={30} color={COLOR.sub}>
-      src/character/zunda.tsx
+      src/character/tsuzumi.tsx
     </text>
-    <Code at={VOICE}>{'<Voicevox name="zunda" speaker={3}\n  speed={1.1} gap={8} reading={READING}>\n  {children}\n</Voicevox>'}</Code>
+    <Code at={VOICE}>{'<Voisona name="tsuzumi" voice="suzuki-tsudumi_ja_JP"\n  gap={12} reading={READING}>\n  {children}\n</Voisona>'}</Code>
     <text x={76} y={432} size={30} color={COLOR.sub}>
       src/parts.tsx
     </text>
     <Code at={READ}>{'export const READING = {\n  Mekuru: "めくる", bun: "バン", TSX: "ティーエスエックス",\n};'}</Code>
     <seq>
-      <Sasara show={<CodeMark code={VOICE} from={2} w={290} />}>次は声の調整です。キャラクターのファイルで、Voicevox に speed を足します。</Sasara>
-      <Sasara face="笑顔">1.1 にすると、ずんだもんが、ちょっと早口になります。</Sasara>
-      <Sasara face="指差し" show={<CodeMark code={READ} from={2} w={1000} />}>
+      <Tsuzumi show={<CodeMark code={VOICE} from={2} w={238} />}>次はセリフの間です。Voisona の gap を変えてみましょう。</Tsuzumi>
+      <Tsuzumi face="笑顔">30 fps の動画で 12 にすると、セリフの後に 0.4 秒の間が入ります。</Tsuzumi>
+      <Tsuzumi face="指差し" show={<CodeMark code={READ} from={2} w={1000} />}>
         読み方を直したい言葉は、parts.tsx の READING に足してね。
-      </Sasara>
-      <Sasara>字幕はそのままで、読み上げだけが、指定した読み方になります。</Sasara>
+      </Tsuzumi>
+      <Tsuzumi>字幕はそのままで、読み上げだけが、指定した読み方になります。</Tsuzumi>
+      <Tsuzumi
+        show={
+          <Label x={640} y={760} size={34} color={COLOR.blue}>
+            pkgs/voisona/README.jp.md
+          </Label>
+        }
+      >
+        接続先などの設定は、音声エンジンごとの日本語 README を見てね。
+      </Tsuzumi>
     </seq>
   </stack>
 );
@@ -482,19 +495,17 @@ const portraitStep = () => (
     <Step n="10">立ち絵を出す</Step>
     <Code at={ADD}>{`<rect w="100%" h="100%" fill="#141C26" />\n${PORTRAITS}\n<stack>\n  …\n</stack>`}</Code>
     <rect x={FRAME.x} y={FRAME.y} w={FRAME.w} h={FRAME.h} fill="#141C26" />
-    <Figure at={0.1} color="#F7B9D2" />
-    <Figure at={0.9} color="#A8DC8F" />
+    <Figure at={0.85} color="#9BC5EB" />
     <seq>
-      <Sasara show={<CodeMark code={ADD} from={2} to={3} w={600} />}>立ち絵も出してみましょう。背景のすぐ後ろに、この二行を足します。</Sasara>
-      <Sasara
+      <Tsuzumi show={<CodeMark code={ADD} from={2} w={700} />}>
+        立ち絵も出してみましょう。import に TsuzumiPortrait を加えて、背景のすぐ後ろに、この一行を足します。
+      </Tsuzumi>
+      <Tsuzumi
         face="指差し"
         show={
           <>
-            <Label x={FRAME.x + FRAME.w * 0.1} y={FRAME.y + 150} size={40}>
-              x=10%
-            </Label>
-            <Label x={FRAME.x + FRAME.w * 0.9} y={FRAME.y + 150} size={40}>
-              x=90%
+            <Label x={FRAME.x + FRAME.w * 0.85} y={FRAME.y + 150} size={40}>
+              x=85%
             </Label>
             <line
               p={`${FRAME.x + FRAME.w + 40}:${FRAME.y + FRAME.h},${FRAME.x + FRAME.w + 40}:${FRAME.y + FRAME.h * 0.55}`}
@@ -509,9 +520,9 @@ const portraitStep = () => (
         }
       >
         x で横の位置を、h で高さを、画面に対する割合で決めています。
-      </Sasara>
-      <Sasara face="笑顔">保存して、二人が左右に出たら成功です！</Sasara>
-      <Sasara face="ウインク">最初に入る立ち絵はダミーなので、あとで好きな素材に差し替えてね。</Sasara>
+      </Tsuzumi>
+      <Tsuzumi face="笑顔">保存して、画面の右側に立ち絵が一つ出たら成功です。</Tsuzumi>
+      <Tsuzumi face="ウインク">コピーした立ち絵はダミーなので、あとで好きな素材に差し替えてね。</Tsuzumi>
     </seq>
   </stack>
 );
@@ -533,11 +544,11 @@ const secondScene = () => (
     <Arrow x1={530} y1={755} x2={640} y2={755} />
     <Scene x={660} title="動画を作る流れ" />
     <seq>
-      <Sasara>最後に、二つ目の場面を足します。最初の stack を閉じた、すぐ後ろに書きます。</Sasara>
-      <Sasara face="指差し" show={<CodeMark code={SECOND} from={2} to={5} w={1130} />}>
+      <Tsuzumi>最後に、二つ目の場面を足します。最初の stack を閉じた、すぐ後ろに書きます。</Tsuzumi>
+      <Tsuzumi face="指差し" show={<CodeMark code={SECOND} from={2} to={5} w={1130} />}>
         column を使うと、見出しと説明を、縦に並べられます。
-      </Sasara>
-      <Sasara
+      </Tsuzumi>
+      <Tsuzumi
         show={
           <Label x={590} y={650} size={44}>
             順番に進む
@@ -545,8 +556,8 @@ const secondScene = () => (
         }
       >
         mekuru の直下に並べた場面は、順番に進みます。
-      </Sasara>
-      <Sasara face="笑顔">最後まで再生して、次の見出しに切り替わったら OK！</Sasara>
+      </Tsuzumi>
+      <Tsuzumi face="笑顔">最後まで再生して、次の見出しに切り替わったら OK！</Tsuzumi>
     </seq>
   </stack>
 );
@@ -562,9 +573,9 @@ const review = () => (
       <Point size={42}>二つ目の場面へ進む</Point>
     </column>
     <seq>
-      <Sasara>ここまでできたら、最初から最後まで、通して見てみましょう。</Sasara>
-      <Sasara face="指差し">セリフの順番、字幕の読みやすさ、立ち絵と文字の重なりをチェックしてね。</Sasara>
-      <Sasara face="笑顔">気になるところは、台本を直して保存すれば、すぐ確認できます。</Sasara>
+      <Tsuzumi>ここまでできたら、最初から最後まで、通して見てみましょう。</Tsuzumi>
+      <Tsuzumi face="指差し">セリフの順番、字幕の読みやすさ、立ち絵と文字の重なりをチェックしてね。</Tsuzumi>
+      <Tsuzumi face="笑顔">気になるところは、台本を直して保存すれば、すぐ確認できます。</Tsuzumi>
     </seq>
   </stack>
 );
@@ -582,14 +593,14 @@ const render = () => (
       {"$ bun run build --preview\n# 半分の解像度・15fps（同じ video.mp4 に書き出す）"}
     </Terminal>
     <seq>
-      <Sasara face="決め" show={<TermMark term={BUILD_TERM} from={1} w={500} />}>
+      <Tsuzumi face="決め" show={<TermMark term={BUILD_TERM} from={1} w={500} />}>
         いよいよ書き出しです！ 別のターミナルで、bun run build を実行します。
-      </Sasara>
-      <Sasara show={<TermMark term={BUILD_TERM} from={2} w={1110} />}>終わると video.mp4 ができます。プレイヤーで開いて、画面と音を確認してね。</Sasara>
-      <Sasara show={<TermMark term={LIGHT_TERM} from={1} w={640} />}>軽く試したいときは、preview オプションで、半分の解像度で書き出せます。</Sasara>
-      <Sasara face="困り" show={<TermMark term={LIGHT_TERM} from={2} w={960} />}>
+      </Tsuzumi>
+      <Tsuzumi show={<TermMark term={BUILD_TERM} from={2} w={1110} />}>終わると video.mp4 ができます。プレイヤーで開いて、画面と音を確認してね。</Tsuzumi>
+      <Tsuzumi show={<TermMark term={LIGHT_TERM} from={1} w={640} />}>軽く試したいときは、preview オプションで、半分の解像度で書き出せます。</Tsuzumi>
+      <Tsuzumi face="困り" show={<TermMark term={LIGHT_TERM} from={2} w={960} />}>
         同じファイルに上書きされるので、最後は、オプションなしで書き出し直してね。
-      </Sasara>
+      </Tsuzumi>
     </seq>
   </stack>
 );
@@ -604,16 +615,16 @@ const uploadConfig = () => (
     </text>
     <Code at={YAML}>
       {
-        'video: video.mp4\ntitle: "はじめての Mekuru 動画"\ndescription: |\n  Mekuru Movie Maker で作った最初の動画です。\n  音声: VOICEVOX:ずんだもん / VOICEVOX:四国めたん\ntags: [MekuruMovieMaker, VOICEVOX]\nprivacy: private'
+        'video: video.mp4\ntitle: "はじめての Mekuru 動画"\ndescription: |\n  Mekuru Movie Maker で作った最初の動画です。\n  音声: VoiSona Talk:すずきつづみ\ntags: [MekuruMovieMaker, VoiSonaTalk, すずきつづみ]\nprivacy: private'
       }
     </Code>
     <seq>
-      <Sasara face="ウインク">投稿したい人は、もうひと手間！</Sasara>
-      <Sasara show={<CodeMark code={YAML} from={2} to={4} w={760} />}>YouTube を選んだ人は、youtube.yaml に、タイトルと説明文を書きます。</Sasara>
-      <Sasara face="指差し" show={<CodeMark code={YAML} from={5} w={960} />}>
+      <Tsuzumi face="ウインク">投稿したい人は、もうひと手間！</Tsuzumi>
+      <Tsuzumi show={<CodeMark code={YAML} from={2} to={4} w={760} />}>YouTube を選んだ人は、youtube.yaml に、タイトルと説明文を書きます。</Tsuzumi>
+      <Tsuzumi face="指差し" show={<CodeMark code={YAML} from={5} w={960} />}>
         説明文には、使った音声のクレジットも入れてね。
-      </Sasara>
-      <Sasara show={<CodeMark code={YAML} from={7} w={400} />}>公開範囲は、まず非公開にしておくと安心です。</Sasara>
+      </Tsuzumi>
+      <Tsuzumi show={<CodeMark code={YAML} from={7} w={400} />}>公開範囲は、まず非公開にしておくと安心です。</Tsuzumi>
     </seq>
   </stack>
 );
@@ -637,10 +648,18 @@ const upload = () => (
       {"$ bunx playwright-core install chromium\n$ bunx mekuru-niconico login\n$ bun run upload:niconico --check"}
     </Terminal>
     <seq>
-      <Sasara>初回だけは準備が必要です。手順は、docs の Upload.md を見てね。</Sasara>
-      <Sasara show={<TermMark term={YOUTUBE_TERM} from={1} to={2} w={960} />}>YouTube は、dry-run で中身を確かめてから、アップロードします。</Sasara>
-      <Sasara show={<TermMark term={NICO_TERM} from={2} to={3} w={960} />}>ニコニコ動画は、ブラウザでログインして、確認してから投稿します。</Sasara>
-      <Sasara face="指差し">投稿したら、投稿先で、動画と公開範囲を確認しましょう。</Sasara>
+      <Tsuzumi
+        show={
+          <Label x={640} y={790} size={34} color={COLOR.blue}>
+            docs/reference/Upload.jp.md
+          </Label>
+        }
+      >
+        初回だけは準備が必要です。日本語の手順は、docs の Upload.jp.md を見てね。
+      </Tsuzumi>
+      <Tsuzumi show={<TermMark term={YOUTUBE_TERM} from={1} to={2} w={960} />}>YouTube は、dry-run で中身を確かめてから、アップロードします。</Tsuzumi>
+      <Tsuzumi show={<TermMark term={NICO_TERM} from={2} to={3} w={960} />}>ニコニコ動画は、ブラウザでログインして、確認してから投稿します。</Tsuzumi>
+      <Tsuzumi face="指差し">投稿したら、投稿先で、動画と公開範囲を確認しましょう。</Tsuzumi>
     </seq>
   </stack>
 );
@@ -649,23 +668,23 @@ const outro = () => (
   <stack id="outro">
     <Shot x={70} y={70} src="assets/lesson.png" w={760} />
     <column x={80} y={540} gap={18}>
-      <Point size={40}>src/main.tsx に会話と場面を書く</Point>
+      <Point size={40}>src/main.tsx にセリフと場面を書く</Point>
       <Point size={40}>bun preview で、保存しながら確認</Point>
       <Point size={40}>bun run build で video.mp4 に</Point>
     </column>
     <seq>
-      <Sasara face="笑顔">てなわけで、最初の動画ができました！</Sasara>
-      <Sasara face="指差し">次は、セリフや見出しを、自分の内容に変えてみてね。</Sasara>
-      <Sasara
+      <Tsuzumi face="笑顔">これで、一人語りの動画ができました。</Tsuzumi>
+      <Tsuzumi face="指差し">次は、セリフや見出しを、自分の内容に変えてみてね。</Tsuzumi>
+      <Tsuzumi
         show={
           <Label x={420} y={790} size={36} color={COLOR.blue}>
             github.com/kanade-k-1228/mekuru
           </Label>
         }
       >
-        今回のコードと手順は、example の README にまとめてあります。
-      </Sasara>
-      <Sasara face="決め">んじゃ、またねー！</Sasara>
+        今回のコードは、リポジトリの example にあります。
+      </Tsuzumi>
+      <Tsuzumi face="決め">それでは、また次の動画で。</Tsuzumi>
       <Exit />
     </seq>
   </stack>
@@ -678,10 +697,10 @@ const Tutorial = () => (
       <audio src="assets/bgm.mp3" volume={0.06} />
     </repeat>
     <stack>
-      <SasaraStand />
+      <TsuzumiStand />
       <seq>
         {intro()}
-        <Jingle>ささらぼ！</Jingle>
+        <Jingle>じゅんび</Jingle>
         {tools()}
         {create()}
         {install()}
@@ -703,7 +722,7 @@ const Tutorial = () => (
         {outro()}
       </seq>
     </stack>
-    <EndCard top="動画づくり" bottom="完全に理解した" credit="音声: VOICEVOX:冥鳴ひまり　立ち絵: しりんだーふれいる 様" len={120} />
+    <EndCard top="動画づくり" bottom="完全に理解した" credit="音声: VoiSona Talk:すずきつづみ　立ち絵: ぴかお 様（ぴかお百貨店）" len={120} />
   </mekuru>
 );
 

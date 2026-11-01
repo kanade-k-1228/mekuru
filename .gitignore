@@ -6,6 +6,8 @@ node_modules/
 .mekuru/
 /example/*.mp4
 /example/assets/character/sasara/
+/example/assets/character/tsuzumi/
+/example/assets/character/pikao-tsuzumi/
 
 /npm-out/
 
