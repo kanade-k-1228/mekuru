@@ -89,7 +89,6 @@ git push origin 0.3.0
 - 時間の計算: [compiler/src/schedule.rs](../../pkgs/compiler/src/schedule.rs)。依存順に解決。循環は E510、到達できない参照は E504
 - 描画: [compiler/src/render](../../pkgs/compiler/src/render)。cosmic-text で組版、Skrifa で文字輪郭、tiny-skia で描画
 - 出力: [compiler/src/pipeline.rs](../../pkgs/compiler/src/pipeline.rs)。音声の速度変更・ミックス・エンコード
-- キャラクター生成: [create/src/character.ts](../../pkgs/create/src/character.ts)。カタログから TSX とダミー立ち絵を生成
 - ビューア: [viewer/src/view](../../pkgs/viewer/src/view) は UI、[viewer/src/logic](../../pkgs/viewer/src/logic) は状態と計算
 
 時間の木・配置・描画順はコンパイル時に確定します。時刻は整数フレームで、秒への変換は ffmpeg・音声ミックス・プレビュー JSON との境界で行います。`<dur>`・`<repeat>` は配置に影響せず、`<hold>` の表示内容は素材の親を基準に配置します。

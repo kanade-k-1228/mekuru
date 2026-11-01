@@ -98,3 +98,5 @@ export const StyleBertVits2 = async (props: StyleBertVits2Props): Promise<Awaite
   const { url, ...voice } = voiceOf(props);
   return line("style-bert-vits2", props, String(props.speaker ?? props.model), voice, (say, out) => server(url).synthesize(props, say, out));
 };
+
+export * from "./characters.ts";

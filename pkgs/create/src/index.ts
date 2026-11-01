@@ -3,26 +3,23 @@ import * as p from "@clack/prompts";
 import { Command, InvalidArgumentError } from "commander";
 import { relative, resolve } from "node:path";
 import { check, type Check } from "./check.ts";
-import { CHARACTER_NAMES, CHARACTERS, ENGINE_NAMES, ENGINES, enginesOf, isCharacter, isEngine, type Character } from "./character.ts";
 import { create, isEmptyDir, VERSION, type CreateOptions } from "./create.ts";
+import { ENGINE_NAMES, ENGINES, isEngine, type Engine } from "./engine.ts";
 import { isSite, SITE_NAMES, SITES, type Site } from "./site.ts";
-import { treeMultiselect } from "./tree.ts";
 
 interface Args extends CreateOptions {
   dir?: string;
   yes?: boolean;
 }
 
-const parseCharacters = (value: string, previous: Character[] = []): Character[] => {
+const parseEngines = (value: string, previous: Engine[] = []): Engine[] => {
   const names = value
     .split(",")
     .map((s) => s.trim())
     .filter((s) => s !== "");
-  const unknown = names.find((n) => !isCharacter(n) && !isEngine(n));
-  if (unknown !== undefined) {
-    throw new InvalidArgumentError(`unknown character ${JSON.stringify(unknown)} (${[...CHARACTER_NAMES, ...ENGINE_NAMES].join(", ")})`);
-  }
-  return CHARACTER_NAMES.filter((c) => previous.includes(c) || names.includes(c) || names.includes(CHARACTERS[c].engine));
+  const unknown = names.find((n) => !isEngine(n));
+  if (unknown !== undefined) throw new InvalidArgumentError(`unknown engine ${JSON.stringify(unknown)} (${ENGINE_NAMES.join(", ")})`);
+  return ENGINE_NAMES.filter((e) => previous.includes(e) || names.includes(e));
 };
 
 const parseSites = (value: string, previous: Site[] = []): Site[] => {
@@ -42,22 +39,19 @@ const answer = <T>(value: T): Exclude<T, symbol> => {
   return value as Exclude<T, symbol>;
 };
 
-const ask = async (args: Args): Promise<Args & { dir: string; characters: readonly Character[]; upload: readonly Site[] }> => {
+const ask = async (args: Args): Promise<Args & { dir: string; engines: readonly Engine[]; upload: readonly Site[] }> => {
   const dir = args.dir ?? (answer(await p.text({ message: "Project folder", placeholder: "my-video", defaultValue: "my-video" })).trim() || "my-video");
   if (!args.force && !isEmptyDir(resolve(dir))) {
     if (!answer(await p.confirm({ message: `${dir} is not empty. Write into it anyway?`, initialValue: false }))) throw new Cancelled();
   }
-  const characters =
-    args.characters ??
+  const engines =
+    args.engines ??
     answer(
-      await treeMultiselect(
-        "Characters (You can add characters later)",
-        ENGINE_NAMES.map((e) => ({
-          label: ENGINES[e].name,
-          hint: ENGINES[e].hint,
-          options: CHARACTER_NAMES.filter((c) => CHARACTERS[c].engine === e).map((c) => ({ value: c, label: CHARACTERS[c].name })),
-        })),
-      ),
+      await p.multiselect({
+        message: "Speech engines (You can add them later)",
+        options: ENGINE_NAMES.map((e) => ({ value: e, label: ENGINES[e].name, hint: ENGINES[e].hint })),
+        required: false,
+      }),
     );
   const upload =
     args.upload ??
@@ -68,7 +62,7 @@ const ask = async (args: Args): Promise<Args & { dir: string; characters: readon
         required: false,
       }),
     );
-  return { ...args, dir, force: true, characters, upload };
+  return { ...args, dir, force: true, engines, upload };
 };
 
 const UPLOAD_STEPS: Record<Site, string> = {
@@ -91,13 +85,13 @@ const line = (c: Check): string => `${c.name}: ${c.detail}`.replace(/\n/g, "\n  
 
 const run = async (args: Args): Promise<number> => {
   if (args.yes || !process.stdin.isTTY || !process.stdout.isTTY) {
-    const characters = args.characters ?? [];
+    const engines = args.engines ?? [];
     const upload = args.upload ?? [];
     try {
-      const target = await create(args.dir ?? "my-video", { ...args, characters, upload });
+      const target = await create(args.dir ?? "my-video", { ...args, engines, upload });
       const steps = nextSteps(target, upload).replace(/^/gm, "  ");
       console.log(`\nCreated a Mekuru Movie Maker project in ${relative(process.cwd(), target) || "."}\n\nNext:\n${steps}\n`);
-      const checks = (await check(enginesOf(characters), upload)).map((c) => `${c.ok ? "✓" : "✗"} ${line(c)}`.replace(/^/gm, "  "));
+      const checks = (await check(engines, upload)).map((c) => `${c.ok ? "✓" : "✗"} ${line(c)}`.replace(/^/gm, "  "));
       console.log(`Tools:\n${checks.join("\n")}\n`);
       return 0;
     } catch (e) {
@@ -111,7 +105,7 @@ const run = async (args: Args): Promise<number> => {
     const target = await create(answers.dir, answers);
     p.log.success(`Created a Mekuru Movie Maker project in ${relative(process.cwd(), target) || "."}`);
     p.note(nextSteps(target, answers.upload), "Next");
-    const engines = enginesOf(answers.characters);
+    const { engines } = answers;
     const spin = p.spinner();
     spin.start(engines.length > 0 || answers.upload.length > 0 ? "Checking ffmpeg and the other tools" : "Checking ffmpeg");
     const checks = await check(engines, answers.upload);
@@ -132,18 +126,14 @@ new Command("create-mekuru")
   )
   .version(VERSION)
   .argument("[folder]", "the folder of the project (default: my-video)")
-  .option(
-    "--voice <characters>",
-    `the characters, separated by commas: ${CHARACTER_NAMES.join(", ")}; an engine (${ENGINE_NAMES.join(", ")}) chooses all its characters (default: none)`,
-    parseCharacters,
-  )
+  .option("--engine <engines>", `the speech engines, separated by commas: ${ENGINE_NAMES.join(", ")} (default: none)`, parseEngines)
   .option("--upload <sites>", `where to upload the video, separated by commas: ${SITE_NAMES.join(", ")} (default: none)`, parseSites)
   .option("-f, --force", "write into a folder that is not empty")
   .option("-y, --yes", "do not ask")
   .option("--mekuru <spec>", "the version of the @mekuru/core package to depend on", `^${VERSION}`)
   .showHelpAfterError("(add --help for more information)")
-  .action(async (dir: string | undefined, { voice, ...opts }: Omit<Args, "dir" | "characters"> & { voice?: Character[] }) => {
-    process.exitCode = await run({ ...opts, dir, characters: voice });
+  .action(async (dir: string | undefined, { engine, ...opts }: Omit<Args, "dir" | "engines"> & { engine?: Engine[] }) => {
+    process.exitCode = await run({ ...opts, dir, engines: engine });
   })
   .parseAsync()
   .then(() => process.exit());

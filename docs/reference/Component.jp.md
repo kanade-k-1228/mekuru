@@ -12,7 +12,7 @@ src/main.tsx → .mekuru/main.xml → video.mp4
 ## プロジェクトを作る
 
 ```sh
-bun create @mekuru my-video --voice zunda,metan
+bun create @mekuru my-video --engine voisona
 cd my-video
 bun install
 ```
@@ -21,7 +21,6 @@ bun install
 
 - `src/main.tsx`: 台本
 - `src/parts.tsx`: 字幕などの共通部品
-- `src/character/`: 選択したキャラクターの読み上げ・立ち絵
 - `assets/`: 画像・動画・音声
 - `configs/`: 投稿設定とサムネイル
 - `.mekuru/`: 生成した XML と音声キャッシュ

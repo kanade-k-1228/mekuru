@@ -21,4 +21,13 @@ bun preview     # http://localhost:3333
 bun run build   # video.mp4
 ```
 
-Choose characters during setup, then edit `src/main.tsx`. `<seq>` plays elements in order; `<stack>` plays them together. See the [first-video tutorial](example/README.md) for a complete example.
+Choose speech engines during setup, then edit `src/main.tsx`. `<seq>` plays elements in order; `<stack>` plays them together. See the [first-video tutorial](example/README.md) for a complete example.
+
+## Speech engines
+
+| Package                                                       | Engines                         |
+| ------------------------------------------------------------- | ------------------------------- |
+| [`@mekuru/voicevox`](pkgs/voicevox/README.md)                 | VOICEVOX, AivisSpeech, SHAREVOX |
+| [`@mekuru/voisona`](pkgs/voisona/README.md)                   | VoiSona Talk                    |
+| [`@mekuru/coeiroink`](pkgs/coeiroink/README.md)               | COEIROINK                       |
+| [`@mekuru/style-bert-vits2`](pkgs/style-bert-vits2/README.md) | Style-Bert-VITS2                |

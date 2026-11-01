@@ -44,6 +44,47 @@ bunx mekuru-server .mekuru/main.xml
 
 `http://localhost:3333` でプレビューします。書き出しは `bunx mekuru-compiler .mekuru/main.xml -o video.mp4`。
 
+## キャラクター
+
+`<Voicevox>` に渡すキャラクターごとの設定をエクスポートしています。展開して使い、ほかの props も追加できます。
+
+```tsx
+import { Voicevox, zunda } from "@mekuru/voicevox";
+
+<Voicevox {...zunda}>こんにちは。</Voicevox>;
+```
+
+| エクスポート | 名前 | `speaker` | エンジン |
+| --- | --- | --- | --- |
+| `zunda` | ずんだもん | `3` | VOICEVOX |
+| `metan` | 四国めたん | `2` | VOICEVOX |
+| `tsumugi` | 春日部つむぎ | `8` | VOICEVOX |
+| `hau` | 雨晴はう | `10` | VOICEVOX |
+| `ritsu` | 波音リツ | `9` | VOICEVOX |
+| `takehiro` | 玄野武宏 | `11` | VOICEVOX |
+| `kotaro` | 白上虎太郎 | `12` | VOICEVOX |
+| `ryusei` | 青山龍星 | `13` | VOICEVOX |
+| `himari` | 冥鳴ひまり | `14` | VOICEVOX |
+| `sora` | 九州そら | `16` | VOICEVOX |
+| `mochiko` | もち子さん | `20` | VOICEVOX |
+| `mesuo` | 剣崎雌雄 | `21` | VOICEVOX |
+| `zunko` | 東北ずん子 | `107` | VOICEVOX |
+| `kiritan` | 東北きりたん | `108` | VOICEVOX |
+| `itako` | 東北イタコ | `109` | VOICEVOX |
+| `kohaku` | コハク | `"コハク"` | AivisSpeech |
+| `mao` | まお | `"まお"` | AivisSpeech |
+| `koharuneAmiSharevox` | 小春音アミ | `14` | SHAREVOX |
+| `tsukuyomiSharevox` | つくよみちゃん | `18` | SHAREVOX |
+| `ykun` | Yくん | `19` | SHAREVOX |
+| `hakuchi` | 白痴ー | `20` | SHAREVOX |
+| `lagopusBlack` | らごぱすブラック | `21` | SHAREVOX |
+| `lagopusWhite` | らごぱすホワイト | `22` | SHAREVOX |
+| `yuki` | 風花ゆき | `23` | SHAREVOX |
+| `hiroha` | 安倍広葉 | `24` | SHAREVOX |
+| `suzuno` | 鈴乃 | `25` | SHAREVOX |
+
+AivisSpeech・SHAREVOX のキャラクターは、`url` を `MEKURU_AIVISSPEECH_URL`・`MEKURU_SHAREVOX_URL`（未設定ならそれぞれの既定のポート）から設定します。
+
 ## 詳しい使い方
 
 ### 声の設定 (`VoicevoxProps`)

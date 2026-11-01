@@ -89,7 +89,6 @@ A failed workflow can be rerun. `--tolerate-republish` handles versions already 
 - Timing: [compiler/src/schedule.rs](../../pkgs/compiler/src/schedule.rs): resolve dependencies; cycles are E510, unreachable references are E504
 - Rendering: [compiler/src/render](../../pkgs/compiler/src/render): cosmic-text for shaping, Skrifa for glyph outlines, tiny-skia for drawing
 - Output: [compiler/src/pipeline.rs](../../pkgs/compiler/src/pipeline.rs): audio speed changes, mixing, and encoding
-- Character generation: [create/src/character.ts](../../pkgs/create/src/character.ts): generate TSX and placeholder portraits from the catalog
 - Viewer: [viewer/src/view](../../pkgs/viewer/src/view) for UI; [viewer/src/logic](../../pkgs/viewer/src/logic) for state and calculations
 
 The timing tree, layout, and draw order are resolved at compile time. Times are integer frames, converted to seconds at the ffmpeg, audio mixing, and preview JSON boundaries. `<dur>` and `<repeat>` do not affect layout; `<hold>` content is positioned relative to the media's parent.

@@ -46,6 +46,21 @@ bunx mekuru-server .mekuru/main.xml
 
 Preview: `http://localhost:3333`. Export with `bunx mekuru-compiler .mekuru/main.xml -o video.mp4`.
 
+## Characters
+
+The package exports each character's settings for `<StyleBertVits2>`. Spread one and add other props as needed.
+
+```tsx
+import { StyleBertVits2, amitaro } from "@mekuru/style-bert-vits2";
+
+<StyleBertVits2 {...amitaro}>こんにちは。</StyleBertVits2>;
+```
+
+| Export | Name | `model` |
+| --- | --- | --- |
+| `koharuneAmi` | 小春音アミ | `"koharune-ami"` |
+| `amitaro` | あみたろ | `"amitaro"` |
+
 ## Detailed usage
 
 ### Voice (`StyleBertVits2Props`)
