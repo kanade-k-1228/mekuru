@@ -44,6 +44,33 @@ bunx mekuru-server .mekuru/main.xml
 
 Preview: `http://localhost:3333`. Export with `bunx mekuru-compiler .mekuru/main.xml -o video.mp4`.
 
+## Characters
+
+The package exports each character's settings for `<Coeiroink>`. Spread one and add other props as needed.
+
+```tsx
+import { Coeiroink, tsukuyomi } from "@mekuru/coeiroink";
+
+<Coeiroink {...tsukuyomi}>こんにちは。</Coeiroink>;
+```
+
+| Export | Name | `speaker` |
+| --- | --- | --- |
+| `tsukuyomi` | つくよみちゃん | `"つくよみちゃん"` |
+| `mana` | MANA | `"MANA"` |
+| `kana` | KANA | `"KANA"` |
+| `ofutonp` | おふとんP | `"おふとんP"` |
+| `ayaka` | AI声優-朱花 | `"AI声優-朱花"` |
+| `aoba` | AI声優-青葉 | `"AI声優-青葉"` |
+| `ginga` | AI声優-銀芽 | `"AI声優-銀芽"` |
+| `kanae` | AI声優-金苗 | `"AI声優-金苗"` |
+| `dia` | ディアちゃん | `"ディアちゃん"` |
+| `arma` | アルマちゃん | `"アルマちゃん"` |
+| `lilin` | リリンちゃん | `"リリンちゃん"` |
+| `croix` | クロワちゃん | `"クロワちゃん"` |
+| `andzie` | アンジーさん | `"アンジーさん"` |
+| `ameno` | アメノちゃん | `"アメノちゃん"` |
+
 ## Detailed usage
 
 ### Voice (`CoeiroinkProps`)

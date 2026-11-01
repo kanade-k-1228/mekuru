@@ -21,4 +21,13 @@ bun preview     # http://localhost:3333
 bun run build   # video.mp4
 ```
 
-作成時にキャラクターを選び、`src/main.tsx` を編集します。`<seq>` は順番に、`<stack>` は同時に再生します。完成までの手順は [最初の動画を作るチュートリアル](example/README.md) を参照してください。
+作成時に音声合成エンジンを選び、`src/main.tsx` を編集します。`<seq>` は順番に、`<stack>` は同時に再生します。完成までの手順は [最初の動画を作るチュートリアル](example/README.md) を参照してください。
+
+## 音声合成エンジン
+
+| パッケージ                                                       | エンジン                        |
+| ---------------------------------------------------------------- | ------------------------------- |
+| [`@mekuru/voicevox`](pkgs/voicevox/README.jp.md)                 | VOICEVOX・AivisSpeech・SHAREVOX |
+| [`@mekuru/voisona`](pkgs/voisona/README.jp.md)                   | VoiSona Talk                    |
+| [`@mekuru/coeiroink`](pkgs/coeiroink/README.jp.md)               | COEIROINK                       |
+| [`@mekuru/style-bert-vits2`](pkgs/style-bert-vits2/README.jp.md) | Style-Bert-VITS2                |

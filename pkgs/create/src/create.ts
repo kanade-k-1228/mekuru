@@ -1,18 +1,16 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
-import { CHARACTER_NAMES, ENGINES, enginesOf, isCharacter, isEngine, type Character } from "./character.ts";
-import { characterImport, characterSource } from "./character-source.ts";
+import { ENGINE_NAMES, ENGINES, isEngine, type Engine } from "./engine.ts";
 import { isSite, SITE_NAMES, SITES, type Site } from "./site.ts";
 
 const pkgDir = join(import.meta.dir, "..");
 const TEMPLATE = join(pkgDir, "template");
-const DUMMY = join(pkgDir, "dummy.png");
 export const VERSION: string = (await Bun.file(join(pkgDir, "package.json")).json()).version;
 
 export interface CreateOptions {
   force?: boolean;
   mekuru?: string;
-  characters?: readonly Character[];
+  engines?: readonly Engine[];
   upload?: readonly Site[];
 }
 
@@ -35,8 +33,8 @@ const keepLines = (text: string, chosen: readonly string[]): string =>
       const m = MARKER.exec(line);
       if (!m) return [line];
       const names = m[1].split(/\s+/);
-      const unknown = names.find((n) => !isCharacter(n) && !isEngine(n) && !isSite(n));
-      if (unknown !== undefined) throw new Error(`the template has #if ${unknown}: not a character, an engine or an upload site`);
+      const unknown = names.find((n) => !isEngine(n) && !isSite(n));
+      if (unknown !== undefined) throw new Error(`the template has #if ${unknown}: not an engine or an upload site`);
       return names.some((n) => chosen.includes(n)) ? [line.slice(0, m.index)] : [];
     })
     .join("\n");
@@ -51,27 +49,20 @@ const copy = async (from: string, to: string, chosen: readonly string[]): Promis
   }
 };
 
-export const create = async (dir: string, { force = false, mekuru = `^${VERSION}`, characters = [], upload = [] }: CreateOptions = {}): Promise<string> => {
-  const unknown = characters.find((c) => !isCharacter(c));
-  if (unknown !== undefined) throw new Error(`unknown character ${unknown} (${CHARACTER_NAMES.join(", ")})`);
+export const create = async (dir: string, { force = false, mekuru = `^${VERSION}`, engines = [], upload = [] }: CreateOptions = {}): Promise<string> => {
+  const unknown = engines.find((e) => !isEngine(e));
+  if (unknown !== undefined) throw new Error(`unknown engine ${unknown} (${ENGINE_NAMES.join(", ")})`);
   const unknownSite = upload.find((s) => !isSite(s));
   if (unknownSite !== undefined) throw new Error(`unknown upload site ${unknownSite} (${SITE_NAMES.join(", ")})`);
   const target = resolve(dir);
   if (!isEmptyDir(target) && !force) throw new Error(`${dir} is not empty (use --force to write into it anyway)`);
-  const selected = CHARACTER_NAMES.filter((id) => characters.includes(id));
-  const engines = enginesOf(selected);
+  const selected = ENGINE_NAMES.filter((e) => engines.includes(e));
   const sites = SITE_NAMES.filter((s) => upload.includes(s));
-  await copy(TEMPLATE, target, [...selected, ...engines, ...sites]);
-  for (const id of selected) {
-    await Bun.write(join(target, "src", "character", `${id}.tsx`), characterSource(id));
-    await Bun.write(join(target, "assets", "character", `${id}.png`), Bun.file(DUMMY));
-  }
-  const main = join(target, "src", "main.tsx");
-  await Bun.write(main, (await Bun.file(main).text()).replace("// #characters", selected.map(characterImport).join("\n")));
+  await copy(TEMPLATE, target, [...selected, ...sites]);
   const pkgFile = join(target, "package.json");
   const pkg = await Bun.file(pkgFile).json();
   pkg.name = packageName(target);
-  for (const engine of engines) pkg.devDependencies[ENGINES[engine].pkg] = `^${VERSION}`;
+  for (const engine of selected) pkg.devDependencies[ENGINES[engine].pkg] = `^${VERSION}`;
   for (const site of sites) {
     pkg.devDependencies[SITES[site].pkg] = `^${VERSION}`;
     pkg.scripts[`upload:${site}`] = SITES[site].bin;

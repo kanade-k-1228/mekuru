@@ -110,3 +110,5 @@ export const Coeiroink = async (props: CoeiroinkProps): Promise<Awaited<JSX.Elem
   const { url, ...voice } = voiceOf(props);
   return line("coeiroink", props, String(props.speaker), voice, (say, out) => engine(url).synthesize(props, say, out));
 };
+
+export * from "./characters.ts";

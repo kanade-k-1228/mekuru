@@ -1,6 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { Engine } from "./character.ts";
+import type { Engine } from "./engine.ts";
 import type { Site } from "./site.ts";
 
 export interface Check {
@@ -71,7 +71,7 @@ const voisona = async (): Promise<Check> => {
     if (res.status === 401) return { name, ok: false, detail: `the email or the API password is wrong: ${credentials}` };
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const { items } = (await res.json()) as { items: { voice_name: string }[] };
-    return { name, ok: true, detail: `${new Set(items.map((v) => v.voice_name)).size} voices at ${at} (set the voices in src/character/ to ones you have)` };
+    return { name, ok: true, detail: `${new Set(items.map((v) => v.voice_name)).size} voices at ${at}` };
   } catch {
     return {
       name,

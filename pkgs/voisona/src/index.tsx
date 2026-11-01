@@ -193,3 +193,5 @@ export const Voisona = async (props: VoisonaProps): Promise<Awaited<JSX.Element>
   const { url, ...voice } = voiceOf(props);
   return line("voisona", props, props.voice, voice, (say, out) => server(url).synthesize(props, say, out));
 };
+
+export * from "./characters.ts";

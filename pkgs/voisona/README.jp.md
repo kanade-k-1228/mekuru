@@ -53,6 +53,28 @@ bunx mekuru-server .mekuru/main.xml
 
 `http://localhost:3333` でプレビューします。書き出しは `bunx mekuru-compiler .mekuru/main.xml -o video.mp4`。
 
+## キャラクター
+
+`<Voisona>` に渡すキャラクターごとの設定をエクスポートしています。展開して使い、ほかの props も追加できます。
+
+```tsx
+import { Voisona, tanaka } from "@mekuru/voisona";
+
+<Voisona {...tanaka}>こんにちは。</Voisona>;
+```
+
+| エクスポート | 名前 | `voice` |
+| --- | --- | --- |
+| `tanaka` | 田中傘 | `"tanaka-san_ja_JP"` |
+| `chisa` | 知声 | `"chis-a_ja_JP"` |
+| `sasara` | さとうささら | `"sato-sasara_ja_JP"` |
+| `tsuzumi` | すずきつづみ | `"suzuki-tsudumi_ja_JP"` |
+| `takahashi` | タカハシ | `"takahashi_ja_JP"` |
+| `rikka` | 小春六花 | `"koharu-rikka_ja_JP"` |
+| `karin` | 夏色花梨 | `"natsuki-karin_ja_JP"` |
+| `chifuyu` | 花隈千冬 | `"hanakuma-chifuyu_ja_JP"` |
+| `minato` | 双葉湊音 | `"futaba-minato_ja_JP"` |
+
 ## 詳しい使い方
 
 ### 声の設定 (`VoisonaProps`)

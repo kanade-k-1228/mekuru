@@ -92,3 +92,5 @@ export const Voicevox = async (props: VoicevoxProps): Promise<Awaited<JSX.Elemen
   const { url, ...voice } = voiceOf(props);
   return line("voicevox", props, String(props.speaker), voice, (say, out) => engine(url).synthesize(props, say, out));
 };
+
+export * from "./characters.ts";

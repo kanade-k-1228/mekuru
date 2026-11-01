@@ -12,7 +12,7 @@ src/main.tsx → .mekuru/main.xml → video.mp4
 ## Create a project
 
 ```sh
-bun create @mekuru my-video --voice zunda,metan
+bun create @mekuru my-video --engine voisona
 cd my-video
 bun install
 ```
@@ -21,7 +21,6 @@ See [@mekuru/create](../../pkgs/create/README.md) for creation options and the [
 
 - `src/main.tsx`: Script
 - `src/parts.tsx`: Shared components, such as subtitles
-- `src/character/`: Speech and portraits for selected characters
 - `assets/`: Images, video, and audio
 - `configs/`: Upload settings and thumbnails
 - `.mekuru/`: Generated XML and speech cache
