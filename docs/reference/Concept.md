@@ -1,39 +1,29 @@
-# Mekuru Movie Maker: Simple Lecture Editor
+# Design
 
-## 目的
+[日本語](Concept.jp.md)
 
-- ゆっくり実況のような解説動画（プレゼンの動画化）を、テキストと少しの GUI で作る
-- 例: https://youtu.be/ENX_b6Bw7oA?si=yjFSIOT9cWRTszVo
+Mekuru builds explainer videos by arranging images and video around spoken lines. You write the script with TSX components; the compiler resolves timing and layout.
 
-## 動機
+## Time and space
 
-- 解説動画の時系列は単純。読み上げに合わせて、画像と音声が順に並ぶだけ
-- タイムライン型の動画編集ソフトでは手間がかかりすぎる
+Containers arrange children along one axis and overlap them along the others. Sizes add up on the arranged axis; the largest child determines the size on overlapping axes.
 
-## 設計
+- `<seq>`: Time
+- `<row>`: Horizontal
+- `<column>`: Vertical
+- `<stack>`: None; overlap on all axes
 
-- 台本は TSX の部品で組み立て、組み込みの要素だけの XML にする
-- 時間と空間を同じ規則で組む。入れ物は子を 1 つの軸に並べ（長さ・大きさの和）、ほかの軸では重ねる（max）
-  - `<seq>` は時間に、`<row>` は横に、`<column>` は縦に並べる。`<stack>` は何も並べず、すべてを重ねる。`<dur>`・`<repeat>` は時間だけを変え、空間では何もしない
-  - 長さを持たないものは親の終わりまで続く。大きさを書かないものは親いっぱいに伸びる
-- レスポンシブ・タイムスライシング: 入れ物の長さは中身（セリフ・動画）から決まる。Web のレスポンシブデザインのように、中身に合わせて時間が伸び縮みする
-- 要素は長さのあるものとないものに分かれ、タグと中身で決まる。動画・音声はある（素材の長さ）、文字・画像・図形はない、入れ物は長さのある子があればある
-  - 長さを変えるのは 2 つだけ: `<dur>` は長さのないものに長さを与え、`<repeat>` は長さのあるものを繰り返して長さのないものにする
-- 時刻は整数（フレーム）で、`max` と `+` だけの式で決まる（`s = max(並びの位置 + at, 参照先の時刻)`、`e = s + 長さ`）。表示は、終わりか親の終わりの早いほうまで
-  - 時刻は依存関係の最長路になる。どこかを遅らせて、ほかが早まることはない
-  - 実数が入るのは、素材を再生する時間（素材の長さと `<speed>`）だけ。そこは次のフレームに切り上げる
-  - 動画の一時停止（`<hold>`）は動画の中に置く。動画の時計は、素材と一時停止を交互に並べた `<seq>` になる
-  - 倍速・スロー（`<speed>`）とカット（`<cut>`）も動画の中に置く。素材を再生する時間が、速さで割った長さになる（カットは 0）
-- TSX は書きやすく、XML は厳格に: 省略や別名は TSX の `writeXml` が展開し、XML は値の書き方が 1 通りの中間形式
-- ルールの詳細は [組み込みの要素](Syntax.md)
+Scene duration follows the length of speech and media. Elements without a duration, such as text and images, remain until their parent ends. `<dur>` sets a duration; `<repeat>` repeats until the parent ends. Neither changes spatial layout.
 
-## レンダリング
+Time uses integer frames, rounding up fractions introduced by playback speed changes. Timing references form a dependency graph; cycles are errors. See the [element reference](Syntax.md) for rules and formulas.
 
-0. Bun: TSX を実行して XML を書き出す。読み上げの部品が音声を合成する（`.mekuru/` にキャッシュ）
-1. 配置: XML を読み、文書全体の位置を一度だけ決めて、時間の木にする
-2. プリプロセス: 素材の長さを調べ、音声を 48kHz の PCM にする（並列）
-3. スケジューリング: 各ノードの時刻と、要素の表示区間・再生位置を決める
-4. 描画: 静的な要素はキャッシュして動画のコマと重ね、ffmpeg にパイプでエンコードする（前と同じフレームは省く）
-5. 音声をミックスし、ffmpeg で mp4 にまとめる。速さを変えた部分（`<speed>`）の音声は、PCM から ffmpeg の `atempo` で音程を保って作る（キャッシュ）
+## Processing
 
-- ライブプレビューは、3 までと描画データ（ベクターパス）を作り、ブラウザが表示する。PCM 変換とエンコードはしない
+1. Bun runs TSX to generate speech audio and strict XML.
+2. The compiler lays out the entire document and probes media duration.
+3. It resolves start and end times, visible intervals, and source playback positions.
+4. It renders frames, mixes audio, and encodes the video with ffmpeg.
+
+Static drawing and audio processing are cached. Audio speed changes use ffmpeg's `atempo` to preserve pitch.
+
+Preview uses the same timing, layout, and text paths. The compiler returns display data as JSON for the browser to render, without generating PCM audio or encoding video.

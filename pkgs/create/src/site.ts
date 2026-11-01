@@ -1,4 +1,4 @@
-const DOCS = "https://github.com/kanade-k-1228/mekuru/blob/main/docs/reference/Upload.md";
+const DOCS = "https://github.com/kanade-k-1228/mekuru/blob/main/docs/reference/Upload.jp.md";
 const MULTILINE = "# 複数行は「description: |」として、次の行から字下げして書く";
 
 export const SITES = {
