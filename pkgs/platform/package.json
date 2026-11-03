@@ -1,6 +1,12 @@
 {
   "name": "@mekuru/platform",
   "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kanade-k-1228/mekuru.git",
+    "directory": "pkgs/platform"
+  },
+  "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/platform/README.md",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"

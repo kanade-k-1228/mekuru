@@ -48,6 +48,8 @@ test("packs an executable npm tarball and adds the downloaded packages as option
   await archive.extract(join(root, "downloaded"));
   const pkg = await read("downloaded/package/package.json").json();
   expect(pkg).toMatchObject({ name: `@mekuru/compiler-${platform}`, version, os: [process.platform], cpu: [process.arch] });
+  expect(pkg.repository).toEqual({ type: "git", url: "git+https://github.com/kanade-k-1228/mekuru.git", directory: "pkgs/compiler" });
+  expect(pkg.homepage).toBe("https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/compiler/README.md");
   const binary = read(`downloaded/package/bin/${exe}`);
   expect(await binary.text()).toBe("compiler fixture");
   if (process.platform !== "win32") expect((await binary.stat()).mode & 0o111).toBe(0o111);

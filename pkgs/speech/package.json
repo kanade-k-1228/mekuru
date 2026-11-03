@@ -1,6 +1,12 @@
 {
   "name": "@mekuru/speech",
   "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kanade-k-1228/mekuru.git",
+    "directory": "pkgs/speech"
+  },
+  "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/speech/README.md",
   "description": "What the speech components of Mekuru Movie Maker (@mekuru/voicevox, @mekuru/coeiroink, ...) share: the text of a line, the cache of synthesized audio and the <audio> it becomes",
   "type": "module",
   "exports": {
