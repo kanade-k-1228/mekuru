@@ -1,9 +1,7 @@
-import type { Child, FC as HonoFC } from "hono/jsx";
+import type { Child } from "hono/jsx";
 import type { JSX as HonoJSX } from "hono/jsx/jsx-runtime";
 
 export type Node = Child;
-/** A component: takes props `P` and returns elements. It may be `async`. */
-export type FC<P = Record<string, unknown>> = HonoFC<P>;
 
 export type Length = number | `${number}%` | "auto";
 type Ratio = number | `${number}%`;
