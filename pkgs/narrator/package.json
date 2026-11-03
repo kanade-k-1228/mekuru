@@ -1,6 +1,12 @@
 {
   "name": "@mekuru/narrator",
   "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kanade-k-1228/mekuru.git",
+    "directory": "pkgs/narrator"
+  },
+  "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/narrator/README.md",
   "description": "Portraits, lip sync, subtitles, and PSD preparation for composing Mekuru narrators",
   "type": "module",
   "exports": {

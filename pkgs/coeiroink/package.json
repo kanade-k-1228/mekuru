@@ -1,6 +1,12 @@
 {
   "name": "@mekuru/coeiroink",
   "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kanade-k-1228/mekuru.git",
+    "directory": "pkgs/coeiroink"
+  },
+  "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/coeiroink/README.md",
   "description": "The speech component <Coeiroink> of Mekuru Movie Maker: lines of speech read by COEIROINK",
   "type": "module",
   "exports": {

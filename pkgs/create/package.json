@@ -1,6 +1,12 @@
 {
   "name": "@mekuru/create",
   "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kanade-k-1228/mekuru.git",
+    "directory": "pkgs/create"
+  },
+  "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/create/README.md",
   "description": "Create a Mekuru Movie Maker video project: `bun create @mekuru my-video`",
   "type": "module",
   "bin": {

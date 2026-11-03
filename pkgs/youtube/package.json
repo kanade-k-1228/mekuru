@@ -1,6 +1,12 @@
 {
   "name": "@mekuru/youtube",
   "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kanade-k-1228/mekuru.git",
+    "directory": "pkgs/youtube"
+  },
+  "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/youtube/README.md",
   "description": "Uploads a video of Mekuru Movie Maker to YouTube with the title, description, ... written in youtube.yaml",
   "type": "module",
   "bin": {

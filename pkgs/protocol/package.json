@@ -1,6 +1,12 @@
 {
   "name": "@mekuru/protocol",
   "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kanade-k-1228/mekuru.git",
+    "directory": "pkgs/protocol"
+  },
+  "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/protocol/README.md",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
