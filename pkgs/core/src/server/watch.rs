@@ -66,7 +66,9 @@ pub(super) fn start(path: PathBuf, app: App) -> Result<JoinHandle<()>> {
                             let modified = tokio::fs::metadata(&path).await.and_then(|m| m.modified()).ok();
                             let current = (text, modified);
                             if seen.as_ref() != Some(&current) {
-                                if generation != 0 || app.live.lock().unwrap().xml != current.0 {
+                                // The first read only compares with the startup read: its event may be a write
+                                // made before the watch started.
+                                if (generation != 0 && seen.is_some()) || app.live.lock().unwrap().xml != current.0 {
                                     app.changed(current.0.clone());
                                 }
                                 seen = Some(current);

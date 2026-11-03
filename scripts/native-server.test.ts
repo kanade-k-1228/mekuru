@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from "bun:test";
+import { afterEach, beforeEach, expect, setDefaultTimeout, test } from "bun:test";
 import { appendFile, chmod, copyFile, mkdir, mkdtemp, rename, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -12,8 +12,10 @@ import type { SnapshotEvent, StateDto } from "../pkgs/protocol/src/index.ts";
 let root: string;
 let xml: string;
 let server: Awaited<ReturnType<typeof startServer>> | undefined;
+// Windows runners can take seconds to start a freshly copied executable; waits end before the test does.
+setDefaultTimeout(15000);
 const until = async (check: () => boolean | Promise<boolean>) => {
-  const deadline = Date.now() + 5000;
+  const deadline = Date.now() + 10000;
   while (!(await check())) {
     if (Date.now() > deadline) throw new Error("timed out");
     await Bun.sleep(10);
