@@ -47,7 +47,7 @@ export const create = async (dir: string, { force = false, mekuru = `^${VERSION}
     await Bun.write(join(target, "configs", `${site}.yaml`), SITES[site].settings(pkg.name));
   }
   for (const name of Object.keys(pkg.devDependencies)) if (name.startsWith("@mekuru/")) pkg.devDependencies[name] = `^${VERSION}`;
-  pkg.devDependencies["@mekuru/core"] = mekuru;
+  pkg.devDependencies["@mekuru/types"] = mekuru;
   pkg.devDependencies = Object.fromEntries(Object.entries(pkg.devDependencies).sort(([a], [b]) => (a < b ? -1 : 1)));
   await Bun.write(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
   const readme = join(target, "README.md");

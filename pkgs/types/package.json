@@ -1,0 +1,27 @@
+{
+  "name": "@mekuru/types",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kanade-k-1228/mekuru.git",
+    "directory": "pkgs/types"
+  },
+  "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/types/README.md",
+  "description": "TSX types, JSX runtime and XML output for Mekuru Movie Maker",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./jsx-runtime": "./src/index.ts",
+    "./jsx-dev-runtime": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "sideEffects": false,
+  "dependencies": {
+    "hono": "^4.13.0"
+  },
+  "engines": {
+    "bun": ">=1.4"
+  }
+}

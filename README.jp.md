@@ -37,6 +37,8 @@ bun run build   # video.mp4
 
 作成時に音声合成エンジンを選び、`src/main.tsx` を編集します。`<seq>` は順番に、`<stack>` は同時に再生します。完成までの手順は [最初の動画を作るチュートリアル](example/README.md) を参照してください。
 
+[@mekuru/types](pkgs/types/README.jp.md) が TSX の型・JSX ランタイム・XML 出力、[@mekuru/core](pkgs/core/README.jp.md) がネイティブコンパイラとプレビューサーバーを提供します。ビューアと OS 別バイナリは core に同梱され、生成プロジェクトには両パッケージが設定されます。
+
 ## 音声合成エンジン
 
 | パッケージ                                                       | エンジン                        |

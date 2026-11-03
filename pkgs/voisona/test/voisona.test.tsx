@@ -1,6 +1,6 @@
-/** @jsxImportSource @mekuru/core */
+/** @jsxImportSource @mekuru/types */
 import { afterAll, beforeAll, beforeEach, expect, test } from "bun:test";
-import { toXml } from "@mekuru/core";
+import { toXml } from "@mekuru/types";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

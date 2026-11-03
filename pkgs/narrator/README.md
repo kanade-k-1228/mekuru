@@ -9,17 +9,17 @@ Shared components for building your own narrator from synthesized speech, a port
 Requires Bun 1.4 or later.
 
 ```sh
-bun add -d @mekuru/core @mekuru/narrator
+bun add -d @mekuru/types @mekuru/narrator
 ```
 
-Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/core"` in `tsconfig.json`. Install your speech engine separately and provide portrait image assets.
+Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` in `tsconfig.json`. Install your speech engine separately and provide portrait image assets.
 
 ## Compose a narrator
 
 This example also uses `@mekuru/voisona` and `@mekuru/speech`. Replace `src` with your portrait folder.
 
 ```tsx
-import type { At, Node } from "@mekuru/core";
+import type { At, Node } from "@mekuru/types";
 import { portrait, Subtitle, type Face } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
@@ -74,7 +74,7 @@ Defaults: `x="50%"`, `y="95%"`, `anchor="b"`, `max-w="90%"`, `align="center"`, `
 Converts ruby notation to display text while retaining `<br />`. Use it to build custom subtitles. This is a re-export of the same function from `@mekuru/speech/text`.
 
 ```tsx
-import type { Node } from "@mekuru/core";
+import type { Node } from "@mekuru/types";
 import { subtitleText } from "@mekuru/narrator";
 
 const MySubtitle = async ({ children }: { children?: Node }) => (
@@ -159,7 +159,7 @@ empty text arrays are valid only with zero frames.
 ```tsx
 import { Subtitle } from "@mekuru/narrator";
 import { captionCues, toSrt } from "@mekuru/narrator/captions";
-import { compileTimeline, timelineIntervals } from "@mekuru/compiler/timeline";
+import { compileTimeline, timelineIntervals } from "@mekuru/core/timeline";
 const cues = captionCues(["First line", "Second\nline"], 90);
 cues[cues.length - 1].frames += 15; // hold the final caption after allocation
 const captions = <seq>{cues.map((cue, i) =>

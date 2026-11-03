@@ -6,7 +6,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
 const EXE = process.platform === "win32" ? "mekuru-compiler.exe" : "mekuru-compiler";
-const PKG = `@mekuru/compiler-${process.platform}-${process.arch}`;
+const PKG = `@mekuru/core-${process.platform}-${process.arch}`;
 const ENV = "MEKURU_COMPILER";
 
 const fromPlatformPackage = () => {

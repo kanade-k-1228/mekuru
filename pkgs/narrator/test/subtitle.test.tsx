@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { toXml, type Node } from "@mekuru/core";
+import { toXml, type Node } from "@mekuru/types";
 import { Subtitle, subtitleText } from "../src/index.tsx";
 
 const render = (children: Node) => toXml(<mekuru>{children}</mekuru>);

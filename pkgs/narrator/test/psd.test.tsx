@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { writePsdBuffer, type Layer } from "ag-psd";
 import sharp from "sharp";
-import { toXml } from "@mekuru/core";
+import { toXml } from "@mekuru/types";
 import { psdPortrait } from "../src/index.tsx";
 import { exportPsd } from "../src/psd";
 

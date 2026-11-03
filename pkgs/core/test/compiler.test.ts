@@ -12,8 +12,8 @@ beforeEach(async () => {
   previousOverride = process.env.MEKURU_COMPILER;
   delete process.env.MEKURU_COMPILER;
   root = mkdtempSync(join(tmpdir(), "mekuru-compiler-test-"));
-  const source = join(root, "pkgs/compiler/npm/compiler.js");
-  mkdirSync(join(root, "pkgs/compiler/npm"), { recursive: true });
+  const source = join(root, "pkgs/core/npm/compiler.js");
+  mkdirSync(join(root, "pkgs/core/npm"), { recursive: true });
   await Bun.write(source, Bun.file(new URL("../npm/compiler.js", import.meta.url)));
   ({ findCompiler } = await import(Bun.pathToFileURL(source).href));
 });
@@ -57,7 +57,7 @@ test("an explicit compiler overrides repository builds and must exist", async ()
 });
 
 test("the unified npm package selects its platform binary ahead of repository builds", async () => {
-  const name = `@mekuru/compiler-${process.platform}-${process.arch}`;
+  const name = `@mekuru/core-${process.platform}-${process.arch}`;
   const pkg = join(root, "node_modules", name);
   mkdirSync(join(pkg, "bin"), { recursive: true });
   await Bun.write(join(pkg, "package.json"), JSON.stringify({ name, version: "0.0.0" }));
@@ -65,7 +65,7 @@ test("the unified npm package selects its platform binary ahead of repository bu
   await Bun.write(path, "platform compiler");
   await binary("debug", 200);
   // Start after installation, without the test process's cached directory resolution.
-  const module = Bun.pathToFileURL(join(root, "pkgs/compiler/npm/compiler.js")).href;
+  const module = Bun.pathToFileURL(join(root, "pkgs/core/npm/compiler.js")).href;
   const child = Bun.spawn([process.execPath, "-e", `import { findCompiler } from ${JSON.stringify(module)}; console.log(findCompiler());`], {
     stdout: "pipe",
     stderr: "pipe",

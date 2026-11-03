@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { fps, isDraft, toXml, type Node } from "@mekuru/core";
+import { fps, isDraft, toXml, type Node } from "@mekuru/types";
 
 const body = async (video: Node) => {
   const xml = await toXml(<mekuru size="320x180">{video}</mekuru>);

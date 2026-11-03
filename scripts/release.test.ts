@@ -18,8 +18,8 @@ const run = async (...args: string[]) => {
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "mekuru-release-"));
   await Bun.write(join(root, "scripts/release.ts"), Bun.file(new URL("release.ts", import.meta.url)));
-  await write("pkgs/compiler/package.json", { name: "@mekuru/compiler", version: "0.0.0" });
   await write("pkgs/core/package.json", { name: "@mekuru/core", version: "0.0.0" });
+  await write("pkgs/types/package.json", { name: "@mekuru/types", version: "0.0.0" });
   await Bun.write(join(root, "Cargo.toml"), '[workspace.package]\nversion = "0.0.0"\n');
   await Bun.write(
     join(root, "Cargo.lock"),
@@ -34,8 +34,8 @@ afterEach(async () => {
 
 test("stamps package and Cargo versions without changing registry dependencies", async () => {
   await run("stamp", version);
+  expect((await read("pkgs/types/package.json").json()).version).toBe(version);
   expect((await read("pkgs/core/package.json").json()).version).toBe(version);
-  expect((await read("pkgs/compiler/package.json").json()).version).toBe(version);
   expect(await read("Cargo.toml").text()).toContain(`version = "${version}"`);
   expect(await read("Cargo.lock").text()).toContain(`name = "mekuru-compiler"\nversion = "${version}"`);
   expect(await read("Cargo.lock").text()).toContain('name = "dependency"\nversion = "1.0.0"');
@@ -44,22 +44,22 @@ test("stamps package and Cargo versions without changing registry dependencies",
 test("packs an executable npm tarball and adds the downloaded packages as optional dependencies", async () => {
   await run("stamp", version);
   await run("pack", platform, "bin", "npm-out");
-  const archive = new Bun.Archive(await read(`npm-out/compiler-${platform}.tgz`).arrayBuffer());
+  const archive = new Bun.Archive(await read(`npm-out/core-${platform}.tgz`).arrayBuffer());
   await archive.extract(join(root, "downloaded"));
   const pkg = await read("downloaded/package/package.json").json();
-  expect(pkg).toMatchObject({ name: `@mekuru/compiler-${platform}`, version, os: [process.platform], cpu: [process.arch] });
-  expect(pkg.repository).toEqual({ type: "git", url: "git+https://github.com/kanade-k-1228/mekuru.git", directory: "pkgs/compiler" });
-  expect(pkg.homepage).toBe("https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/compiler/README.md");
+  expect(pkg).toMatchObject({ name: `@mekuru/core-${platform}`, version, os: [process.platform], cpu: [process.arch] });
+  expect(pkg.repository).toEqual({ type: "git", url: "git+https://github.com/kanade-k-1228/mekuru.git", directory: "pkgs/core" });
+  expect(pkg.homepage).toBe("https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/core/README.md");
   const binary = read(`downloaded/package/bin/${exe}`);
   expect(await binary.text()).toBe("compiler fixture");
   if (process.platform !== "win32") expect((await binary.stat()).mode & 0o111).toBe(0o111);
   await run("deps", "npm-out");
-  expect((await read("pkgs/compiler/package.json").json()).optionalDependencies).toEqual({ [`@mekuru/compiler-${platform}`]: version });
+  expect((await read("pkgs/core/package.json").json()).optionalDependencies).toEqual({ [`@mekuru/core-${platform}`]: version });
 });
 
 test("rejects an unstamped release and the development tag before preparing artifacts", async () => {
   await expect(run("stamp", "0.0.0")).rejects.toThrow("reserved for development");
   await expect(run("stamp", "v0.3.0")).rejects.toThrow("no v");
   await expect(run("pack", platform, "bin", "npm-out")).rejects.toThrow("run `release.ts stamp");
-  expect((await read("pkgs/compiler/package.json").json()).version).toBe("0.0.0");
+  expect((await read("pkgs/core/package.json").json()).version).toBe("0.0.0");
 });

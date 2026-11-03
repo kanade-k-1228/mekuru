@@ -1,5 +1,5 @@
 /** Test/benchmark harness only: all serving and compilation runs in the native binary. */
-import { findCompiler } from "../../pkgs/compiler/npm/compiler.js";
+import { findCompiler } from "../../pkgs/core/npm/compiler.js";
 
 export async function startServer(opts: {
   xml: string;

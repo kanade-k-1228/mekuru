@@ -35,7 +35,7 @@ new Command("create-mekuru")
   .option("--upload <sites>", `where to upload the video, separated by commas: ${SITE_NAMES.join(", ")} (default: none)`, parseSites)
   .option("-f, --force", "write into a folder that is not empty")
   .option("-y, --yes", "do not ask")
-  .option("--mekuru <spec>", "the version of the @mekuru/core package to depend on", `^${VERSION}`)
+  .option("--mekuru <spec>", "the version of the @mekuru/types package to depend on", `^${VERSION}`)
   .showHelpAfterError("(add --help for more information)")
   .action(async (dir: string | undefined, { engine, ...opts }: Omit<Args, "dir" | "engines"> & { engine?: Engine[] }) => {
     process.exitCode = await run({ ...opts, dir, engines: engine });

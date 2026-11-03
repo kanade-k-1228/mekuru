@@ -23,7 +23,7 @@ updates:
       bun:
         patterns: ['*']
 
-  # Cargo workspace (pkgs/compiler)
+  # Cargo workspace (pkgs/core)
   - package-ecosystem: cargo
     directory: /
     schedule:

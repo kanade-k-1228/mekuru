@@ -27,7 +27,7 @@ bun install
 
 ## 台本
 
-`writeXml(path, video)` は部品を展開して XML を保存します。読み上げ部品は、音声がなければ下書きを出し、合成後に更新します。使い方と JSX の設定は [@mekuru/core](../../pkgs/core/README.jp.md)、完成例は [tutorial/main.tsx](../../example/tutorial/main.tsx) にあります。
+`writeXml(path, video)` は部品を展開して XML を保存します。読み上げ部品は、音声がなければ下書きを出し、合成後に更新します。使い方と JSX の設定は [@mekuru/types](../../pkgs/types/README.jp.md)、完成例は [tutorial/main.tsx](../../example/tutorial/main.tsx) にあります。
 
 属性には数値 `{30}`、文字列 `"100%"`、真偽値 `closed`、配列 `{[0, 80]}` を指定できます。`false`・`null`・`undefined` は出力されません。[XML](Syntax.jp.md#xml中間形式) では値の表記を統一します。
 
@@ -91,4 +91,4 @@ bun run build --from 60 --to 90    # 60〜90秒
 
 ## コマンド
 
-生成プロジェクトの `preview` は `mekuru-compiler --serve --run 'bun --hot src/main.tsx' .mekuru/main.xml`、`build` は `bun src/main.tsx && mekuru-compiler .mekuru/main.xml -o video.mp4` を実行します。オプションと素材の基準フォルダは [@mekuru/compiler](../../pkgs/compiler/README.jp.md) を参照してください。
+生成プロジェクトの `preview` は `mekuru-compiler --serve --run 'bun --hot src/main.tsx' .mekuru/main.xml`、`build` は `bun src/main.tsx && mekuru-compiler .mekuru/main.xml -o video.mp4` を実行します。オプションと素材の基準フォルダは [@mekuru/core](../../pkgs/core/README.jp.md) を参照してください。

@@ -7,21 +7,24 @@
     "directory": "pkgs/core"
   },
   "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/core/README.md",
-  "description": "The types of the XML of Mekuru Movie Maker, for writing videos in TSX with jsxImportSource @mekuru/core (the JSX runtime is Hono's); the viewer and the compiler are in @mekuru/compiler",
+  "description": "Native video compiler and preview server with an embedded browser viewer",
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts",
-    "./jsx-runtime": "./src/index.ts",
-    "./jsx-dev-runtime": "./src/index.ts"
+  "bin": {
+    "mekuru-compiler": "./bin/mekuru-compiler.js",
+    "mekuru-server": "./bin/mekuru-server.js"
   },
   "files": [
-    "src"
+    "bin",
+    "npm"
   ],
-  "sideEffects": false,
-  "dependencies": {
-    "hono": "^4.13.0"
-  },
   "engines": {
-    "bun": ">=1.4"
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@mekuru/protocol": "workspace:^"
+  },
+  "exports": {
+    "./compiler": "./npm/compiler.js",
+    "./timeline": "./npm/timeline.ts"
   }
 }

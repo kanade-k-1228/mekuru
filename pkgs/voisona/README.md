@@ -20,17 +20,17 @@ The example uses `tanaka-san_ja_JP` (田中傘). Use an installed library and fo
 Requires Bun 1.4+, ffmpeg with libx264, ffprobe, and Japanese fonts. Install in the project folder:
 
 ```sh
-bun add -d @mekuru/core @mekuru/compiler @mekuru/voisona
+bun add -d @mekuru/types @mekuru/core @mekuru/voisona
 ```
 
-In `tsconfig.json`, set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/core"` (already set by `bun create @mekuru`).
+In `tsconfig.json`, set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` (already set by `bun create @mekuru`).
 
 ## Quick start
 
 Save as `src/main.tsx`:
 
 ```tsx
-import { writeXml } from "@mekuru/core";
+import { writeXml } from "@mekuru/types";
 import { Voisona } from "@mekuru/voisona";
 
 const text = "こんにちは。";

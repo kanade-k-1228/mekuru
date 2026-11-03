@@ -6,13 +6,13 @@ Mekuru Movie Maker の読み上げ部品を実装するためのユーティリ�
 
 ## セットアップ
 
-Bun 1.4 以上と `@mekuru/core` が必要です。プロジェクトのフォルダから台本を実行すると、そのプロジェクトの `.mekuru/cache/tts/` に音声が保存されます。
+Bun 1.4 以上と `@mekuru/types` が必要です。プロジェクトのフォルダから台本を実行すると、そのプロジェクトの `.mekuru/cache/tts/` に音声が保存されます。
 
 ```sh
-bun add -d @mekuru/core @mekuru/speech
+bun add -d @mekuru/types @mekuru/speech
 ```
 
-`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/core"` を設定します。テキストと声の設定を受け取り、指定されたパスへ WAV を書き出し、保存が完了してから解決するエンジン用の関数を用意してください。
+`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/types"` を設定します。テキストと声の設定を受け取り、指定されたパスへ WAV を書き出し、保存が完了してから解決するエンジン用の関数を用意してください。
 
 ## 簡単な使い方
 
@@ -92,6 +92,6 @@ export const createSpeech = (synthesize: Synthesize) =>
 
 ### 下書きを独自に扱う場合
 
-`@mekuru/core` の `isDraft()`・`waitFor()` を使い、合成の Promise を登録します。下書きでは `<dur len={estimatedFrames}><audio draft label="..." /></dur>`、完成版では生成済みの `src` を持つ音声を返します。`label` がある音声はタイムラインの読み上げ行に出ます。`waitFor()` が完成版の更新を予約するのは `writeXml()` の中だけです。
+`@mekuru/types` の `isDraft()`・`waitFor()` を使い、合成の Promise を登録します。下書きでは `<dur len={estimatedFrames}><audio draft label="..." /></dur>`、完成版では生成済みの `src` を持つ音声を返します。`label` がある音声はタイムラインの読み上げ行に出ます。`waitFor()` が完成版の更新を予約するのは `writeXml()` の中だけです。
 
 `Audio` と `readAudio` は `@mekuru/audio`、`joinWavs` は `@mekuru/audio/wav` が提供します。

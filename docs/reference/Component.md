@@ -27,7 +27,7 @@ See [@mekuru/create](../../pkgs/create/README.md) for creation options and the [
 
 ## Scripts
 
-`writeXml(path, video)` expands components and saves XML. Speech components emit a draft when audio is missing, then update it after synthesis. See [@mekuru/core](../../pkgs/core/README.md) for usage and JSX configuration, and [tutorial/main.tsx](../../example/tutorial/main.tsx) for a complete script.
+`writeXml(path, video)` expands components and saves XML. Speech components emit a draft when audio is missing, then update it after synthesis. See [@mekuru/types](../../pkgs/types/README.md) for usage and JSX configuration, and [tutorial/main.tsx](../../example/tutorial/main.tsx) for a complete script.
 
 Attributes accept numbers `{30}`, strings `"100%"`, booleans `closed`, and arrays `{[0, 80]}`. `false`, `null`, and `undefined` are omitted. Values are normalized in [XML](Syntax.md#xml-intermediate-format).
 
@@ -91,4 +91,4 @@ bun run build --from 60 --to 90    # Seconds 60–90
 
 ## Commands
 
-In generated projects, `preview` runs `mekuru-compiler --serve --run 'bun --hot src/main.tsx' .mekuru/main.xml`, and `build` runs `bun src/main.tsx && mekuru-compiler .mekuru/main.xml -o video.mp4`. See [@mekuru/compiler](../../pkgs/compiler/README.md) for options and the base directory for media paths.
+In generated projects, `preview` runs `mekuru-compiler --serve --run 'bun --hot src/main.tsx' .mekuru/main.xml`, and `build` runs `bun src/main.tsx && mekuru-compiler .mekuru/main.xml -o video.mp4`. See [@mekuru/core](../../pkgs/core/README.md) for options and the base directory for media paths.

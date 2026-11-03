@@ -14,11 +14,11 @@
       "name": "mekuru-tutorial",
       "devDependencies": {
         "@mekuru/audio": "workspace:*",
-        "@mekuru/compiler": "workspace:*",
         "@mekuru/core": "workspace:*",
         "@mekuru/narrator": "workspace:*",
         "@mekuru/niconico": "workspace:*",
         "@mekuru/speech": "workspace:*",
+        "@mekuru/types": "workspace:*",
         "@mekuru/voisona": "workspace:*",
         "@mekuru/youtube": "workspace:*",
         "@types/bun": "1.4.2",
@@ -29,7 +29,7 @@
       "name": "@mekuru/audio",
       "version": "0.0.0",
       "dependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
       },
     },
     "pkgs/coeiroink": {
@@ -40,14 +40,14 @@
         "@mekuru/speech": "workspace:^",
       },
       "devDependencies": {
-        "@mekuru/core": "workspace:*",
+        "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
       },
     },
-    "pkgs/compiler": {
-      "name": "@mekuru/compiler",
+    "pkgs/core": {
+      "name": "@mekuru/core",
       "version": "0.0.0",
       "bin": {
         "mekuru-compiler": "./bin/mekuru-compiler.js",
@@ -55,13 +55,6 @@
       },
       "dependencies": {
         "@mekuru/protocol": "workspace:^",
-      },
-    },
-    "pkgs/core": {
-      "name": "@mekuru/core",
-      "version": "0.0.0",
-      "dependencies": {
-        "hono": "^4.13.0",
       },
     },
     "pkgs/create": {
@@ -91,10 +84,10 @@
         "sharp": "^0.35.5",
       },
       "devDependencies": {
-        "@mekuru/core": "workspace:*",
+        "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
       },
     },
     "pkgs/niconico": {
@@ -124,10 +117,10 @@
         "@mekuru/audio": "workspace:^",
       },
       "devDependencies": {
-        "@mekuru/core": "workspace:*",
+        "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
       },
     },
     "pkgs/style-bert-vits2": {
@@ -138,10 +131,17 @@
         "@mekuru/speech": "workspace:^",
       },
       "devDependencies": {
-        "@mekuru/core": "workspace:*",
+        "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
+      },
+    },
+    "pkgs/types": {
+      "name": "@mekuru/types",
+      "version": "0.0.0",
+      "dependencies": {
+        "hono": "^4.13.0",
       },
     },
     "pkgs/viewer": {
@@ -174,10 +174,10 @@
         "@mekuru/speech": "workspace:^",
       },
       "devDependencies": {
-        "@mekuru/core": "workspace:*",
+        "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
       },
     },
     "pkgs/voisona": {
@@ -188,10 +188,10 @@
         "@mekuru/speech": "workspace:^",
       },
       "devDependencies": {
-        "@mekuru/core": "workspace:*",
+        "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
       },
     },
     "pkgs/youtube": {
@@ -299,8 +299,6 @@
 
     "@mekuru/coeiroink": ["@mekuru/coeiroink@workspace:pkgs/coeiroink"],
 
-    "@mekuru/compiler": ["@mekuru/compiler@workspace:pkgs/compiler"],
-
     "@mekuru/core": ["@mekuru/core@workspace:pkgs/core"],
 
     "@mekuru/create": ["@mekuru/create@workspace:pkgs/create"],
@@ -316,6 +314,8 @@
     "@mekuru/speech": ["@mekuru/speech@workspace:pkgs/speech"],
 
     "@mekuru/style-bert-vits2": ["@mekuru/style-bert-vits2@workspace:pkgs/style-bert-vits2"],
+
+    "@mekuru/types": ["@mekuru/types@workspace:pkgs/types"],
 
     "@mekuru/viewer": ["@mekuru/viewer@workspace:pkgs/viewer"],
 

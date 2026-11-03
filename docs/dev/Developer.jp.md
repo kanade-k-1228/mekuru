@@ -4,9 +4,9 @@
 
 ## リポジトリ構成
 
-- [pkgs/core](../../pkgs/core/README.jp.md): TSX の型・JSX ランタイム・XML 出力
-- [pkgs/compiler](../../pkgs/compiler/README.jp.md): Rust コンパイラ。XML → 動画
-- [pkgs/viewer](../../pkgs/viewer/README.jp.md): React のビューア。ビルド先は `pkgs/compiler/viewer/`
+- [pkgs/types](../../pkgs/types/README.jp.md): TSX の型・JSX ランタイム・XML 出力
+- [pkgs/core](../../pkgs/core/README.jp.md): Rust コンパイラ。XML → 動画
+- [pkgs/viewer](../../pkgs/viewer/README.jp.md): React のビューア。ビルド先は `pkgs/core/viewer/`
 - [pkgs/create](../../pkgs/create/README.jp.md): プロジェクト生成
 - [pkgs/speech](../../pkgs/speech/README.jp.md): 読み上げ部品の実装用 API
 - `pkgs/voicevox`・`coeiroink`・`style-bert-vits2`・`voisona`: 音声エンジンとの連携
@@ -33,7 +33,7 @@ bun run --cwd example preview     # サンプル
 
 `bun build`・`bun test` は Bun 自身のコマンドです。ルートのスクリプトを呼ぶ場合は `bun run` を使います。
 
-TypeScript パッケージはソースを直接実行するため、変更後のビルドは不要です。コンパイラ変更後は `cargo build --workspace --locked`、ビューア変更後は埋め込み直すため `bun run build` を実行します。コンパイラの選択順は [compiler](../../pkgs/compiler/README.jp.md) を参照してください。
+TypeScript パッケージはソースを直接実行するため、変更後のビルドは不要です。コンパイラ変更後は `cargo build --workspace --locked`、ビューア変更後は埋め込み直すため `bun run build` を実行します。コンパイラの選択順は [core](../../pkgs/core/README.jp.md) を参照してください。
 
 ビューアの開発は、別々のターミナルで次を起動します。
 
@@ -63,7 +63,7 @@ git push origin 0.3.0
 
 1. `release.ts stamp` が版を manifests と lockfiles に設定する。変更はコミットしない。
 2. 各 OS のジョブでビューアをビルドし、Rust 実行ファイルへ埋め込んでから `pack` で npm tarball にする。
-3. `deps` が `@mekuru/compiler` の `optionalDependencies` を設定し、バイナリと公開 workspace を `bun publish` で公開する。`private` は除外する。
+3. `deps` が `@mekuru/core` の `optionalDependencies` を設定し、バイナリと公開 workspace を `bun publish` で公開する。`private` は除外する。
 4. 変更点付きの GitHub Release を作成する。
 
 認証は公開ステップだけで `NPM_TOKEN` を `NPM_CONFIG_TOKEN` に渡します。`0.3.0-rc.1` のようなタグは npm の `next` と GitHub のプレリリースになります。手元からは公開しません。
@@ -72,7 +72,7 @@ git push origin 0.3.0
 
 ## プレビューの仕組み
 
-`mekuru-compiler <xml> --serve` が Tokio/Axum の HTTP サーバー、ファイル監視、コンパイラ専用スレッドを同一プロセス内で動かします。ビルド済みビューアも実行ファイルへ埋め込みます。CLI パッケージを `@mekuru/compiler` へ統合し、`mekuru-server` は同じネイティブ実行ファイルを起動する npm 上の別名になりました。既存 XML のプレビューに Bun やワーカー IPC は不要です。`--run` は引き続きプロジェクトフォルダで台本生成コマンドを実行します。
+`mekuru-compiler <xml> --serve` が Tokio/Axum の HTTP サーバー、ファイル監視、コンパイラ専用スレッドを同一プロセス内で動かします。ビルド済みビューアも実行ファイルへ埋め込みます。CLI パッケージを `@mekuru/core` へ統合し、`mekuru-server` は同じネイティブ実行ファイルを起動する npm 上の別名になりました。既存 XML のプレビューに Bun やワーカー IPC は不要です。`--run` は引き続きプロジェクトフォルダで台本生成コマンドを実行します。
 
 シーン・描画リソースは Arc で共有し、待機中は最新 XML だけを保持します。専用スレッドでフォント・素材・描画・識別キーのキャッシュを再利用し、コンパイル中も HTTP と素材読み込みを非同期で受け付けます。`--emit-preview`・`--emit-timeline`・ツール向け `--preview-worker` は維持します。
 - ファイル通知後、10 ms 間隔で2回読んで内容が一致すると受理します。通常は最後の通知から約20 msです。新しい通知は進行中の読み取りを無効にし、一時的な読み取り失敗は最大3回まで試します。原子的な置き換えと短い分割書き込みをまとめます。`/mnt/` 配下の500 msポーリングは維持します。
@@ -87,7 +87,7 @@ git push origin 0.3.0
 
 プレビューの文字はコンパイラが計算した位置・幅・スタイルを受けて HTML/CSS で描画し、図形・画像は SVG、動画・音声はブラウザのメディア要素を使います。文字幅・改行・縁取りは書き出しと差が出る場合があります。個別・共通指定のプロジェクト内フォントをリビジョン付きの `/files/` URL から読み込み、読み込み中・失敗時は代替フォントで表示します。ブラウザはソースとリビジョンでフォントを共有し、最後の表示参照がなくなると解放します。動画書き出しは Rust の組版・文字輪郭描画を維持します。上記の字形キャッシュは書き出し用で、HTML プレビューでは使いません。
 
-単発プレビュー・常駐プレビュー・`--emit-timeline` は解析処理を共有します。プレビュー診断は整形後 XML、タイムライン診断は入力 XML の行番号を使います。フレーム単位のタイムライン・字幕 API は [compiler](../../pkgs/compiler/README.jp.md#公開apiと軽量タイムライン) と [narrator](../../pkgs/narrator/README.jp.md) を参照してください。台本 ID とプレビューの照合キーは別の役割を持ちます。
+単発プレビュー・常駐プレビュー・`--emit-timeline` は解析処理を共有します。プレビュー診断は整形後 XML、タイムライン診断は入力 XML の行番号を使います。フレーム単位のタイムライン・字幕 API は [core](../../pkgs/core/README.jp.md#公開apiと軽量タイムライン) と [narrator](../../pkgs/narrator/README.jp.md) を参照してください。台本 ID とプレビューの照合キーは別の役割を持ちます。
 
 素材単独の変更監視、XML・配置・時間計算の増分化、再生中の最適化は対象外です。素材は次回コンパイル時に検証し、システムフォントを追加した場合はサーバーを再起動してください。
 
@@ -119,12 +119,12 @@ Bun が PATH にない環境へコピーした実行ファイル、埋め込み 
 
 ## 内部構造
 
-- TSX → XML: [core/src/xml.ts](../../pkgs/core/src/xml.ts)。部品を展開し、省略・別名を正規化
-- XML の解析: [compiler/src/lang](../../pkgs/compiler/src/lang)。厳格な属性・参照の検査
-- 配置: [compiler/src/layout](../../pkgs/compiler/src/layout)。taffy で文書全体を配置し、時間の木に変換
-- 時間の計算: [compiler/src/schedule/mod.rs](../../pkgs/compiler/src/schedule/mod.rs)。依存順に解決。循環は E510、到達できない参照は E504
-- 描画: [compiler/src/render](../../pkgs/compiler/src/render)。cosmic-text で組版、Skrifa で文字輪郭、tiny-skia で描画
-- 出力: [compiler/src/pipeline.rs](../../pkgs/compiler/src/pipeline.rs)。音声の速度変更・ミックス・エンコード
+- TSX → XML: [types/src/xml.ts](../../pkgs/types/src/xml.ts)。部品を展開し、省略・別名を正規化
+- XML の解析: [core/src/lang](../../pkgs/core/src/lang)。厳格な属性・参照の検査
+- 配置: [core/src/layout](../../pkgs/core/src/layout)。taffy で文書全体を配置し、時間の木に変換
+- 時間の計算: [core/src/schedule/mod.rs](../../pkgs/core/src/schedule/mod.rs)。依存順に解決。循環は E510、到達できない参照は E504
+- 描画: [core/src/render](../../pkgs/core/src/render)。cosmic-text で組版、Skrifa で文字輪郭、tiny-skia で描画
+- 出力: [core/src/pipeline.rs](../../pkgs/core/src/pipeline.rs)。音声の速度変更・ミックス・エンコード
 - ビューア: [viewer/src/view](../../pkgs/viewer/src/view) は UI、[viewer/src/logic](../../pkgs/viewer/src/logic) は状態と計算
 
 時間の木・配置・描画順はコンパイル時に確定します。時刻は整数フレームで、秒への変換は ffmpeg・音声ミックス・プレビュー JSON との境界で行います。`<dur>`・`<repeat>` は配置に影響せず、`<hold>` の表示内容は素材の親を基準に配置します。

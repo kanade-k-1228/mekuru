@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { toXml, type Node } from "@mekuru/core";
+import { toXml, type Node } from "@mekuru/types";
 import { speechText, subtitleText } from "../src/text.tsx";
 
 const display = async (children: Node) => {

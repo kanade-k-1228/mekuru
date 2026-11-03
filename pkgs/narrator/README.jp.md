@@ -9,17 +9,17 @@
 Bun 1.4 以上が必要です。
 
 ```sh
-bun add -d @mekuru/core @mekuru/narrator
+bun add -d @mekuru/types @mekuru/narrator
 ```
 
-`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/core"` を設定します。音声エンジンと立ち絵の画像素材は別途用意します。
+`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/types"` を設定します。音声エンジンと立ち絵の画像素材は別途用意します。
 
 ## ナレータを組み立てる
 
 次は `@mekuru/voisona`・`@mekuru/speech` を追加したプロジェクトでの例です。`src` は自分の立ち絵フォルダに置き換えます。
 
 ```tsx
-import type { At, Node } from "@mekuru/core";
+import type { At, Node } from "@mekuru/types";
 import { portrait, Subtitle, type Face } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
@@ -74,7 +74,7 @@ export const Tsuzumi = async ({ children, face, id, at }: TsuzumiProps) => {
 ルビを表示文字に変換し、`<br />` を保持したNodeを返します。独自の字幕に使えます。`@mekuru/speech/text` が提供する同じ非同期関数の再エクスポートです。
 
 ```tsx
-import type { Node } from "@mekuru/core";
+import type { Node } from "@mekuru/types";
 import { subtitleText } from "@mekuru/narrator";
 
 const MySubtitle = async ({ children }: { children?: Node }) => (

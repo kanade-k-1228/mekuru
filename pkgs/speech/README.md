@@ -6,13 +6,13 @@ Utilities for implementing Mekuru Movie Maker speech components. For an existing
 
 ## Setup
 
-Requires Bun 1.4 or later and `@mekuru/core`. Run scripts from the project folder so generated audio is stored in that project's `.mekuru/cache/tts/`.
+Requires Bun 1.4 or later and `@mekuru/types`. Run scripts from the project folder so generated audio is stored in that project's `.mekuru/cache/tts/`.
 
 ```sh
-bun add -d @mekuru/core @mekuru/speech
+bun add -d @mekuru/types @mekuru/speech
 ```
 
-Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/core"` in `tsconfig.json`. Prepare an engine adapter that accepts text and voice settings, writes a WAV to a specified path, and resolves only after the write is complete.
+Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` in `tsconfig.json`. Prepare an engine adapter that accepts text and voice settings, writes a WAV to a specified path, and resolves only after the write is complete.
 
 ## Quick start
 
@@ -92,6 +92,6 @@ From `@mekuru/speech/engine`:
 
 ### Custom draft handling
 
-Without `line()`, use `isDraft()` and `waitFor()` from `@mekuru/core`: register the synthesis promise and return `<dur len={estimatedFrames}><audio draft label="..." /></dur>` for the draft, then audio with a completed `src` on the final pass. `label` selects the timeline's speech track. `waitFor()` schedules the final pass only within `writeXml()`.
+Without `line()`, use `isDraft()` and `waitFor()` from `@mekuru/types`: register the synthesis promise and return `<dur len={estimatedFrames}><audio draft label="..." /></dur>` for the draft, then audio with a completed `src` on the final pass. `label` selects the timeline's speech track. `waitFor()` schedules the final pass only within `writeXml()`.
 
 `Audio` and `readAudio` are provided by `@mekuru/audio`; `joinWavs` is provided by `@mekuru/audio/wav`.

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { connectPreview } from "./fixtures/preview-socket.ts";
 import { startServer } from "./fixtures/native-server.ts";
-import { findCompiler } from "../pkgs/compiler/npm/compiler.js";
+import { findCompiler } from "../pkgs/core/npm/compiler.js";
 import { previewXml } from "./preview-fixture.ts";
 import { previewStore } from "../pkgs/viewer/src/logic/preview.ts";
 import type { SnapshotEvent, StateDto } from "../pkgs/protocol/src/index.ts";

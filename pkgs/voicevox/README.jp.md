@@ -11,17 +11,17 @@ Windows・macOS・Linux で [VOICEVOX](https://voicevox.hiroshiba.jp/how_to_use/
 Bun 1.4 以上・libx264 付き ffmpeg・ffprobe・日本語フォントを用意し、プロジェクトに追加します。
 
 ```sh
-bun add -d @mekuru/core @mekuru/compiler @mekuru/voicevox
+bun add -d @mekuru/types @mekuru/core @mekuru/voicevox
 ```
 
-`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/core"` を設定します。`bun create @mekuru` では設定済みです。
+`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/types"` を設定します。`bun create @mekuru` では設定済みです。
 
 ## 簡単な使い方
 
 `src/main.tsx` に保存します。
 
 ```tsx
-import { writeXml } from "@mekuru/core";
+import { writeXml } from "@mekuru/types";
 import { Voicevox } from "@mekuru/voicevox";
 
 const text = "こんにちは。";

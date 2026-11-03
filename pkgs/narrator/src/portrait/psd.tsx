@@ -1,7 +1,7 @@
-/** @jsxImportSource @mekuru/core */
+/** @jsxImportSource @mekuru/types */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { projectRoot, type At, type Time } from "@mekuru/core";
+import { projectRoot, type At, type Time } from "@mekuru/types";
 import type { AudioSource } from "@mekuru/audio";
 import type { PortraitOptions } from "./index.tsx";
 import { validateManifest } from "./psd-schema.ts";

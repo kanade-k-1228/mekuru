@@ -4,9 +4,9 @@
 
 ## Repository structure
 
-- [pkgs/core](../../pkgs/core/README.md): TSX types, JSX runtime, and XML output
-- [pkgs/compiler](../../pkgs/compiler/README.md): Rust video compiler, native preview server, embedded UI and npm launchers
-- [pkgs/viewer](../../pkgs/viewer/README.md): React viewer, built into `pkgs/compiler/viewer/`
+- [pkgs/types](../../pkgs/types/README.md): TSX types, JSX runtime, and XML output
+- [pkgs/core](../../pkgs/core/README.md): Rust video compiler, native preview server, embedded UI and npm launchers
+- [pkgs/viewer](../../pkgs/viewer/README.md): React viewer, built into `pkgs/core/viewer/`
 - [pkgs/create](../../pkgs/create/README.md): Project generator
 - [pkgs/speech](../../pkgs/speech/README.md): API for implementing speech components
 - `pkgs/voicevox`, `coeiroink`, `style-bert-vits2`, `voisona`: Speech engine integrations
@@ -33,7 +33,7 @@ bun run --cwd example preview     # Example
 
 `bun build` and `bun test` are Bun's own commands. Use `bun run` to invoke the root scripts.
 
-TypeScript packages run directly from source and need no rebuild after changes. After compiler changes, run `cargo build --workspace --locked`; after viewer changes, run `bun run build` to embed the new UI. See [compiler](../../pkgs/compiler/README.md) for compiler lookup order.
+TypeScript packages run directly from source and need no rebuild after changes. After compiler changes, run `cargo build --workspace --locked`; after viewer changes, run `bun run build` to embed the new UI. See [core](../../pkgs/core/README.md) for compiler lookup order.
 
 For viewer development, start these in separate terminals:
 
@@ -63,7 +63,7 @@ Publishing a tag:
 
 1. `release.ts stamp` sets the version in manifests and lockfiles without committing the changes.
 2. Each platform job builds the viewer, embeds it in the Rust executable, and `pack` creates compiler npm tarballs.
-3. `deps` sets `@mekuru/compiler`'s `optionalDependencies`; publish the binaries and public workspaces with `bun publish`. Exclude `private` packages.
+3. `deps` sets `@mekuru/core`'s `optionalDependencies`; publish the binaries and public workspaces with `bun publish`. Exclude `private` packages.
 4. Create a GitHub Release with release notes.
 
 Only publishing steps pass `NPM_TOKEN` as `NPM_CONFIG_TOKEN`. Tags such as `0.3.0-rc.1` use npm's `next` tag and GitHub prereleases. Do not publish from a local machine.
@@ -72,7 +72,7 @@ A failed workflow can be rerun. `--tolerate-republish` handles versions already 
 
 ## How preview works
 
-`mekuru-compiler <xml> --serve` runs a Tokio/Axum HTTP server, filesystem watcher and a dedicated compiler thread in one process. The compiled viewer is embedded in the executable. `@mekuru/compiler` replaces the separate CLI package; `mekuru-server` is an npm alias that launches the same native executable. No Bun process or worker IPC is needed to preview existing XML. `--run` still executes the user's authoring command in the project folder.
+`mekuru-compiler <xml> --serve` runs a Tokio/Axum HTTP server, filesystem watcher and a dedicated compiler thread in one process. The compiled viewer is embedded in the executable. `@mekuru/core` replaces the separate CLI package; `mekuru-server` is an npm alias that launches the same native executable. No Bun process or worker IPC is needed to preview existing XML. `--run` still executes the user's authoring command in the project folder.
 
 Scenes and drawing resources are shared with Arc, and only the latest pending XML is compiled. The compiler thread keeps the existing font, media, drawing and identity caches. HTTP and file streams remain asynchronous while compilation runs. `--emit-preview`, `--emit-timeline` and the tool-facing `--preview-worker` protocol remain available.
 - File notifications settle through two matching reads 10 ms apart, normally about 20 ms after the last notification. New notifications invalidate in-flight reads; transient read errors retry up to three times. Atomic replacements and quick chunked writes are coalesced. The existing 500 ms polling fallback under `/mnt/` still applies.
@@ -87,7 +87,7 @@ Scenes and drawing resources are shared with Arc, and only the latest pending XM
 
 Preview text uses HTML/CSS from compiler-resolved positions, widths and styles; shapes and images use SVG, and media uses browser elements. Text width, wrapping and outlines can differ from export. Explicit and project-default font files inside the project load through `/files/` with a revision in the URL; unavailable or loading fonts use a fallback. The browser shares faces by source and revision and releases the last mounted reference. Export retains Rust shaping and glyph paths. The glyph cache described above is used by export, not HTML preview.
 
-Single-shot preview, resident preview and `--emit-timeline` share analysis. Preview diagnostics refer to formatted XML; timeline diagnostics refer to the input XML. The frame-based timeline and caption APIs are documented in [compiler](../../pkgs/compiler/README.md#programmatic-apis) and [narrator](../../pkgs/narrator/README.md). Timeline source IDs and preview reconciliation keys serve separate purposes.
+Single-shot preview, resident preview and `--emit-timeline` share analysis. Preview diagnostics refer to formatted XML; timeline diagnostics refer to the input XML. The frame-based timeline and caption APIs are documented in [core](../../pkgs/core/README.md#programmatic-apis) and [narrator](../../pkgs/narrator/README.md). Timeline source IDs and preview reconciliation keys serve separate purposes.
 
 Asset-only watching, incremental XML/layout/timing, and playback optimization are outside this path. Asset changes are validated on the next compile; restart the server after installing system fonts.
 
@@ -119,12 +119,12 @@ Tests cover a relocated binary with no Bun on PATH, embedded UI/assets, range re
 
 ## Internals
 
-- TSX → XML: [core/src/xml.ts](../../pkgs/core/src/xml.ts): expand components and normalize omissions and aliases
-- XML parsing: [compiler/src/lang](../../pkgs/compiler/src/lang): strict attribute and reference validation
-- Layout: [compiler/src/layout](../../pkgs/compiler/src/layout): lay out the document with taffy and convert it to a timing tree
-- Timing: [compiler/src/schedule/mod.rs](../../pkgs/compiler/src/schedule/mod.rs): resolve dependencies; cycles are E510, unreachable references are E504
-- Rendering: [compiler/src/render](../../pkgs/compiler/src/render): cosmic-text for shaping, Skrifa for glyph outlines, tiny-skia for drawing
-- Output: [compiler/src/pipeline.rs](../../pkgs/compiler/src/pipeline.rs): audio speed changes, mixing, and encoding
+- TSX → XML: [types/src/xml.ts](../../pkgs/types/src/xml.ts): expand components and normalize omissions and aliases
+- XML parsing: [core/src/lang](../../pkgs/core/src/lang): strict attribute and reference validation
+- Layout: [core/src/layout](../../pkgs/core/src/layout): lay out the document with taffy and convert it to a timing tree
+- Timing: [core/src/schedule/mod.rs](../../pkgs/core/src/schedule/mod.rs): resolve dependencies; cycles are E510, unreachable references are E504
+- Rendering: [core/src/render](../../pkgs/core/src/render): cosmic-text for shaping, Skrifa for glyph outlines, tiny-skia for drawing
+- Output: [core/src/pipeline.rs](../../pkgs/core/src/pipeline.rs): audio speed changes, mixing, and encoding
 - Viewer: [viewer/src/view](../../pkgs/viewer/src/view) for UI; [viewer/src/logic](../../pkgs/viewer/src/logic) for state and calculations
 
 The timing tree, layout, and draw order are resolved at compile time. Times are integer frames, converted to seconds at the ffmpeg, audio mixing, and preview JSON boundaries. `<dur>` and `<repeat>` do not affect layout; `<hold>` content is positioned relative to the media's parent.

@@ -25,7 +25,7 @@ const indent = (code: string, spaces: number) =>
     .map((line) => " ".repeat(spaces) + line)
     .join("\n");
 
-const script = (body: string, withPortrait = false) => `import { writeXml } from "@mekuru/core";
+const script = (body: string, withPortrait = false) => `import { writeXml } from "@mekuru/types";
 import { ${withPortrait ? "Tsuzumi, TsuzumiPortrait" : "Tsuzumi"} } from "./character/tsuzumi";
 
 const Video = () => (

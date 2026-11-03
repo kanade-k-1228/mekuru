@@ -22,7 +22,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: { proxy: backend },
   build: {
-    outDir: "../compiler/viewer",
+    outDir: "../core/viewer",
     emptyOutDir: true,
     chunkSizeWarningLimit: 1500,
   },

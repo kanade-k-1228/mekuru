@@ -1,7 +1,7 @@
 /** Run after `cargo build`: bun scripts/preview-benchmark.ts [text-count] [edits] [en|ja]. */
 import { previewXml } from "./preview-fixture.ts";
 import { lineReader } from "./fixtures/lines.ts";
-import { findCompiler } from "../pkgs/compiler/npm/compiler.js";
+import { findCompiler } from "../pkgs/core/npm/compiler.js";
 import { previewStore } from "../pkgs/viewer/src/logic/preview.ts";
 import type { PreviewEvent, StateDto, WorkerCompilation } from "../pkgs/protocol/src/index.ts";
 

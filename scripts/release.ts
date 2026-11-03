@@ -8,7 +8,7 @@ import { join, resolve } from "node:path";
 import { $ } from "bun";
 
 const root = join(import.meta.dir, "..");
-const compilerPkg = join(root, "pkgs/compiler/package.json");
+const corePkg = join(root, "pkgs/core/package.json");
 const BINARY = "mekuru-compiler";
 const SCOPE = "@mekuru";
 const SEMVER = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
@@ -18,7 +18,7 @@ const writeJson = (path: string, value: unknown) => Bun.write(path, `${JSON.stri
 
 // the stamped version; 0.0.0 means `stamp` has not run, so nothing is built or published with it
 const stamped = async (): Promise<string> => {
-  const { version } = await readJson(compilerPkg);
+  const { version } = await readJson(corePkg);
   if (version === "0.0.0") throw new Error("the version is 0.0.0: run `release.ts stamp <tag>` first (ci.yml does this on a tag)");
   return version;
 };
@@ -47,8 +47,8 @@ const pack = async (platform: string, binDir: string, outDir: string): Promise<v
   const version = await stamped();
   const [os, cpu] = platform.split("-");
   if (!os || !cpu) throw new Error(`the platform is <os>-<cpu> (such as linux-x64), not ${platform}`);
-  // the folder has no scope: `compiler-linux-x64` holds @mekuru/compiler-linux-x64
-  const folder = `compiler-${platform}`;
+  // the folder has no scope: `core-linux-x64` holds @mekuru/core-linux-x64
+  const folder = `core-${platform}`;
   const name = `${SCOPE}/${folder}`;
   const dir = join(outDir, folder);
   const exe = os === "win32" ? `${BINARY}.exe` : BINARY;
@@ -57,10 +57,10 @@ const pack = async (platform: string, binDir: string, outDir: string): Promise<v
   const pkg = {
     name,
     version,
-    description: `The compiler of Mekuru Movie Maker (XML → video) for ${platform}; installed by the @mekuru/compiler package`,
+    description: `The compiler of Mekuru Movie Maker (XML → video) for ${platform}; installed by the @mekuru/core package`,
     license: "MIT",
-    repository: { type: "git", url: "git+https://github.com/kanade-k-1228/mekuru.git", directory: "pkgs/compiler" },
-    homepage: "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/compiler/README.md",
+    repository: { type: "git", url: "git+https://github.com/kanade-k-1228/mekuru.git", directory: "pkgs/core" },
+    homepage: "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/core/README.md",
     os: [os],
     cpu: [cpu],
     files: ["bin"],
@@ -69,7 +69,7 @@ const pack = async (platform: string, binDir: string, outDir: string): Promise<v
   await writeJson(join(dir, "package.json"), pkg);
   await Bun.write(
     join(dir, "README.md"),
-    `# ${name}\n\nThe prebuilt ${BINARY} of [Mekuru Movie Maker](https://www.npmjs.com/package/@mekuru/core) for ${platform}. Install \`@mekuru/compiler\` instead.\n`,
+    `# ${name}\n\nThe prebuilt ${BINARY} of [Mekuru Movie Maker](https://www.npmjs.com/package/@mekuru/core) for ${platform}. Install \`@mekuru/core\` instead.\n`,
   );
   // Artifact uploads discard executable permissions; the npm tarball preserves them.
   await $`${process.execPath} pm pack --filename ${resolve(outDir, `${folder}.tgz`)}`.cwd(dir);
@@ -77,15 +77,15 @@ const pack = async (platform: string, binDir: string, outDir: string): Promise<v
 
 const deps = async (outDir: string): Promise<void> => {
   const version = await stamped();
-  const pkg = await readJson(compilerPkg);
+  const pkg = await readJson(corePkg);
   const names = readdirSync(outDir)
-    .filter((n) => n.startsWith("compiler-") && n.endsWith(".tgz"))
+    .filter((n) => n.startsWith("core-") && n.endsWith(".tgz"))
     .sort()
     .map((n) => `${SCOPE}/${n.slice(0, -4)}`);
-  if (names.length === 0) throw new Error(`no compiler-<platform>.tgz packages in ${outDir}`);
+  if (names.length === 0) throw new Error(`no core-<platform>.tgz packages in ${outDir}`);
   pkg.optionalDependencies = Object.fromEntries(names.map((n) => [n, version]));
-  await writeJson(compilerPkg, pkg);
-  console.log(`added ${names.length} platform packages to pkgs/compiler/package.json`);
+  await writeJson(corePkg, pkg);
+  console.log(`added ${names.length} platform packages to pkgs/core/package.json`);
 };
 
 const [cmd, ...args] = process.argv.slice(2);

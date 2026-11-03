@@ -17,10 +17,10 @@
   ],
   "sideEffects": false,
   "peerDependencies": {
-    "@mekuru/core": "workspace:^"
+    "@mekuru/types": "workspace:^"
   },
   "devDependencies": {
-    "@mekuru/core": "workspace:*"
+    "@mekuru/types": "workspace:*"
   },
   "dependencies": {
     "@mekuru/speech": "workspace:^",

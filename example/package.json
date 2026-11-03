@@ -11,8 +11,8 @@
   },
   "devDependencies": {
     "@types/bun": "1.4.2",
+    "@mekuru/types": "workspace:*",
     "@mekuru/core": "workspace:*",
-    "@mekuru/compiler": "workspace:*",
     "@mekuru/niconico": "workspace:*",
     "@mekuru/voisona": "workspace:*",
     "@mekuru/youtube": "workspace:*",
