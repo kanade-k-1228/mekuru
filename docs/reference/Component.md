@@ -33,7 +33,7 @@ Attributes accept numbers `{30}`, strings `"100%"`, booleans `closed`, and array
 
 ## Components
 
-A component is a function that takes props and returns elements. It can be `async` and use arrays, conditionals, and fragments. Components have no hooks or state.
+A component is a function that takes props and returns elements. It can be `async` and use arrays, conditionals, and fragments. Components have no hooks or state. Type it with `FC<Props>` from `@mekuru/types`.
 
 This component combines speech, a portrait, and subtitles into one line. Types and helper components are in [example/src/parts.tsx](../../example/src/parts.tsx).
 
