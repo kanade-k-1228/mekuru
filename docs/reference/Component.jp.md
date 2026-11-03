@@ -39,20 +39,22 @@ bun install
 
 ```tsx
 // example/src/parts.tsx（抜粋）
-export const Tsuzumi = ({ children, face, show, ...time }: Line) => (
-  <stack {...time}>
-    <tsuzumi.Talk face={face}>
-      <Voisona {...voice}>{children}</Voisona>
-    </tsuzumi.Talk>
-    <Subtitle>{children}</Subtitle>
-    {show}
-  </stack>
-);
+export const Tsuzumi = async ({ children, face, show, ...time }: Line) => {
+  const line = await Voisona.prepare({ ...voice, children });
+  return (
+    <dur len={line.len} {...time}>
+      <stack>
+        <Audio source={line.audio} />
+        <tsuzumi.Talk source={line.audio} face={face} />
+        <Subtitle>{line.display}</Subtitle>
+        {show}
+      </stack>
+    </dur>
+  );
+};
 ```
 
-`<stack>` 内の音声が長さを決め、字幕・立ち絵・`show` に渡した要素を同時に表示します。声は [VoiSona Talk](../../pkgs/voisona/README.jp.md)、立ち絵は [portrait](Portrait.jp.md) を参照してください。
-
-字幕の共通部品は [@mekuru/narrator](../../pkgs/narrator/README.jp.md) の `Subtitle` を使います。ルビを表示文字に変換し、明示改行を保ちます。上の例の `Subtitle` はこの部品に独自の装飾を加えたものです。音声の長さは音声部品、口パクは `portrait().Talk` が担当します。追加要素に長さがあれば `<stack>` 全体が長くなることがあり、必要に応じて `<dur>` で制御します。
+`Voisona.prepare` で一度準備した音声素材を `Audio` と `Talk` に渡します（`Audio` は `@mekuru/speech` から import）。`line.display` はルビの表記部分と改行を保持した字幕です。`Subtitle` は装飾だけを加える通常の `text` です。外側の `<dur>` でセリフの長さを決めるので、`show` に追加した素材もその区間に収まります。詳しくは [ナレータの組み立て](../../pkgs/narrator/README.jp.md) を参照してください。
 
 ### コードを表示する
 

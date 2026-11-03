@@ -2,10 +2,10 @@
 
 [日本語](Portrait.jp.md)
 
-`@mekuru/portrait` layers images in YMM4's animated portrait format, with blinking, expressions, and lip sync driven by audio volume.
+`@mekuru/narrator` layers images in YMM4's animated portrait format, with blinking, expressions, and lip sync driven by audio volume.
 
 ```sh
-bun add -d @mekuru/portrait
+bun add -d @mekuru/narrator
 ```
 
 ## Image folders
@@ -32,7 +32,9 @@ assets/character/pikao-tsuzumi/
 Define a component in `src/parts.tsx` and place `<Scene />` inside the script's `<mekuru>`. This example uses parts copied by the [example asset preparation script](../../example/scripts/portrait.ts).
 
 ```tsx
-import { portrait } from "@mekuru/portrait";
+import { portrait } from "@mekuru/narrator";
+
+import { Audio } from "@mekuru/audio";
 import { Voisona } from "@mekuru/voisona";
 
 const actor = portrait({
@@ -41,17 +43,17 @@ const actor = portrait({
   faces: { 笑顔: { 目: "笑顔", 口: "にこ" } },
 });
 
-export const Scene = () => (
-  <stack>
+export const Scene = async () => {
+  const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", children: "こんにちは。" });
+  return <stack>
     <actor.Stand />
-    <actor.Talk face="笑顔">
-      <Voisona voice="suzuki-tsudumi_ja_JP">こんにちは。</Voisona>
-    </actor.Talk>
-  </stack>
-);
+    <Audio source={line.audio} />
+    <actor.Talk source={line.audio} face="笑顔" />
+  </stack>;
+};
 ```
 
-`Stand` remains until its parent ends. `Talk` takes one speech component or `<audio>` and replaces the `Stand` in the same `slot` during playback. The mouth follows WAV volume and stays closed in drafts.
+`Stand` lasts until its parent ends. `Talk` accepts a shared audio `source` and renders the portrait for its duration; play the audio separately with `Audio`. It temporarily replaces `Stand` in the same `slot`. Mouth motion follows WAV amplitude and stays closed in drafts. Use `readAudio(src)` from `@mekuru/audio` for an existing WAV. Prepare sources inside a component under `<mekuru>`.
 
 ## Options
 

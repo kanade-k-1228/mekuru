@@ -96,7 +96,7 @@ import { Coeiroink, tsukuyomi } from "@mekuru/coeiroink";
 - `len`: 無音を含む全体のフレーム数。既定: 音声の長さを切り上げた値 + `gap`。話速は変えない。
 - `id`・`at`: 生成する `<dur>` の識別名と開始時刻。[時間の属性](../../docs/reference/Syntax.jp.md#時間の属性)を参照。
 
-ルビ `｜表示《よみ》` は「よみ」を読み、タイムラインには「表示」を残します。半角 `|` と `漢字《かんじ》` も使用できます。`<br />` は空白になり、ほかの要素は入れられません。セリフの連続再生は `<seq>`、字幕との同時表示は `<stack>`、口パクは[立ち絵の `Talk`](../portrait/README.jp.md) を使います。
+ルビ `｜表示《よみ》` は「よみ」を読み、タイムラインには「表示」を残します。半角 `|` と `漢字《かんじ》` も使用できます。`<br />` は空白になり、ほかの要素は入れられません。セリフの連続再生は `<seq>`、字幕との同時表示は `<stack>`、口パクは[立ち絵の `Talk`](../narrator/README.jp.md) を使います。
 
 ### キャッシュとプレビュー
 
@@ -113,3 +113,5 @@ curl http://127.0.0.1:50032/v1/speakers
 ```
 
 接続できない場合は起動状態とポートを確認します。Windows のエンジンには [WSL の mirrored ネットワーク](https://learn.microsoft.com/en-us/windows/wsl/networking#mirrored-mode-networking)で `127.0.0.1` から接続できます。
+
+独自のナレータでは `await Coeiroink.prepare({ ...声の設定, children })` で音声素材・表示文字・長さをまとめて取得できます。`id`・`at` は配置する部品に付けます。[共有する音声素材](../speech/README.jp.md#共有する音声素材)と[ナレータの組み立て](../narrator/README.jp.md)を参照してください。

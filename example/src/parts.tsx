@@ -1,6 +1,7 @@
 import type { At, Length, Node } from "@mekuru/core";
-import { portrait, type Face } from "@mekuru/portrait";
-import { Subtitle as NarratorSubtitle } from "@mekuru/narrator";
+import { portrait, type Face, Subtitle as NarratorSubtitle } from "@mekuru/narrator";
+
+import { Audio } from "@mekuru/audio";
 import { Voisona } from "@mekuru/voisona";
 
 type Children = { children?: Node };
@@ -118,33 +119,41 @@ const voice = { name: "tsuzumi", voice: "suzuki-tsudumi_ja_JP", gap: 6, reading:
 
 type Line = Children & { id?: string; at?: At; face?: FaceName; show?: Node };
 
-export const Tsuzumi = ({ children, face, show, ...time }: Line) => (
-  <stack {...time}>
-    <tsuzumi.Talk face={face}>
-      <Voisona {...voice}>{children}</Voisona>
-    </tsuzumi.Talk>
-    <Subtitle>{children}</Subtitle>
-    {show}
-  </stack>
-);
+export const Tsuzumi = async ({ children, face, show, ...time }: Line) => {
+  const line = await Voisona.prepare({ ...voice, children });
+  return (
+    <dur len={line.len} {...time}>
+      <stack>
+        <Audio source={line.audio} />
+        <tsuzumi.Talk source={line.audio} face={face} />
+        <Subtitle>{line.display}</Subtitle>
+        {show}
+      </stack>
+    </dur>
+  );
+};
 
-export const Jingle = ({ children }: { children: string }) => (
-  <stack>
-    <rect w="100%" h="100%" fill={COLOR.pink} z={20} />
-    <text x="30%" y="47%" anchor="c" size={180} weight="bold" color="#FFFFFF" stroke={COLOR.magenta} stroke-width={18} rotate={-9} z={21}>
-      {children}
-    </text>
-    <audio src="assets/chime.wav" volume={0.5} />
-    <big.Stand face="決め" />
-    <seq>
-      <dur len={9} />
-      <big.Talk face="決め">
-        <Voisona {...voice}>{children}</Voisona>
-      </big.Talk>
-      <dur len={21} />
-    </seq>
-  </stack>
-);
+export const Jingle = async ({ children }: { children: string }) => {
+  const line = await Voisona.prepare({ ...voice, children });
+  return (
+    <stack>
+      <rect w="100%" h="100%" fill={COLOR.pink} z={20} />
+      <text x="30%" y="47%" anchor="c" size={180} weight="bold" color="#FFFFFF" stroke={COLOR.magenta} stroke-width={18} rotate={-9} z={21}>
+        {children}
+      </text>
+      <audio src="assets/chime.wav" volume={0.5} />
+      <big.Stand face="決め" />
+      <seq>
+        <dur len={9} />
+        <stack>
+          <Audio source={line.audio} />
+          <big.Talk source={line.audio} face="決め" />
+        </stack>
+        <dur len={21} />
+      </seq>
+    </stack>
+  );
+};
 
 export const Exit = () => (
   <dur len={36}>

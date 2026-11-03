@@ -14,10 +14,11 @@
     "@mekuru/core": "workspace:*",
     "@mekuru/cli": "workspace:*",
     "@mekuru/niconico": "workspace:*",
-    "@mekuru/portrait": "workspace:*",
     "@mekuru/voisona": "workspace:*",
     "@mekuru/youtube": "workspace:*",
     "typescript": "7.0.2",
-    "@mekuru/narrator": "workspace:*"
+    "@mekuru/narrator": "workspace:*",
+    "@mekuru/speech": "workspace:*",
+    "@mekuru/audio": "workspace:*"
   }
 }
