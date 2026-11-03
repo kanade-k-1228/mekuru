@@ -19,7 +19,7 @@ Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` in `tsconfig.json`
 This example also uses `@mekuru/voisona` and `@mekuru/speech`. Replace `src` with your portrait folder.
 
 ```tsx
-import type { At, Node } from "@mekuru/types";
+import type { At, FC, Node } from "@mekuru/types";
 import { portrait, Subtitle, type Face } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
@@ -29,7 +29,7 @@ const actor = portrait({ src: "assets/character/tsuzumi" });
 type TsuzumiProps = { children?: Node; face?: Face; id?: string; at?: At };
 
 export const TsuzumiStand = actor.Stand;
-export const Tsuzumi = async ({ children, face, id, at }: TsuzumiProps) => {
+export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
   const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", children });
   return (
     <dur len={line.len} id={id} at={at}>
@@ -74,10 +74,10 @@ Defaults: `x="50%"`, `y="95%"`, `anchor="b"`, `max-w="90%"`, `align="center"`, `
 Converts ruby notation to display text while retaining `<br />`. Use it to build custom subtitles. This is a re-export of the same function from `@mekuru/speech/text`.
 
 ```tsx
-import type { Node } from "@mekuru/types";
+import type { FC, Node } from "@mekuru/types";
 import { subtitleText } from "@mekuru/narrator";
 
-const MySubtitle = async ({ children }: { children?: Node }) => (
+const MySubtitle: FC<{ children?: Node }> = async ({ children }) => (
   <text x="50%" y="95%" anchor="b" size={48}>
     {await subtitleText(children)}
   </text>
@@ -123,6 +123,7 @@ character.psd (front to back)
 The output contains `group/option.png`, `layer.png`, `portrait.json` (stacking order, defaults, and asset references), and `portrait.d.ts` (the generated `LayerProps`). All PNGs retain the original canvas size and coordinates. Use a dedicated output directory. Re-export replaces generated files and removes obsolete PNGs recorded in the previous manifest; unrelated files are retained.
 
 ```tsx
+import type { FC } from "@mekuru/types";
 import { psdPortrait } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
@@ -131,7 +132,7 @@ import type { LayerProps } from "./assets/sasara/portrait";
 
 const Sasara = psdPortrait<LayerProps>({ src: "assets/sasara" });
 <Sasara.Stand face="smile" glass />;
-const Line = async () => {
+const Line: FC = async () => {
   const source = await readAudio("assets/voice/line.wav");
   return <stack><Audio source={source} /><Sasara.Talk source={source} face="angry" /></stack>;
 };

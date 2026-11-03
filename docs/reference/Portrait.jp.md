@@ -32,6 +32,7 @@ assets/character/pikao-tsuzumi/
 `src/parts.tsx` などで部品を定義し、台本の `<mekuru>` 内に `<Scene />` を置きます。以下は [example の素材の準備スクリプト](../../example/scripts/portrait.ts)で取り込んだ部品を使う例です。
 
 ```tsx
+import type { FC } from "@mekuru/types";
 import { portrait } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
@@ -43,7 +44,7 @@ const actor = portrait({
   faces: { 笑顔: { 目: "笑顔", 口: "にこ" } },
 });
 
-export const Scene = async () => {
+export const Scene: FC = async () => {
   const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", children: "こんにちは。" });
   return <stack>
     <actor.Stand />
