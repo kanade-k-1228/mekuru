@@ -12,6 +12,7 @@
 - [pkgs/speech](../../pkgs/speech/README.jp.md): 読み上げ部品の実装用 API
 - `pkgs/voicevox`・`coeiroink`・`style-bert-vits2`・`voisona`: 音声エンジンとの連携
 - [pkgs/portrait](../../pkgs/portrait/README.jp.md): 動く立ち絵
+- [pkgs/narrator](../../pkgs/narrator/README.jp.md): 自作ナレータの字幕部品・表示テキスト変換
 - `pkgs/youtube`・`niconico`: 投稿コマンド
 - [example](../../example/README.md): チュートリアルと解説動画
 - [scripts/release.ts](../../scripts/release.ts): リリースの版設定・梱包・依存関係の設定

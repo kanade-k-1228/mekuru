@@ -15,6 +15,7 @@
       "devDependencies": {
         "@mekuru/cli": "workspace:*",
         "@mekuru/core": "workspace:*",
+        "@mekuru/narrator": "workspace:*",
         "@mekuru/niconico": "workspace:*",
         "@mekuru/portrait": "workspace:*",
         "@mekuru/voisona": "workspace:*",
@@ -64,6 +65,19 @@
         "@clack/core": "^1.5.1",
         "@clack/prompts": "^1.8.1",
         "commander": "^14.0.3",
+      },
+    },
+    "pkgs/narrator": {
+      "name": "@mekuru/narrator",
+      "version": "0.0.0",
+      "dependencies": {
+        "@mekuru/speech": "workspace:^",
+      },
+      "devDependencies": {
+        "@mekuru/core": "workspace:*",
+      },
+      "peerDependencies": {
+        "@mekuru/core": "workspace:^",
       },
     },
     "pkgs/niconico": {
@@ -209,6 +223,8 @@
     "@mekuru/core": ["@mekuru/core@workspace:pkgs/core"],
 
     "@mekuru/create": ["@mekuru/create@workspace:pkgs/create"],
+
+    "@mekuru/narrator": ["@mekuru/narrator@workspace:pkgs/narrator"],
 
     "@mekuru/niconico": ["@mekuru/niconico@workspace:pkgs/niconico"],
 

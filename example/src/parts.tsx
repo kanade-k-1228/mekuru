@@ -1,5 +1,6 @@
 import type { At, Length, Node } from "@mekuru/core";
 import { portrait, type Face } from "@mekuru/portrait";
+import { Subtitle as NarratorSubtitle } from "@mekuru/narrator";
 import { Voisona } from "@mekuru/voisona";
 
 type Children = { children?: Node };
@@ -87,9 +88,9 @@ const Subtitle = ({ children }: Children) => (
         ["#FFFFFF", 6],
       ] as const
     ).map(([stroke, width]) => (
-      <text x="50%" y="97%" anchor="b" max-w="74%" align="center" size={56} weight="bold" color={COLOR.red} stroke={stroke} stroke-width={width} z={100}>
+      <NarratorSubtitle y="97%" max-w="74%" size={56} weight="bold" color={COLOR.red} stroke={stroke} stroke-width={width}>
         {balance(children)}
-      </text>
+      </NarratorSubtitle>
     ))}
   </>
 );

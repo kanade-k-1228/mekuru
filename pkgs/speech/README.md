@@ -66,6 +66,7 @@ On a cache miss, `writeXml()` writes a silent draft, then replaces it after synt
 
 ### Other exports
 
+- `subtitleText(children)`: Converts ruby notation to display text and preserves `<br />`, using the same input format as speech. For subtitle placement and styling, use `Subtitle` from [@mekuru/narrator](../narrator/README.md).
 - `voiceOf(props)`: Removes the fields in `SpeechProps` and returns the remaining engine settings. Remove a connection-only `url` yourself before using those settings as a cache key.
 - `joinWavs(parts)`: Joins a nonempty array of WAV buffers with identical format chunks. It does not resample or convert audio formats.
 

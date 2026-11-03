@@ -52,6 +52,8 @@ export const Tsuzumi = ({ children, face, show, ...time }: Line) => (
 
 Audio inside `<stack>` sets the duration; subtitles, the portrait, and elements passed as `show` appear together. See [VoiSona Talk](../../pkgs/voisona/README.md) for speech and [portraits](Portrait.md) for animation.
 
+Use `Subtitle` from [@mekuru/narrator](../../pkgs/narrator/README.md) for shared subtitle behavior: ruby notation becomes display text and explicit line breaks are preserved. The example above wraps this component with custom styling. Speech owns audio duration, and `portrait().Talk` owns lip sync. Additional timed elements can extend the enclosing `<stack>`; use `<dur>` when a fixed duration is needed.
+
 ### Displaying code
 
 `<text pre>` preserves line breaks and spaces, removing common indentation and leading or trailing blank lines. See [Code and CodeMark in parts.tsx](../../example/src/parts.tsx) for line numbers and highlight frames. Line height is `size × line-height`.

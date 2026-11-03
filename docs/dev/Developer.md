@@ -12,6 +12,7 @@
 - [pkgs/speech](../../pkgs/speech/README.md): API for implementing speech components
 - `pkgs/voicevox`, `coeiroink`, `style-bert-vits2`, `voisona`: Speech engine integrations
 - [pkgs/portrait](../../pkgs/portrait/README.md): Animated portraits
+- [pkgs/narrator](../../pkgs/narrator/README.md): Subtitle components and display text for custom narrators
 - `pkgs/youtube`, `niconico`: Upload commands
 - [example](../../example/README.md): Tutorial and explainer video (Japanese)
 - [scripts/release.ts](../../scripts/release.ts): Release versioning, packaging, and dependency setup
