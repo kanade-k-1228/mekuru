@@ -15,7 +15,7 @@ pub struct SharedPreview {
     pub scene: Arc<Preview>,
 }
 #[derive(Clone)]
-pub(super) struct Published {
+pub(crate) struct Published {
     pub preview: SharedPreview,
     pub resources: Arc<Resources>,
     pub resource_bytes: usize,
@@ -115,7 +115,6 @@ impl Published {
             resources: Arc::new(HashMap::new()),
         };
         let snapshot_len = encoded_len(&empty) - 2 + self.resource_bytes;
-        // The SSE event name "snapshot" is three bytes longer than "patch".
-        if encoded_len(&patch) < snapshot_len + 3 { patch } else { self.snapshot() }
+        if encoded_len(&patch) < snapshot_len { patch } else { self.snapshot() }
     }
 }

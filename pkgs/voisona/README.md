@@ -20,7 +20,7 @@ The example uses `tanaka-san_ja_JP` (田中傘). Use an installed library and fo
 Requires Bun 1.4+, ffmpeg with libx264, ffprobe, and Japanese fonts. Install in the project folder:
 
 ```sh
-bun add -d @mekuru/core @mekuru/cli @mekuru/voisona
+bun add -d @mekuru/core @mekuru/compiler @mekuru/voisona
 ```
 
 In `tsconfig.json`, set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/core"` (already set by `bun create @mekuru`).

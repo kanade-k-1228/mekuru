@@ -11,6 +11,7 @@ pub mod preview;
 pub mod progress;
 pub mod render;
 pub mod schedule;
+pub mod server;
 pub mod settings;
 pub mod timeline;
 pub mod typography;

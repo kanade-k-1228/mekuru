@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "The compiler of Mekuru Movie Maker: compiles an XML script (rendered from TSX by the `@mekuru/core` npm package) into a video"
+description = "Native video compiler and preview server for Mekuru Movie Maker"
 
 [dependencies]
 roxmltree = "=0.20.0"
@@ -19,3 +19,13 @@ sha2 = "0.10.9"
 anyhow = { workspace = true }
 clap = { workspace = true }
 env_logger = { workspace = true }
+
+axum = { version = "0.8.9", default-features = false, features = ["http1", "tokio", "ws"] }
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "net", "fs", "io-util", "sync", "time", "signal", "process", "macros"] }
+tokio-util = { version = "0.7", features = ["io", "rt"] }
+notify = "8.2.1"
+mime_guess = "2.0"
+percent-encoding = "2.3"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

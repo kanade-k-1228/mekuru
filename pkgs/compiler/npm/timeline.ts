@@ -1,5 +1,5 @@
 import type { FrameInterval, TimelineCompilation, TimelineEntry } from "@mekuru/protocol";
-import { findCompiler } from "./compiler.ts";
+import { findCompiler } from "./compiler.js";
 export type { FrameRate, FrameInterval, TimelineEntry, ResolvedTimeline, TimelineCompilation } from "@mekuru/protocol";
 
 export async function compileTimeline(xmlPath: string, options: { root?: string } = {}): Promise<TimelineCompilation> {

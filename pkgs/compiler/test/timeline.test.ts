@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { timelineIntervals, type TimelineEntry } from "../src/timeline.ts";
+import { timelineIntervals, type TimelineEntry } from "../npm/timeline.ts";
 const entry: TimelineEntry = {
   id: "n:1",
   parent: null,
@@ -22,7 +22,7 @@ test.skipIf(process.platform === "win32")("timeline API returns diagnostics and 
   const { mkdtemp, chmod, rm } = await import("node:fs/promises");
   const { tmpdir } = await import("node:os");
   const { join } = await import("node:path");
-  const { compileTimeline } = await import("../src/timeline.ts");
+  const { compileTimeline } = await import("../npm/timeline.ts");
   const dir = await mkdtemp(join(tmpdir(), "mekuru-timeline-"));
   const compiler = join(dir, "compiler");
   const previous = process.env.MEKURU_COMPILER;

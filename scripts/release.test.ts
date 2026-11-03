@@ -18,7 +18,7 @@ const run = async (...args: string[]) => {
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "mekuru-release-"));
   await Bun.write(join(root, "scripts/release.ts"), Bun.file(new URL("release.ts", import.meta.url)));
-  await write("pkgs/cli/package.json", { name: "@mekuru/cli", version: "0.0.0" });
+  await write("pkgs/compiler/package.json", { name: "@mekuru/compiler", version: "0.0.0" });
   await write("pkgs/core/package.json", { name: "@mekuru/core", version: "0.0.0" });
   await Bun.write(join(root, "Cargo.toml"), '[workspace.package]\nversion = "0.0.0"\n');
   await Bun.write(
@@ -35,7 +35,7 @@ afterEach(async () => {
 test("stamps package and Cargo versions without changing registry dependencies", async () => {
   await run("stamp", version);
   expect((await read("pkgs/core/package.json").json()).version).toBe(version);
-  expect((await read("pkgs/cli/package.json").json()).version).toBe(version);
+  expect((await read("pkgs/compiler/package.json").json()).version).toBe(version);
   expect(await read("Cargo.toml").text()).toContain(`version = "${version}"`);
   expect(await read("Cargo.lock").text()).toContain(`name = "mekuru-compiler"\nversion = "${version}"`);
   expect(await read("Cargo.lock").text()).toContain('name = "dependency"\nversion = "1.0.0"');
@@ -54,12 +54,12 @@ test("packs an executable npm tarball and adds the downloaded packages as option
   expect(await binary.text()).toBe("compiler fixture");
   if (process.platform !== "win32") expect((await binary.stat()).mode & 0o111).toBe(0o111);
   await run("deps", "npm-out");
-  expect((await read("pkgs/cli/package.json").json()).optionalDependencies).toEqual({ [`@mekuru/compiler-${platform}`]: version });
+  expect((await read("pkgs/compiler/package.json").json()).optionalDependencies).toEqual({ [`@mekuru/compiler-${platform}`]: version });
 });
 
 test("rejects an unstamped release and the development tag before preparing artifacts", async () => {
   await expect(run("stamp", "0.0.0")).rejects.toThrow("reserved for development");
   await expect(run("stamp", "v0.3.0")).rejects.toThrow("no v");
   await expect(run("pack", platform, "bin", "npm-out")).rejects.toThrow("run `release.ts stamp");
-  expect((await read("pkgs/cli/package.json").json()).version).toBe("0.0.0");
+  expect((await read("pkgs/compiler/package.json").json()).version).toBe("0.0.0");
 });

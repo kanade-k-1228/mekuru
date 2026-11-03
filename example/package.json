@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "portrait": "bun scripts/portrait.ts",
-    "preview": "bun scripts/portrait.ts && mekuru-server --run 'bun --tsconfig-override ../tsconfig.json --hot src/main.tsx' .mekuru/main.xml",
+    "preview": "bun scripts/portrait.ts && mekuru-compiler --serve --run 'bun --tsconfig-override ../tsconfig.json --hot src/main.tsx' .mekuru/main.xml",
     "build": "bun scripts/portrait.ts && bun --tsconfig-override ../tsconfig.json src/main.tsx && mekuru-compiler .mekuru/main.xml -o tutorial.mp4",
     "upload:youtube": "mekuru-youtube",
     "upload:niconico": "mekuru-niconico"
@@ -12,7 +12,7 @@
   "devDependencies": {
     "@types/bun": "1.4.2",
     "@mekuru/core": "workspace:*",
-    "@mekuru/cli": "workspace:*",
+    "@mekuru/compiler": "workspace:*",
     "@mekuru/niconico": "workspace:*",
     "@mekuru/voisona": "workspace:*",
     "@mekuru/youtube": "workspace:*",

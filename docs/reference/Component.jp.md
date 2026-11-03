@@ -91,4 +91,4 @@ bun run build --from 60 --to 90    # 60〜90秒
 
 ## コマンド
 
-生成プロジェクトの `preview` は `mekuru-server --run 'bun --hot src/main.tsx' .mekuru/main.xml`、`build` は `bun src/main.tsx && mekuru-compiler .mekuru/main.xml -o video.mp4` を実行します。オプションと素材の基準フォルダは [@mekuru/cli](../../pkgs/cli/README.jp.md) を参照してください。
+生成プロジェクトの `preview` は `mekuru-compiler --serve --run 'bun --hot src/main.tsx' .mekuru/main.xml`、`build` は `bun src/main.tsx && mekuru-compiler .mekuru/main.xml -o video.mp4` を実行します。オプションと素材の基準フォルダは [@mekuru/compiler](../../pkgs/compiler/README.jp.md) を参照してください。

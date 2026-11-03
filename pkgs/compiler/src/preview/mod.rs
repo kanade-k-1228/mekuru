@@ -1,5 +1,5 @@
 use crate::typography::font::FontBook;
-mod delta;
+pub(crate) mod delta;
 mod identity;
 mod source;
 mod worker;

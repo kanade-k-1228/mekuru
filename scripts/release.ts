@@ -8,7 +8,7 @@ import { join, resolve } from "node:path";
 import { $ } from "bun";
 
 const root = join(import.meta.dir, "..");
-const cliPkg = join(root, "pkgs/cli/package.json");
+const compilerPkg = join(root, "pkgs/compiler/package.json");
 const BINARY = "mekuru-compiler";
 const SCOPE = "@mekuru";
 const SEMVER = /^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$/;
@@ -18,7 +18,7 @@ const writeJson = (path: string, value: unknown) => Bun.write(path, `${JSON.stri
 
 // the stamped version; 0.0.0 means `stamp` has not run, so nothing is built or published with it
 const stamped = async (): Promise<string> => {
-  const { version } = await readJson(cliPkg);
+  const { version } = await readJson(compilerPkg);
   if (version === "0.0.0") throw new Error("the version is 0.0.0: run `release.ts stamp <tag>` first (ci.yml does this on a tag)");
   return version;
 };
@@ -57,7 +57,7 @@ const pack = async (platform: string, binDir: string, outDir: string): Promise<v
   const pkg = {
     name,
     version,
-    description: `The compiler of Mekuru Movie Maker (XML → video) for ${platform}; installed by the @mekuru/cli package`,
+    description: `The compiler of Mekuru Movie Maker (XML → video) for ${platform}; installed by the @mekuru/compiler package`,
     license: "MIT",
     repository: { type: "git", url: "git+https://github.com/kanade-k-1228/mekuru.git", directory: "pkgs/compiler" },
     homepage: "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/compiler/README.md",
@@ -69,7 +69,7 @@ const pack = async (platform: string, binDir: string, outDir: string): Promise<v
   await writeJson(join(dir, "package.json"), pkg);
   await Bun.write(
     join(dir, "README.md"),
-    `# ${name}\n\nThe prebuilt ${BINARY} of [Mekuru Movie Maker](https://www.npmjs.com/package/@mekuru/core) for ${platform}. Install \`@mekuru/cli\` instead.\n`,
+    `# ${name}\n\nThe prebuilt ${BINARY} of [Mekuru Movie Maker](https://www.npmjs.com/package/@mekuru/core) for ${platform}. Install \`@mekuru/compiler\` instead.\n`,
   );
   // Artifact uploads discard executable permissions; the npm tarball preserves them.
   await $`${process.execPath} pm pack --filename ${resolve(outDir, `${folder}.tgz`)}`.cwd(dir);
@@ -77,15 +77,15 @@ const pack = async (platform: string, binDir: string, outDir: string): Promise<v
 
 const deps = async (outDir: string): Promise<void> => {
   const version = await stamped();
-  const pkg = await readJson(cliPkg);
+  const pkg = await readJson(compilerPkg);
   const names = readdirSync(outDir)
     .filter((n) => n.startsWith("compiler-") && n.endsWith(".tgz"))
     .sort()
     .map((n) => `${SCOPE}/${n.slice(0, -4)}`);
   if (names.length === 0) throw new Error(`no compiler-<platform>.tgz packages in ${outDir}`);
   pkg.optionalDependencies = Object.fromEntries(names.map((n) => [n, version]));
-  await writeJson(cliPkg, pkg);
-  console.log(`added ${names.length} platform packages to pkgs/cli/package.json`);
+  await writeJson(compilerPkg, pkg);
+  console.log(`added ${names.length} platform packages to pkgs/compiler/package.json`);
 };
 
 const [cmd, ...args] = process.argv.slice(2);

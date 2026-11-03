@@ -16,6 +16,6 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["pkgs/*/src", "pkgs/*/test", "scripts", "example/src", "example/scripts"],
+  "include": ["pkgs/*/src", "pkgs/*/test", "scripts", "example/src", "example/scripts", "pkgs/*/npm"],
   "exclude": ["pkgs/viewer", "pkgs/create/template"]
 }

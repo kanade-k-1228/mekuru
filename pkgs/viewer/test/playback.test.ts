@@ -5,13 +5,14 @@ import { scheduleAtom, serverAtom } from "../src/logic/server";
 import { followAtom, timelineMetricsAtom, timelineViewAtom } from "../src/logic/timeline/atoms";
 
 test("seeking and stepping update playback independently of timeline following", async () => {
-  const Original = globalThis.EventSource;
+  const Original = globalThis.WebSocket;
   const originalFetch = globalThis.fetch;
   class Events {
     onopen = null;
     onerror = null;
-    addEventListener(name: string, listener: (event: { data: string }) => void) {
-      if (name !== "snapshot") return;
+    onclose = null;
+    send() {}
+    set onmessage(listener: (event: { data: string }) => void) {
       listener({
         data: JSON.stringify({
           type: "snapshot",
@@ -30,7 +31,7 @@ test("seeking and stepping update playback independently of timeline following",
     }
     close() {}
   }
-  globalThis.EventSource = Events as unknown as typeof EventSource;
+  globalThis.WebSocket = Events as unknown as typeof WebSocket;
   globalThis.fetch = (async () =>
     Response.json({ version: 1, width: 16, height: 16, fps: 30, duration: 100, elements: [], timeline: { nodes: [], clips: [] } })) as unknown as typeof fetch;
   const store = createStore();
@@ -60,7 +61,7 @@ test("seeking and stepping update playback independently of timeline following",
   } finally {
     unfollow();
     disconnect();
-    globalThis.EventSource = Original;
+    globalThis.WebSocket = Original;
     globalThis.fetch = originalFetch;
   }
 });

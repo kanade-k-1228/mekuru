@@ -14,7 +14,7 @@
       "name": "mekuru-tutorial",
       "devDependencies": {
         "@mekuru/audio": "workspace:*",
-        "@mekuru/cli": "workspace:*",
+        "@mekuru/compiler": "workspace:*",
         "@mekuru/core": "workspace:*",
         "@mekuru/narrator": "workspace:*",
         "@mekuru/niconico": "workspace:*",
@@ -32,19 +32,6 @@
         "@mekuru/core": "workspace:^",
       },
     },
-    "pkgs/cli": {
-      "name": "@mekuru/cli",
-      "version": "0.0.0",
-      "bin": {
-        "mekuru-server": "./src/mekuru-server.ts",
-        "mekuru-compiler": "./src/mekuru-compiler.ts",
-      },
-      "dependencies": {
-        "@mekuru/platform": "workspace:^",
-        "@mekuru/protocol": "workspace:^",
-        "commander": "^14.0.3",
-      },
-    },
     "pkgs/coeiroink": {
       "name": "@mekuru/coeiroink",
       "version": "0.0.0",
@@ -57,6 +44,17 @@
       },
       "peerDependencies": {
         "@mekuru/core": "workspace:^",
+      },
+    },
+    "pkgs/compiler": {
+      "name": "@mekuru/compiler",
+      "version": "0.0.0",
+      "bin": {
+        "mekuru-compiler": "./bin/mekuru-compiler.js",
+        "mekuru-server": "./bin/mekuru-server.js",
+      },
+      "dependencies": {
+        "@mekuru/protocol": "workspace:^",
       },
     },
     "pkgs/core": {
@@ -299,9 +297,9 @@
 
     "@mekuru/audio": ["@mekuru/audio@workspace:pkgs/audio"],
 
-    "@mekuru/cli": ["@mekuru/cli@workspace:pkgs/cli"],
-
     "@mekuru/coeiroink": ["@mekuru/coeiroink@workspace:pkgs/coeiroink"],
+
+    "@mekuru/compiler": ["@mekuru/compiler@workspace:pkgs/compiler"],
 
     "@mekuru/core": ["@mekuru/core@workspace:pkgs/core"],
 

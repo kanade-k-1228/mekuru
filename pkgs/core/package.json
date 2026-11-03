@@ -7,7 +7,7 @@
     "directory": "pkgs/core"
   },
   "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/core/README.md",
-  "description": "The types of the XML of Mekuru Movie Maker, for writing videos in TSX with jsxImportSource @mekuru/core (the JSX runtime is Hono's); the viewer and the compiler are in @mekuru/cli",
+  "description": "The types of the XML of Mekuru Movie Maker, for writing videos in TSX with jsxImportSource @mekuru/core (the JSX runtime is Hono's); the viewer and the compiler are in @mekuru/compiler",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",

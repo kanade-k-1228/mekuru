@@ -113,6 +113,10 @@ impl Worker {
         }
     }
 
+    pub(crate) fn scene(&self) -> Option<Published> {
+        self.candidate.as_ref().or(self.published.as_ref()).cloned()
+    }
+
     pub(super) fn draw(&mut self, op: &ViewOp, fonts: &FontBook, root: &Path) -> Drawing {
         fn dependency(op: &ViewOp, fonts: &FontBook) -> String {
             match op {

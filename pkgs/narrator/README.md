@@ -159,7 +159,7 @@ empty text arrays are valid only with zero frames.
 ```tsx
 import { Subtitle } from "@mekuru/narrator";
 import { captionCues, toSrt } from "@mekuru/narrator/captions";
-import { compileTimeline, timelineIntervals } from "@mekuru/cli/timeline";
+import { compileTimeline, timelineIntervals } from "@mekuru/compiler/timeline";
 const cues = captionCues(["First line", "Second\nline"], 90);
 cues[cues.length - 1].frames += 15; // hold the final caption after allocation
 const captions = <seq>{cues.map((cue, i) =>

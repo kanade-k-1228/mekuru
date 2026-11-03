@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { lineReader } from "../src/lines.ts";
+import { lineReader } from "./lines.ts";
 
 test("JSON lines survive byte boundaries, large records and multiple records in one chunk", async () => {
   const first = JSON.stringify({ xml: "字幕🙂".repeat(50_000) });

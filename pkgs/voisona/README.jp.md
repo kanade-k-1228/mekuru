@@ -20,7 +20,7 @@ export MEKURU_VOISONA_PASSWORD='your-api-password'
 Bun 1.4 以上・libx264 付き ffmpeg・ffprobe・日本語フォントを用意し、プロジェクトに追加します。
 
 ```sh
-bun add -d @mekuru/core @mekuru/cli @mekuru/voisona
+bun add -d @mekuru/core @mekuru/compiler @mekuru/voisona
 ```
 
 `tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/core"` を設定します。`bun create @mekuru` では設定済みです。

@@ -14,6 +14,20 @@ use std::path::{Path, PathBuf};
 #[command(name = "mekuru-compiler", version, about, args_override_self = true)]
 struct Cli {
     script: PathBuf,
+    /// Watch XML and serve the embedded browser viewer from this process.
+    #[arg(long, conflicts_with_all = ["emit_preview", "preview_worker", "emit_timeline", "output", "scale", "fps", "from", "to", "preset", "crf", "no_audio", "preview"])]
+    serve: bool,
+    /// Run a script command in the project folder while serving.
+    #[arg(long, requires = "serve")]
+    run: Option<String>,
+    #[arg(short = 'p', long, default_value_t = 3333, requires = "serve")]
+    port: u16,
+    #[arg(long, requires = "serve")]
+    title: Option<String>,
+    #[arg(long, requires = "serve", conflicts_with = "no_open")]
+    open: bool,
+    #[arg(long, requires = "serve")]
+    no_open: bool,
     #[arg(long)]
     root: Option<PathBuf>,
     #[arg(short, long)]
@@ -52,6 +66,35 @@ fn main() {
 }
 
 fn run(cli: Cli) -> Result<()> {
+    if cli.serve {
+        use mekuru_compiler::server;
+        let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
+        let result = runtime.block_on(async {
+            let server = server::start(server::Options {
+                xml: cli.script.clone(),
+                root: cli.root.clone(),
+                run: cli.run.clone(),
+                port: cli.port,
+                title: cli.title.clone(),
+            })
+            .await?;
+            let url = server.url();
+            eprintln!("mekuru viewer: {url}  ({})", cli.title.as_deref().unwrap_or(&cli.script.to_string_lossy()));
+            let open = !matches!(
+                std::env::var("MEKURU_OPEN").unwrap_or_default().to_ascii_lowercase().as_str(),
+                "0" | "false" | "no" | "off"
+            );
+            if cli.open || (!cli.no_open && open) {
+                server::open_browser(&url);
+            }
+            tokio::select! { result = server::shutdown_signal() => result?, _ = server.terminated() => {} }
+            server.close();
+            server.wait().await;
+            Ok(())
+        });
+        runtime.shutdown_timeout(std::time::Duration::from_secs(2));
+        return result;
+    }
     let Cli {
         script,
         root,
@@ -67,6 +110,7 @@ fn run(cli: Cli) -> Result<()> {
         emit_preview,
         preview_worker,
         emit_timeline,
+        ..
     } = cli;
     if preview_worker {
         let mut worker = mekuru_compiler::preview::Worker::default();

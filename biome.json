@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!pkgs/cli/viewer", "!bun.lock"]
+    "includes": ["**", "!pkgs/compiler/viewer", "!bun.lock"]
   },
   "formatter": {
     "indentStyle": "space",

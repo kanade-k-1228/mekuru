@@ -1,8 +1,7 @@
 /** Run after `cargo build`: bun scripts/preview-benchmark.ts [text-count] [edits] [en|ja]. */
 import { previewXml } from "./preview-fixture.ts";
-import { lineReader } from "../pkgs/cli/src/lines.ts";
-import { findCompiler } from "../pkgs/cli/src/compiler.ts";
-import { acceptPreview, serializeEvent, type SharedPreview } from "../pkgs/cli/src/share.ts";
+import { lineReader } from "./fixtures/lines.ts";
+import { findCompiler } from "../pkgs/compiler/npm/compiler.js";
 import { previewStore } from "../pkgs/viewer/src/logic/preview.ts";
 import type { PreviewEvent, StateDto, WorkerCompilation } from "../pkgs/protocol/src/index.ts";
 
@@ -26,42 +25,39 @@ const worker = Bun.spawn([compiler, "-", "--preview-worker"], { stdin: "pipe", s
 const readLine = lineReader(worker.stdout);
 const store = previewStore();
 const samples = [];
-let shared: SharedPreview | null = null;
+let previewVersion: number | null = null;
+const serializeEvent = (event: PreviewEvent) => JSON.stringify(event);
 const browserEvents: PreviewEvent[] = [];
 try {
   for (let edit = 0; edit <= edits; edit++) {
     const start = performance.now();
-    worker.stdin.write(`${JSON.stringify({ version: edit + 1, xml: xml(edit), baseVersion: shared?.preview.version ?? null })}\n`);
+    worker.stdin.write(`${JSON.stringify({ version: edit + 1, xml: xml(edit), baseVersion: previewVersion })}\n`);
     await worker.stdin.flush();
     const body = await readLine();
     if (body === null) throw new Error("worker stopped");
     const result = JSON.parse(body) as WorkerCompilation;
     const workerWallMs = performance.now() - start;
-    const relayStart = performance.now();
-    const next = acceptPreview(shared, result);
     const state: StateDto = { path: "benchmark.xml", status: "ready", error: null, diagnostics: [], version: edit + 1, previewVersion: edit + 1 };
     const serializeStart = performance.now();
     const eventText = serializeEvent(result.update ? { ...result.update, state } : { type: "status", state });
     const serializeMs = performance.now() - serializeStart;
-    const relayMs = performance.now() - relayStart;
     const applyStart = performance.now();
-    const event = JSON.parse(eventText.split("\ndata: ")[1]) as PreviewEvent;
+    const event = JSON.parse(eventText) as PreviewEvent;
     if (event.type === "status") throw new Error("expected preview");
     store.apply(event);
+    previewVersion = result.previewVersion;
     const applyMs = performance.now() - applyStart;
     samples.push({
       edit,
       ...result.stats,
       workerWallMs,
       workerBytes: Buffer.byteLength(body),
-      sseBytes: Buffer.byteLength(eventText),
+      messageBytes: Buffer.byteLength(eventText),
       serializeMs,
-      relayMs,
       applyMs,
       resourceCount: Object.keys(result.update?.resources ?? {}).length,
     });
     browserEvents.push(event);
-    shared = next;
   }
 } finally {
   worker.kill();
@@ -75,9 +71,10 @@ const output = {
   baseline: { medianMs: median(baseline.map((s) => s.wallMs)), bytes: baseline[0].bytes },
   first: samples[0],
   repeated: Object.fromEntries(
-    ["compileMs", "diffMs", "workerWallMs", "workerBytes", "sseBytes", "serializeMs", "relayMs", "applyMs", "drawHits", "drawMisses", "resourceCount"].map(
-      (key) => [key, median(repeated.map((s) => s[key as keyof typeof s]))],
-    ),
+    ["compileMs", "diffMs", "workerWallMs", "workerBytes", "messageBytes", "serializeMs", "applyMs", "drawHits", "drawMisses", "resourceCount"].map((key) => [
+      key,
+      median(repeated.map((s) => s[key as keyof typeof s])),
+    ]),
   ),
 };
 if (process.env.MEKURU_BENCH_OUT) {

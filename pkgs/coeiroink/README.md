@@ -11,7 +11,7 @@ Install [COEIROINK v2](https://coeiroink.com/download), download the desired voi
 Requires Bun 1.4+, ffmpeg with libx264, ffprobe, and Japanese fonts. Install in the project folder:
 
 ```sh
-bun add -d @mekuru/core @mekuru/cli @mekuru/coeiroink
+bun add -d @mekuru/core @mekuru/compiler @mekuru/coeiroink
 ```
 
 In `tsconfig.json`, set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/core"` (already set by `bun create @mekuru`).

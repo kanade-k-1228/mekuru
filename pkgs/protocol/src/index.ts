@@ -72,6 +72,8 @@ export interface PatchEvent {
   removedResources: string[];
 }
 export type PreviewEvent = SnapshotEvent | StatusEvent | PatchEvent;
+/** Browser-to-server JSON message over /api/ws. */
+export type PreviewCommand = { type: "resync" };
 
 export interface PreviewDto {
   width: number;

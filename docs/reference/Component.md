@@ -91,4 +91,4 @@ bun run build --from 60 --to 90    # Seconds 60–90
 
 ## Commands
 
-In generated projects, `preview` runs `mekuru-server --run 'bun --hot src/main.tsx' .mekuru/main.xml`, and `build` runs `bun src/main.tsx && mekuru-compiler .mekuru/main.xml -o video.mp4`. See [@mekuru/cli](../../pkgs/cli/README.md) for options and the base directory for media paths.
+In generated projects, `preview` runs `mekuru-compiler --serve --run 'bun --hot src/main.tsx' .mekuru/main.xml`, and `build` runs `bun src/main.tsx && mekuru-compiler .mekuru/main.xml -o video.mp4`. See [@mekuru/compiler](../../pkgs/compiler/README.md) for options and the base directory for media paths.

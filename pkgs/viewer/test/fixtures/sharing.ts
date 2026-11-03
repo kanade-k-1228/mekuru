@@ -60,7 +60,7 @@ export const patch = (state: StateDto, before: SharedPreview, after: SharedPrevi
     removedResources: Object.keys(before.resources).filter((key) => !Object.hasOwn(after.resources, key)),
   };
 };
-export const serializeEvent = (event: PreviewEvent) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+export const serializeEvent = (event: PreviewEvent) => JSON.stringify(event);
 // Account for the full event without serializing unchanged path data on each edit.
 const resourceLengths = new WeakMap<object, number>();
 const resourceLength = (ops: Resources[string]) => {
@@ -94,7 +94,7 @@ export const workerResponse = (result: FixtureCompilation, before: SharedPreview
             { path: "fixture", version: result.version, previewVersion: result.version, status: "ready", error: null, diagnostics: result.diagnostics },
             before,
             after,
-          ).split("\ndata: ")[1],
+          ),
         )
       : null;
   if (event) delete event.state;

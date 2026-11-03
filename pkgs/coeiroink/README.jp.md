@@ -11,7 +11,7 @@ Mekuru Movie Maker のセリフを、COEIROINK v2 で読み上げる `Coeiroink`
 Bun 1.4 以上・libx264 付き ffmpeg・ffprobe・日本語フォントを用意し、プロジェクトに追加します。
 
 ```sh
-bun add -d @mekuru/core @mekuru/cli @mekuru/coeiroink
+bun add -d @mekuru/core @mekuru/compiler @mekuru/coeiroink
 ```
 
 `tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/core"` を設定します。`bun create @mekuru` では設定済みです。
