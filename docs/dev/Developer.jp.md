@@ -57,7 +57,7 @@ git tag 0.3.0
 git push origin 0.3.0
 ```
 
-[ci.yml](../../.github/workflows/ci.yml) が検査・Rust 1.89 の確認・5環境のビルドと起動確認を実行します。タグでは release、それ以外は debug ビルドです。依存関係は `bun ci`、Bun の版は `packageManager` に従います。
+[packages.yml](../../.github/workflows/packages.yml) が検査・Rust 1.89 の確認・8環境のビルドと起動確認を実行します。8環境は x64 と arm64 それぞれの Linux（glibc・musl）・macOS・Windows です。タグでは release、それ以外は debug ビルドです。依存関係は `bun ci`、Bun の版は `packageManager` に従います。
 
 タグの公開処理:
 

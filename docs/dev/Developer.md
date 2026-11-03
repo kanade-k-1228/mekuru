@@ -57,7 +57,7 @@ git tag 0.3.0
 git push origin 0.3.0
 ```
 
-[ci.yml](../../.github/workflows/ci.yml) runs checks, verifies Rust 1.89 support, and builds and smoke-tests five platforms. Tags use release builds; other runs use debug builds. Dependencies use `bun ci`, with Bun's version taken from `packageManager`.
+[packages.yml](../../.github/workflows/packages.yml) runs checks, verifies Rust 1.89 support, and builds and smoke-tests eight platforms: Linux (glibc and musl) and macOS on x64 and arm64, and Windows on x64 and arm64. Tags use release builds; other runs use debug builds. Dependencies use `bun ci`, with Bun's version taken from `packageManager`.
 
 Publishing a tag:
 
