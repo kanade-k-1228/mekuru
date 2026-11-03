@@ -32,7 +32,7 @@ export const TsuzumiStand = actor.Stand;
 export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
   const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", children });
   return (
-    <dur len={line.len} id={id} at={at}>
+    <dur len={line.audio.len} id={id} at={at}>
       <stack>
         <Audio source={line.audio} />
         <actor.Talk source={line.audio} face={face} />
@@ -47,7 +47,7 @@ Place `<Tsuzumi>漢字《かんじ》を読みます。</Tsuzumi>` inside `<meku
 
 - The speech component owns synthesis, caching, and duration.
 - `portrait()` in this package owns expressions, lip sync, and idle portraits. Use `<image>` for a static portrait.
-- `prepare` expands the text once and returns display text and a shared audio source. `line.len` is the source duration. The outer `<dur>` fixes the line interval even when decorations are added.
+- `prepare` expands the text once and returns display text and a shared audio source. `line.audio.len` is the source duration. The outer `<dur>` fixes the line interval even when decorations are added.
 
 ## Portraits and lip sync
 

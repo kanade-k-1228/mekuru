@@ -91,9 +91,19 @@ fn targets(s: &Script) -> impl Iterator<Item = Target> + '_ {
 
 pub fn schedule(s: &Script, m: &dyn MediaDb) -> Schedule {
     let fps = s.settings.rate();
-    let info: Vec<Option<MediaInfo>> = s.elems.iter().map(|e| m.info(e)).collect();
-    let clocks: Vec<Option<Clock>> = s.elems.iter().zip(&info).map(|(e, i)| clock(e, *i, fps)).collect();
-    let paces = s.elems.iter().zip(&clocks).map(|(e, c)| paces(e, *c)).collect();
+    let media = s
+        .elems
+        .iter()
+        .map(|element| {
+            let info = m.info(element);
+            let clock = clock(element, info, fps);
+            MediaTiming {
+                info,
+                clock,
+                paces: paces(element, clock),
+            }
+        })
+        .collect();
     let mut holds: BTreeMap<ElemId, Vec<(i64, NodeId)>> = BTreeMap::new();
     for n in &s.nodes {
         if let Some(h) = n.hold {
@@ -106,16 +116,12 @@ pub fn schedule(s: &Script, m: &dyn MediaDb) -> Schedule {
     let all = s.nodes.len() + s.elems.len();
     let mut solver = Solver {
         s,
-        info,
-        clocks,
-        paces,
+        media,
         holds,
         diags: vec![],
         val: vec![],
-        shown: vec![(0, 0); all],
-        dropped: vec![false; all],
-        inner: vec![0; s.nodes.len()],
-        round: vec![None; s.nodes.len()],
+        targets: vec![TargetState::default(); all],
+        nodes: vec![NodeState::default(); s.nodes.len()],
     };
     let g = solver.graph();
     let (val, done) = g.solve();
@@ -130,18 +136,32 @@ pub fn schedule(s: &Script, m: &dyn MediaDb) -> Schedule {
     solver.finish()
 }
 
+struct MediaTiming {
+    info: Option<MediaInfo>,
+    clock: Option<Clock>,
+    paces: Vec<(f64, f64, f64)>,
+}
+
+#[derive(Clone, Default)]
+struct TargetState {
+    interval: (i64, i64),
+    dropped: bool,
+}
+
+#[derive(Clone, Default)]
+struct NodeState {
+    inner_end: i64,
+    period: Option<i64>,
+}
+
 struct Solver<'a> {
     s: &'a Script,
-    info: Vec<Option<MediaInfo>>,
-    clocks: Vec<Option<Clock>>,
-    paces: Vec<Vec<(f64, f64, f64)>>,
+    media: Vec<MediaTiming>,
     holds: BTreeMap<ElemId, Vec<(i64, NodeId)>>,
     diags: Vec<Diag>,
     val: Vec<i64>,
-    shown: Vec<(i64, i64)>,
-    dropped: Vec<bool>,
-    inner: Vec<i64>,
-    round: Vec<Option<i64>>,
+    targets: Vec<TargetState>,
+    nodes: Vec<NodeState>,
 }
 
 impl<'a> Solver<'a> {
@@ -179,8 +199,8 @@ impl<'a> Solver<'a> {
 
     fn until(&self, x: Target) -> i64 {
         match x {
-            Target::Node(n) => self.inner[n],
-            Target::Elem(_) => self.shown[self.ix(x)].1,
+            Target::Node(n) => self.nodes[n].inner_end,
+            Target::Elem(_) => self.targets[self.ix(x)].interval.1,
         }
     }
 
@@ -193,7 +213,7 @@ impl<'a> Solver<'a> {
 
     fn clock(&self, x: Target) -> Option<(ElemId, Clock)> {
         match x {
-            Target::Elem(e) => self.clocks[e].map(|c| (e, c)),
+            Target::Elem(e) => self.media[e].clock.map(|c| (e, c)),
             Target::Node(_) => None,
         }
     }
@@ -203,14 +223,15 @@ impl<'a> Solver<'a> {
     }
 
     fn played(&self, v: ElemId, a: f64, b: f64) -> f64 {
-        self.paces[v].iter().fold(b - a, |u, &(x, y, r)| {
+        self.media[v].paces.iter().fold(b - a, |u, &(x, y, r)| {
             let o = (y.min(b) - x.max(a)).max(0.0);
             u - o + o / r
         })
     }
 
     fn waits_at(&self, v: ElemId, q: f64) -> f64 {
-        self.paces[v]
+        self.media[v]
+            .paces
             .iter()
             .find(|p| p.2.is_infinite() && p.0 <= q + EPS && q <= p.1 + EPS)
             .map_or(q, |p| p.1.max(q))
@@ -290,7 +311,7 @@ impl<'a> Solver<'a> {
                     g.add(self.var(c, V::End), e, 0, None);
                 }
             }
-            (Dur::Own, Target::Elem(v)) => match self.clocks[v] {
+            (Dur::Own, Target::Elem(v)) => match self.media[v].clock {
                 Some(c) => self.arrival(g, x, c.to, e, None, true),
                 None => g.add(s, e, 0, None),
             },
@@ -318,7 +339,7 @@ impl<'a> Solver<'a> {
 
     fn intervals(&mut self) {
         let total = self.val[self.var(Target::Node(0), V::End)].max(0);
-        (self.shown[0], self.dropped[0], self.inner[0]) = ((0, total), false, total);
+        (self.targets[0].interval, self.targets[0].dropped, self.nodes[0].inner_end) = ((0, total), false, total);
         self.visit(0);
     }
 
@@ -341,11 +362,11 @@ impl<'a> Solver<'a> {
 
     fn inside(&mut self, n: NodeId) {
         let node = &self.s.nodes[n];
-        let (start, end) = self.shown[n];
+        let (start, end) = self.targets[n].interval;
         let longest = node.order.iter().filter(|&&c| self.timed(c)).map(|&c| self.val[self.var(c, V::End)]).max();
         let round = longest.map(|l| l - start).filter(|_| node.kind == NodeKind::Repeat);
-        self.round[n] = round;
-        self.inner[n] = round.map_or(end, |r| end.min(start + r));
+        self.nodes[n].period = round;
+        self.nodes[n].inner_end = round.map_or(end, |r| end.min(start + r));
         self.visit(n);
     }
 
@@ -353,8 +374,8 @@ impl<'a> Solver<'a> {
         let (s, e, until) = (self.val[self.var(x, V::Start)], self.val[self.var(x, V::End)], self.until(within));
         let i = self.ix(x);
         let late = s > until || (s >= until && self.timed(x) && e > s);
-        self.dropped[i] = self.dropped[self.ix(within)] || late;
-        self.shown[i] = if self.dropped[i] {
+        self.targets[i].dropped = self.targets[self.ix(within)].dropped || late;
+        self.targets[i].interval = if self.targets[i].dropped {
             (s.min(until), s.min(until))
         } else {
             (s, if self.timed(x) { e.min(until).max(s) } else { until })
@@ -363,14 +384,14 @@ impl<'a> Solver<'a> {
 
     fn placed(&self, x: Target) -> bool {
         let Some(p) = self.within(x) else { return true };
-        !self.dropped[self.ix(p)] && self.val[self.var(x, V::Flow)] <= self.until(p)
+        !self.targets[self.ix(p)].dropped && self.val[self.var(x, V::Flow)] <= self.until(p)
     }
 
     fn unreached(&mut self) {
         let mut found = vec![];
         for x in targets(self.s).filter(|&x| self.placed(x)) {
             let Some((id, y, q)) = self.reference(x) else { continue };
-            let msg = if self.dropped[self.ix(y)] {
+            let msg = if self.targets[self.ix(y)].dropped {
                 format!("this never starts: `{id}` is never shown")
             } else if let Some((_, c)) = self.clock(y)
                 && ((q as f64) < c.from || q as f64 > c.to)
@@ -380,8 +401,8 @@ impl<'a> Solver<'a> {
                     show(c.from),
                     show(c.to)
                 )
-            } else if self.arrival_at(y, q) > self.shown[self.ix(y)].1 {
-                let (start, end) = self.shown[self.ix(y)];
+            } else if self.arrival_at(y, q) > self.targets[self.ix(y)].interval.1 {
+                let (start, end) = self.targets[self.ix(y)].interval;
                 format!("`{id}` never gets to frame {q}: it is shown for {} frames", end - start)
             } else {
                 continue;
@@ -390,7 +411,7 @@ impl<'a> Solver<'a> {
         }
         for n in &self.s.nodes {
             if let Some(h) = n.hold
-                && let Some(c) = self.clocks[h.media]
+                && let Some(c) = self.media[h.media].clock
                 && ((h.at as f64) < c.from || h.at as f64 > c.to)
             {
                 found.push(Diag::new(
@@ -405,7 +426,7 @@ impl<'a> Solver<'a> {
                 ));
             }
         }
-        for (e, c) in self.s.elems.iter().zip(&self.clocks) {
+        for (e, c) in self.s.elems.iter().zip(self.media.iter().map(|media| media.clock)) {
             let (Some(m), Some(c)) = (e.kind.media(), c) else { continue };
             for p in &m.speeds {
                 let (a, b) = (p.from.map_or(c.from, |a| a as f64), p.to.map_or(c.to, |b| b as f64));
@@ -433,7 +454,7 @@ impl<'a> Solver<'a> {
             .filter(|&x| {
                 let ready = self.val[self.var(x, V::Flow)] + self.time(x).delay;
                 self.reference(x)
-                    .is_some_and(|(_, y, q)| !self.dropped[self.ix(y)] && self.arrival_at(y, q) < ready)
+                    .is_some_and(|(_, y, q)| !self.targets[self.ix(y)].dropped && self.arrival_at(y, q) < ready)
             })
             .collect();
         for x in late {
@@ -460,7 +481,7 @@ impl<'a> Solver<'a> {
             }
         };
         let play = |segs: &mut Vec<SrcSeg>, t: f64, pos: f64, q: f64| {
-            runs(&self.paces[v], pos, q).into_iter().fold(t, |t, (a, b, r)| {
+            runs(&self.media[v].paces, pos, q).into_iter().fold(t, |t, (a, b, r)| {
                 let dt = (b - a) / r;
                 add(segs, t, t + dt, a, r);
                 t + dt
@@ -481,13 +502,19 @@ impl<'a> Solver<'a> {
 
     fn finish(mut self) -> Schedule {
         let s = self.s;
-        let nodes: Vec<NodeTime> = self.shown[..s.nodes.len()].iter().map(|&(start, end)| NodeTime { start, end }).collect();
+        let nodes: Vec<NodeTime> = self.targets[..s.nodes.len()]
+            .iter()
+            .map(|state| {
+                let (start, end) = state.interval;
+                NodeTime { start, end }
+            })
+            .collect();
         let total = nodes[0].end;
         let mut repeats: Vec<Vec<Repeat>> = vec![vec![]; s.nodes.len()];
         for n in &s.nodes {
             let nt = nodes[n.id];
             let mut chain = n.parent.map_or_else(Vec::new, |p| repeats[p].clone());
-            if let Some(period) = self.round[n.id].filter(|&r| r > 0 && nt.end > nt.start + r) {
+            if let Some(period) = self.nodes[n.id].period.filter(|&r| r > 0 && nt.end > nt.start + r) {
                 chain.push(Repeat {
                     from: nt.start,
                     period,
@@ -534,7 +561,7 @@ impl<'a> Solver<'a> {
         let mut audio = vec![];
         for (eid, e) in s.elems.iter().enumerate() {
             let i = self.ix(Target::Elem(eid));
-            let (start, end) = self.shown[i];
+            let (start, end) = self.targets[i].interval;
             let parent = nodes[e.node];
             let draws = !matches!(&e.kind, ElemKind::View(v) if v.ops.is_empty());
             if e.kind.is_visual() && draws && end <= start && parent.end > parent.start {
@@ -558,10 +585,10 @@ impl<'a> Solver<'a> {
             if e.kind.is_visual() {
                 et.hidden = hidden_in(e);
             }
-            if let Some(c) = self.clocks[eid].filter(|_| !self.dropped[i]) {
+            if let Some(c) = self.media[eid].clock.filter(|_| !self.targets[i].dropped) {
                 let segs = self.segments(eid, c, start, end);
                 let volume = e.kind.media().map_or(0.0, |m| m.volume);
-                let audible = volume > 0.0 && (matches!(e.kind, ElemKind::Audio(_)) || self.info[eid].is_some_and(|i| i.has_audio));
+                let audible = volume > 0.0 && (matches!(e.kind, ElemKind::Audio(_)) || self.media[eid].info.is_some_and(|i| i.has_audio));
                 if audible {
                     let env = et.fades();
                     for g in segs.iter().filter(|g| g.rate > 0.0 && g.t1 - g.t0 > EPS) {
@@ -601,7 +628,7 @@ impl<'a> Solver<'a> {
         let s = self.s;
         let mut slots: BTreeMap<&str, Vec<(Target, i64, i64, u32)>> = BTreeMap::new();
         for x in targets(s) {
-            let (start, end) = self.shown[self.ix(x)];
+            let (start, end) = self.targets[self.ix(x)].interval;
             let (order, chain): (u32, &[Repeat]) = match x {
                 Target::Node(n) => (s.nodes[n].span.lo, s.nodes[n].parent.map_or(&[], |p| repeats[p].as_slice())),
                 Target::Elem(e) => (s.elems[e].site.lo, &repeats[s.elems[e].node]),
@@ -614,7 +641,7 @@ impl<'a> Solver<'a> {
                 }
             }
         }
-        let total = self.shown[0].1;
+        let total = self.targets[0].interval.1;
         let mut hidden = BTreeMap::new();
         for holders in slots.values_mut() {
             holders.sort_by_key(|h| (h.1, h.3));
@@ -669,7 +696,7 @@ impl<'a> Solver<'a> {
         for (i, node) in s.nodes.iter().enumerate().skip(1) {
             let empty = nodes[i].end <= nodes[i].start;
             let tag = node.tag;
-            if node.t.timed() && !self.dropped[i] && empty {
+            if node.t.timed() && !self.targets[i].dropped && empty {
                 self.diags.push(Diag::new(
                     "W551",
                     node.head,
@@ -677,7 +704,7 @@ impl<'a> Solver<'a> {
                 ));
             }
             let shown = self.within(Target::Node(i)).is_some_and(|p| {
-                let (start, end) = self.shown[self.ix(p)];
+                let (start, end) = self.targets[self.ix(p)].interval;
                 end > start
             });
             if !node.t.timed() && empty && shown && !node.order.is_empty() {
@@ -690,7 +717,7 @@ impl<'a> Solver<'a> {
             let site = self.site(x);
             let p = self.within(x).expect("not the root");
             let reported = self.diags.iter().any(|d| d.is_error() && d.span == site);
-            if self.timed(x) && self.dropped[i] && !self.dropped[self.ix(p)] && !reported {
+            if self.timed(x) && self.targets[i].dropped && !self.targets[self.ix(p)].dropped && !reported {
                 self.diags
                     .push(Diag::new("W556", site, "this never plays: its container ends before it starts"));
             }

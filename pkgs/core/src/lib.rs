@@ -44,6 +44,7 @@ pub struct Project {
     pub source: String,
     pub index: LineIndex,
     pub script: ir::Script,
+    pub syntax: lang::ast::Tag,
     pub diags: Vec<Diag>,
 }
 
@@ -74,6 +75,7 @@ impl Project {
             source,
             index,
             script,
+            syntax: doc.root,
             diags,
         }
     }

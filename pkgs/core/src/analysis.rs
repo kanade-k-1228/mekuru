@@ -2,28 +2,62 @@ use crate::{
     Project,
     lang::diag::Diag,
     prepare::{self, Prepared},
-    preview::Diagnostic,
     schedule::Schedule,
 };
 use std::path::Path;
 
-pub fn analyze(path: &Path, root: Option<&Path>, source: String) -> (Project, Option<(Prepared, Schedule)>, Vec<Diag>) {
-    let p = Project::from_source_mode(path, root, source, true);
-    let mut diags = p.diags.clone();
-    let result = if p.has_errors() {
-        None
-    } else {
-        let prepared = prepare::inspect(&p.script);
-        diags.extend(prepared.diags.iter().cloned());
-        if diags.iter().any(Diag::is_error) {
-            None
-        } else {
-            let sched = p.schedule(&prepared);
-            diags.extend(sched.diags.iter().cloned());
-            if diags.iter().any(Diag::is_error) { None } else { Some((prepared, sched)) }
+#[derive(Clone, PartialEq, serde::Serialize)]
+pub struct Diagnostic {
+    pub code: String,
+    pub severity: &'static str,
+    pub line: u32,
+    pub message: String,
+}
+
+pub struct Resolved {
+    pub prepared: Prepared,
+    pub schedule: Schedule,
+}
+
+pub struct Compilation {
+    pub project: Project,
+    pub resolved: Option<Resolved>,
+    pub diagnostics: Vec<Diag>,
+}
+
+impl Compilation {
+    pub fn inspect(path: &Path, root: Option<&Path>, source: String) -> Self {
+        Self::new(Project::from_source_mode(path, root, source, true), prepare::inspect)
+    }
+
+    pub fn new(project: Project, prepare: impl FnOnce(&crate::ir::Script) -> Prepared) -> Self {
+        let mut diagnostics = project.diags.clone();
+        let resolved = (|| {
+            if diagnostics.iter().any(Diag::is_error) {
+                return None;
+            }
+            let prepared = prepare(&project.script);
+            diagnostics.extend(prepared.diags.iter().cloned());
+            if diagnostics.iter().any(Diag::is_error) {
+                return None;
+            }
+            let schedule = project.schedule(&prepared);
+            diagnostics.extend(schedule.diags.iter().cloned());
+            if diagnostics.iter().any(Diag::is_error) {
+                return None;
+            }
+            Some(Resolved { prepared, schedule })
+        })();
+        Self {
+            project,
+            resolved,
+            diagnostics,
         }
-    };
-    (p, result, diags)
+    }
+
+    pub fn diagnostics(&self) -> Vec<Diagnostic> {
+        diagnostics(&self.project, &self.diagnostics)
+    }
 }
 
 pub fn diagnostics(p: &Project, diags: &[Diag]) -> Vec<Diagnostic> {

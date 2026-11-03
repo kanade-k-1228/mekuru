@@ -45,7 +45,8 @@ fn preview_emits_text_styles_and_transform_without_glyph_paths() {
         .as_array()
         .unwrap()
         .iter()
-        .flat_map(|e| e["ops"].as_array().unwrap())
+        .flat_map(|e| e["drawings"].as_array().unwrap())
+        .flat_map(|id| result["resources"][id.as_str().unwrap()].as_array().unwrap())
         .collect();
     assert_eq!(ops.len(), 1);
     let text = ops[0];

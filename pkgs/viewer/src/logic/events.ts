@@ -1,14 +1,14 @@
-import type { PreviewCommand, PreviewDto, PreviewEvent, StateDto } from "@mekuru/protocol";
+import type { PreviewCommand, PreviewDto, PreviewEvent, Resources, StateDto } from "@mekuru/protocol";
 import { previewStore } from "./preview";
 export type ConnState = "connecting" | "open" | "reconnecting";
 export interface Connection {
   conn: ConnState;
   server: StateDto | null;
   preview: PreviewDto | null;
-  previewVersion: number;
+  resources: Resources;
   previewError: string | null;
 }
-export const initialConnection: Connection = { conn: "connecting", server: null, preview: null, previewVersion: 0, previewError: null };
+export const initialConnection: Connection = { conn: "connecting", server: null, preview: null, resources: {}, previewError: null };
 
 export const previewSocketUrl = (href: string): string => {
   const url = new URL("/api/ws", href);
@@ -61,10 +61,9 @@ export const connectEvents = (set: (update: (state: Connection) => Connection) =
         } else if (event.type === "snapshot" || event.type === "patch") {
           if (event.type === "patch" && phase !== "ready") return;
           const preview = store.apply(event);
-          const version = event.type === "snapshot" ? (event.preview?.version ?? 0) : event.version;
           phase = "ready";
           clearTimeout(timer);
-          set((s) => ({ ...s, conn: "open", server: event.state, preview, previewVersion: version, previewError: null }));
+          set((s) => ({ ...s, conn: "open", server: event.state, preview, resources: store.resources, previewError: null }));
         } else throw new Error("unknown preview event");
       } catch (e) {
         resync(e instanceof Error ? e.message : String(e));

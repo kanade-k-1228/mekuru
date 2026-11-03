@@ -67,3 +67,7 @@ bun run build:release
 The viewer builds to `pkgs/core/viewer/` and `build.rs` embeds it. Rebuild the executable after UI changes. A release build fails if the UI is missing; a Rust-only debug build displays build instructions instead. CI embeds the UI in every platform binary before packaging.
 
 See [XML syntax](../../docs/reference/Syntax.md) and [development](../../docs/dev/Developer.md).
+
+## Preview protocol migration
+
+`--emit-preview` returns `{ preview, resources, diagnostics }`. Preview elements use required `key` and `drawings` fields; resolve drawing IDs through `resources`. Inline `ops`, viewer-only `chunks`, and patch `removedResources` are removed. Discard resources not referenced by the accepted scene. Single-shot previews have version 1. Diagnostics refer to original XML lines. The Rust resident compiler is `preview::Session` (formerly `Worker`).

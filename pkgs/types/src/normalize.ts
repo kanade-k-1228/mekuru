@@ -1,10 +1,3 @@
-import type { Element } from "./expand.ts";
-export interface X {
-  tag: string;
-  attrs: [string, string][];
-  children: (X | string)[];
-}
-
 const TIMES = new Set(["len", "fadein", "fadeout", "from", "to", "delay"]);
 const LENGTHS = new Set(["x", "y", "w", "h", "min-w", "max-w", "min-h", "max-h", "gap"]);
 const RATIOS = new Set(["opacity", "volume"]);
@@ -74,16 +67,9 @@ const attr = (tag: string, key: string, v: unknown): [string, string] | undefine
   return [key, typeof v === "number" ? num(v) : String(v)];
 };
 
-export const normalize = (el: Element): X => {
-  const x: X = { tag: el.tag, attrs: [], children: [] };
-  for (const c of el.children) {
-    if (typeof c !== "string") x.children.push(normalize(c));
-    else if (el.tag === "text" || c.trim()) x.children.push(c);
-  }
-  for (const [k, v] of Object.entries(el.props)) {
-    if (k === "children" || k === "key" || v === undefined || v === null) continue;
-    const a = attr(el.tag, k, v);
-    if (a) x.attrs.push(a);
-  }
-  return x;
-};
+export const attributes = (tag: string, props: Record<string, unknown>): [string, string][] =>
+  Object.entries(props).flatMap(([key, value]) => {
+    if (key === "children" || key === "key" || value === undefined || value === null) return [];
+    const pair = tag === "mekuru" ? ([key, typeof value === "number" ? num(value) : String(value)] as [string, string]) : attr(tag, key, value);
+    return pair ? [pair] : [];
+  });

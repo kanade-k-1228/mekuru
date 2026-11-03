@@ -32,7 +32,7 @@ export const TsuzumiStand = actor.Stand;
 export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
   const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", children });
   return (
-    <dur len={line.len} id={id} at={at}>
+    <dur len={line.audio.len} id={id} at={at}>
       <stack>
         <Audio source={line.audio} />
         <actor.Talk source={line.audio} face={face} />
@@ -47,7 +47,7 @@ export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
 
 - 音声生成・キャッシュ・長さは音声コンポーネントが担当します。
 - 表情・口パク・待機中の表示は同じパッケージの `portrait()` が担当します。静止画には `<image>` も使えます。
-- `prepare` は文字を一度展開して、表示文字と共有する音声素材を返します。`line.len` は音声素材の長さです。外側の `<dur>` でセリフの区間を決めるため、装飾を足しても長さは変わりません。
+- `prepare` は文字を一度展開して、表示文字と共有する音声素材を返します。`line.audio.len` は音声素材の長さです。外側の `<dur>` でセリフの区間を決めるため、装飾を足しても長さは変わりません。
 
 ## 立ち絵・口パク
 

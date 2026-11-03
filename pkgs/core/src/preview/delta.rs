@@ -8,7 +8,7 @@ use std::{
 
 pub type Resources = HashMap<String, Arc<Vec<Op>>>;
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct SharedPreview {
     pub version: u64,
     #[serde(flatten)]
@@ -36,7 +36,6 @@ pub struct Patch {
     nodes: CollectionPatch<TimelineNode>,
     clips: CollectionPatch<Clip>,
     resources: Resources,
-    removed_resources: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -98,16 +97,15 @@ impl Published {
                 fps: b.fps,
                 duration: b.duration,
             },
-            elements: collection(&a.elements, &b.elements, |e| e.key.as_deref().expect("worker element key")),
-            nodes: collection(&a.timeline.nodes, &b.timeline.nodes, |e| e.key.as_deref().expect("worker node key")),
-            clips: collection(&a.timeline.clips, &b.timeline.clips, |e| e.key.as_deref().expect("worker clip key")),
+            elements: collection(&a.elements, &b.elements, |e| &e.key),
+            nodes: collection(&a.timeline.nodes, &b.timeline.nodes, |e| &e.key),
+            clips: collection(&a.timeline.clips, &b.timeline.clips, |e| &e.key),
             resources: self
                 .resources
                 .iter()
                 .filter(|(k, _)| !before.resources.contains_key(*k))
                 .map(|(k, ops)| (k.clone(), ops.clone()))
                 .collect(),
-            removed_resources: before.resources.keys().filter(|k| !self.resources.contains_key(*k)).cloned().collect(),
         }));
         // Count scene metadata once; unchanged drawing JSON sizes were cached at generation.
         let empty = Update::Snapshot {

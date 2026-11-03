@@ -24,6 +24,31 @@ pub enum Child {
 }
 
 impl Tag {
+    pub fn attribute(&self, name: &str) -> Option<&str> {
+        self.attrs.iter().find(|a| a.key == name).map(|a| a.value.as_str())
+    }
+
+    pub fn tags(&self) -> impl Iterator<Item = &Tag> {
+        self.children.iter().filter_map(|c| match c {
+            Child::Tag(t) => Some(t),
+            _ => None,
+        })
+    }
+
+    pub fn descendants(&self) -> Vec<&Tag> {
+        std::iter::once(self).chain(self.tags().flat_map(Tag::descendants)).collect()
+    }
+
+    pub fn label(&self) -> String {
+        self.children
+            .iter()
+            .map(|c| match c {
+                Child::Tag(t) => t.label(),
+                Child::Text(l) => l.display(),
+            })
+            .collect()
+    }
+
     pub fn text(&self) -> Label {
         let mut segs = vec![];
         let mut span: Option<Span> = None;

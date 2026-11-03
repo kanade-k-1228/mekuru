@@ -4,7 +4,7 @@ mod script;
 mod socket;
 mod watch;
 
-use crate::preview::{Diagnostic, Request, Worker, delta::Published};
+use crate::preview::{Diagnostic, Request, Session, delta::Published};
 use anyhow::{Context, Result};
 use axum::{
     Router,
@@ -143,7 +143,7 @@ impl App {
 
 /// A bounded queue retains only the newest pending XML. Compilation stays off Tokio's I/O threads.
 fn compile(app: App, path: PathBuf) {
-    let mut worker = Worker::default();
+    let mut worker = Session::default();
     while let Some((version, xml)) = app.queue.take() {
         let base_version = app.live.lock().unwrap().scene.as_ref().map(|s| s.preview.version);
         let started = Instant::now();
@@ -166,7 +166,7 @@ fn compile(app: App, path: PathBuf) {
                     break;
                 }
                 Err(_) => {
-                    worker = Worker::default();
+                    worker = Session::default();
                 }
             }
             if app.cancel.is_cancelled() || app.live.lock().unwrap().state.version != version {

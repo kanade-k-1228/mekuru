@@ -122,7 +122,7 @@ type Line = Children & { id?: string; at?: At; face?: FaceName; show?: Node };
 export const Tsuzumi: FC<Line> = async ({ children, face, show, ...time }) => {
   const line = await Voisona.prepare({ ...voice, children });
   return (
-    <dur len={line.len} {...time}>
+    <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
         <tsuzumi.Talk source={line.audio} face={face} />

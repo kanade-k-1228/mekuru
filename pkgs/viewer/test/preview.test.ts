@@ -9,16 +9,17 @@ const present = (p: PreviewDto | null): PreviewDto => {
   return p;
 };
 
-test("patches atomically, keeping unchanged elements, chunks and timeline references", () => {
+test("patches atomically, keeping unchanged elements, resources and timeline references", () => {
   const store = previewStore();
   const a = sharePreview(compilation(), null);
   const first = present(store.apply(snapshot(state(), a)));
+  const originalA = store.resources.A;
   const b = sharePreview(compilation(2, [element("e0", ["A", "C"]), element("e1", ["A"], 1)], { C: resources.C }), a);
   const second = present(store.apply(patch(state(2), a, b)));
   expect(second.elements[1]).toBe(first.elements[1]);
   expect(second.elements[0]).not.toBe(first.elements[0]);
-  expect(second.elements[0].chunks?.[0]).toBe(first.elements[0].chunks?.[0]);
-  expect(second.elements[0].chunks?.[1].ops).toEqual(resources.C);
+  expect(store.resources.A).toBe(originalA);
+  expect(store.resources[second.elements[0].drawings[1]]).toEqual(resources.C);
   expect(second.timeline).toBe(first.timeline);
   const c = sharePreview(compilation(3, b.preview.elements, {}), b);
   const third = present(store.apply(patch(state(3), b, c)));
@@ -55,5 +56,6 @@ test("rejects missing resources and version mismatch without corrupting the prev
   // B was pruned: a later patch must supply it again.
   const c = sharePreview(compilation(3, [element("e0", ["B"])], { B: resources.B }), b);
   expect(() => store.apply({ ...patch(state(3), b, c), resources: {} })).toThrow("missing drawing");
-  expect(store.apply(snapshot(state(3), c))?.elements[0].chunks?.[0].ops).toEqual(resources.B);
+  store.apply(snapshot(state(3), c));
+  expect(store.resources.B).toEqual(resources.B);
 });

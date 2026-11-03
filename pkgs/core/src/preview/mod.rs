@@ -1,9 +1,8 @@
 use crate::typography::font::FontBook;
 pub(crate) mod delta;
 mod identity;
-mod source;
-mod worker;
-pub use worker::{Request, Response, Worker};
+mod session;
+pub use session::{Request, Response, Session};
 
 use crate::{
     Project,
@@ -20,15 +19,39 @@ mod dto;
 pub use dto::*;
 
 pub fn compile(path: &Path, root: Option<&Path>, xml: String) -> Compilation {
-    compile_internal(path, root, xml, None)
+    let mut worker = Session::default();
+    let response = worker.compile(
+        path,
+        root,
+        Request {
+            version: 1,
+            xml,
+            base_version: None,
+        },
+    );
+    let published = worker.scene();
+    Compilation {
+        preview: published.as_ref().map(|p| p.preview.clone()),
+        resources: published.map(|p| (*p.resources).clone()).unwrap_or_default(),
+        diagnostics: response.diagnostics,
+    }
 }
 
-fn compile_internal(path: &Path, root: Option<&Path>, xml: String, worker: Option<&mut Worker>) -> Compilation {
-    let source = source::format(&xml).unwrap_or(xml);
-    let (p, analysis, diags) = crate::analysis::analyze(path, root, source);
-    let preview = analysis.map(|(prepared, sched)| scene(&p, &prepared, &sched, worker));
-    let diagnostics = crate::analysis::diagnostics(&p, &diags);
-    Compilation { preview, diagnostics }
+struct SceneCompilation {
+    preview: Option<Preview>,
+    diagnostics: Vec<Diagnostic>,
+}
+
+fn compile_internal(path: &Path, root: Option<&Path>, xml: String, worker: &mut Session) -> SceneCompilation {
+    let compilation = crate::analysis::Compilation::inspect(path, root, xml);
+    let preview = compilation
+        .resolved
+        .as_ref()
+        .map(|r| scene(&compilation.project, &r.prepared, &r.schedule, worker));
+    SceneCompilation {
+        preview,
+        diagnostics: compilation.diagnostics(),
+    }
 }
 
 fn file_src(path: &Path, root: &Path) -> String {
@@ -103,7 +126,7 @@ fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &m
                 let root = base_dir.canonicalize().ok()?;
                 path.strip_prefix(root).ok().map(|p| p.to_string_lossy().replace('\\', "/"))
             });
-            let font_revision = font_src.as_ref().and(path.as_deref()).map(worker::revision);
+            let font_revision = font_src.as_ref().and(path.as_deref()).map(session::revision);
             ops.push(Op::Text {
                 text: text.text.clone(),
                 x: text.x,
@@ -141,25 +164,23 @@ fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &m
     ops.extend(transform_paths(paths, t).into_iter().map(path_op));
 }
 
-fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, mut worker: Option<&mut Worker>) -> Preview {
+fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, worker: &mut Session) -> Preview {
     let script = &p.script;
     let st = &script.settings;
     let fps = st.rate();
     let s = |f: f64| fps.secs(f);
     let i = |f: i64| fps.secs(f as f64);
     let fonts = p.fonts();
-    let keys = worker.as_mut().map(|w| w.identities.update(&p.source));
+    let keys = worker.identities.update(&p.syntax);
     let mut counts = std::collections::HashMap::<String, usize>::new();
     let elem_keys: Vec<_> = script
         .elems
         .iter()
         .map(|e| {
-            keys.as_ref().map(|keys| {
-                let base = format!("{}:{}", keys[&(e.site.lo as usize)], e.kind.name());
-                let count = counts.entry(base.clone()).or_default();
-                *count += 1;
-                format!("{base}:{count}")
-            })
+            let base = format!("{}:{}", keys[&(e.site.lo as usize)], e.kind.name());
+            let count = counts.entry(base.clone()).or_default();
+            *count += 1;
+            format!("{base}:{count}")
         })
         .collect();
     let mut elements = vec![];
@@ -170,18 +191,13 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, mut worker
         if !e.kind.is_visual() && !matches!(e.kind, ElemKind::Audio(_)) {
             continue;
         }
-        let mut ops = vec![];
         let mut drawings = vec![];
         let mut bounds = None;
         match &e.kind {
             ElemKind::View(view) => {
                 for op in &view.ops {
-                    if let Some(w) = worker.as_mut() {
-                        let drawing = w.draw(op, &fonts, &script.base_dir);
-                        drawings.push(drawing.id.clone());
-                    } else {
-                        draw_op(op, Transform::identity(), &fonts, &script.base_dir, &mut ops);
-                    }
+                    let drawing = worker.draw(op, &fonts, &script.base_dir);
+                    drawings.push(drawing.id);
                 }
             }
             ElemKind::Video(v) => {
@@ -192,7 +208,7 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, mut worker
             _ => {}
         }
         let media = e.kind.media().zip(et.src.as_ref()).map(|(m, src)| Media {
-            revision: worker.is_some().then(|| worker::revision(&m.path)),
+            revision: Some(session::revision(&m.path)),
             src: file_src(&m.path, &script.base_dir),
             gain: if prepared.media.get(&e.id).is_some_and(|m| m.probe.has_audio) {
                 m.volume
@@ -213,8 +229,7 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, mut worker
                 .filter(|f| f.fade_in > 0.0 || f.fade_out > 0.0)
                 .map(|f| [s(f.start), s(f.end), s(f.fade_in), s(f.fade_out), f.level as f64])
                 .collect(),
-            ops: worker.is_none().then_some(ops),
-            drawings: worker.is_some().then_some(drawings),
+            drawings,
             key: elem_keys[e.id].clone(),
             media,
             bounds,
@@ -228,17 +243,16 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, mut worker
         fps: st.fps,
         duration: i(sched.total),
         elements,
-        timeline: timeline(p, sched, keys.as_ref(), &elem_keys),
+        timeline: timeline(p, sched, &keys, &elem_keys),
     }
 }
 
-fn timeline(p: &Project, sched: &Schedule, keys: Option<&std::collections::HashMap<usize, String>>, elem_keys: &[Option<String>]) -> Timeline {
+fn timeline(p: &Project, sched: &Schedule, keys: &std::collections::HashMap<usize, String>, elem_keys: &[String]) -> Timeline {
     let fps = p.script.settings.rate();
     let i = |f: i64| fps.secs(f as f64);
     let s = &p.script;
     let mut out = Timeline::default();
-    let doc = roxmltree::Document::parse(&p.source).expect("validated XML");
-    let tags: BTreeMap<_, _> = doc.descendants().filter(|n| n.is_element()).map(|n| (n.range().start as u32, n)).collect();
+    let tags: BTreeMap<_, _> = p.syntax.descendants().into_iter().map(|tag| (tag.head.lo, tag)).collect();
     let mut depths = vec![0; s.nodes.len()];
     let mut labels = vec![String::new(); s.nodes.len()];
     for n in &s.nodes {
@@ -249,7 +263,7 @@ fn timeline(p: &Project, sched: &Schedule, keys: Option<&std::collections::HashM
     for e in &s.elems {
         let et = &sched.elems[e.id];
         let tag = tags.get(&e.site.lo);
-        let name = tag.map_or(e.kind.name(), |t| t.tag_name().name());
+        let name = tag.map_or(e.kind.name(), |t| t.name.as_str());
         let speech = tag.and_then(|t| t.attribute("label"));
         let lane = match &e.kind {
             ElemKind::Audio(_) | ElemKind::DraftAudio => {
@@ -266,17 +280,7 @@ fn timeline(p: &Project, sched: &Schedule, keys: Option<&std::collections::HashM
             e.kind
                 .media()
                 .map(|m| m.path.file_name().unwrap_or_default().to_string_lossy().into_owned())
-                .unwrap_or_else(|| {
-                    tag.map_or_else(String::new, |t| {
-                        t.descendants()
-                            .filter(|n| n.is_text())
-                            .filter_map(|n| n.text())
-                            .collect::<String>()
-                            .split_whitespace()
-                            .collect::<Vec<_>>()
-                            .join(" ")
-                    })
-                })
+                .unwrap_or_else(|| tag.map_or_else(String::new, |t| t.label().split_whitespace().collect::<Vec<_>>().join(" ")))
         });
         if lane == "speech" && labels[e.node].is_empty() {
             labels[e.node] = label.clone();
@@ -286,7 +290,7 @@ fn timeline(p: &Project, sched: &Schedule, keys: Option<&std::collections::HashM
             continue;
         }
         out.clips.push(Clip {
-            key: elem_keys[e.id].as_ref().map(|k| format!("{k}:clip")),
+            key: format!("{}:clip", elem_keys[e.id]),
             tag: name.into(),
             lane,
             line,
@@ -317,7 +321,7 @@ fn timeline(p: &Project, sched: &Schedule, keys: Option<&std::collections::HashM
         let t = sched.nodes[n.id];
         let line = p.index.line(n.head.lo);
         out.nodes.push(TimelineNode {
-            key: keys.map(|keys| format!("{}:node", keys[&(n.head.lo as usize)])),
+            key: format!("{}:node", keys[&(n.head.lo as usize)]),
             id: n.id,
             parent: n.parent.filter(|&id| !top(id)),
             depth: depths[n.id] - 1,

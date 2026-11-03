@@ -1,4 +1,4 @@
-use mekuru_compiler::preview::{Request, Worker};
+use mekuru_compiler::preview::{Request, Session as PreviewSession};
 use serde_json::{Value, json};
 use std::{
     collections::HashMap,
@@ -41,7 +41,7 @@ fn apply_collection(before: &Value, delta: &Value) -> Value {
 }
 
 struct Session {
-    worker: Worker,
+    worker: PreviewSession,
     resources: HashMap<String, Value>,
     version: u64,
     scene: Value,
@@ -49,7 +49,7 @@ struct Session {
 impl Session {
     fn new() -> Self {
         Self {
-            worker: Worker::default(),
+            worker: PreviewSession::default(),
             resources: HashMap::new(),
             version: 0,
             scene: Value::Null,
@@ -83,9 +83,6 @@ impl Session {
                 for name in ["nodes", "clips"] {
                     self.scene["timeline"][name] = apply_collection(&self.scene["timeline"][name], &update[name]);
                 }
-                for key in update["removedResources"].as_array().unwrap() {
-                    self.resources.remove(key.as_str().unwrap());
-                }
                 for (key, ops) in update["resources"].as_object().unwrap() {
                     self.resources.insert(key.clone(), ops.clone());
                 }
@@ -102,38 +99,7 @@ impl Session {
             scene.as_object_mut().unwrap().remove("version");
             scene
         };
-        let mut expanded = result["preview"].clone();
-        if !expanded.is_null() {
-            for entries in [&expanded["elements"], &expanded["timeline"]["nodes"], &expanded["timeline"]["clips"]] {
-                let entries = entries.as_array().unwrap();
-                let keys: std::collections::HashSet<_> = entries.iter().map(|e| e["key"].as_str().unwrap()).collect();
-                assert_eq!(keys.len(), entries.len(), "duplicate preview keys");
-            }
-            let mut used = std::collections::HashSet::new();
-            for element in expanded["elements"].as_array_mut().unwrap() {
-                let drawings = element.as_object_mut().unwrap().remove("drawings").unwrap();
-                let mut ops = vec![];
-                for key in drawings.as_array().unwrap() {
-                    let key = key.as_str().unwrap();
-                    used.insert(key.to_string());
-                    ops.extend(self.resources[key].as_array().unwrap().iter().cloned().map(|mut op| {
-                        op.as_object_mut().unwrap().remove("revision");
-                        op
-                    }));
-                }
-                element["ops"] = json!(ops);
-                element.as_object_mut().unwrap().remove("key");
-                if let Some(media) = element["media"].as_object_mut() {
-                    media.remove("revision");
-                }
-            }
-            self.resources.retain(|k, _| used.contains(k));
-            for name in ["nodes", "clips"] {
-                for entry in expanded["timeline"][name].as_array_mut().unwrap() {
-                    entry.as_object_mut().unwrap().remove("key");
-                }
-            }
-        }
+        let expanded = expand(result["preview"].clone(), &mut self.resources);
         // A fresh process keeps the uncached reference independent of resident caches.
         let mut proc = Command::new(env!("CARGO_BIN_EXE_mekuru-compiler"))
             .args(["-", "--emit-preview", "--root"])
@@ -146,10 +112,52 @@ impl Session {
         let output = proc.wait_with_output().unwrap();
         assert!(output.status.success());
         let reference: Value = serde_json::from_slice(&output.stdout).unwrap();
-        assert_eq!(expanded, reference["preview"], "{xml}");
+        let mut reference_scene = reference["preview"].clone();
+        if let Some(scene) = reference_scene.as_object_mut() {
+            scene.remove("version");
+        }
+        let mut resources = serde_json::from_value(reference["resources"].clone()).unwrap();
+        assert_eq!(expanded, expand(reference_scene, &mut resources), "{xml}");
         assert_eq!(result["diagnostics"], reference["diagnostics"], "{xml}");
         result
     }
+}
+
+fn expand(scene: Value, resources: &mut HashMap<String, Value>) -> Value {
+    let mut expanded = scene;
+    if !expanded.is_null() {
+        for entries in [&expanded["elements"], &expanded["timeline"]["nodes"], &expanded["timeline"]["clips"]] {
+            let entries = entries.as_array().unwrap();
+            let keys: std::collections::HashSet<_> = entries.iter().map(|e| e["key"].as_str().unwrap()).collect();
+            assert_eq!(keys.len(), entries.len(), "duplicate preview keys");
+        }
+        let mut used = std::collections::HashSet::new();
+        for element in expanded["elements"].as_array_mut().unwrap() {
+            let drawings = element.as_object_mut().unwrap().remove("drawings").unwrap();
+            let mut ops = vec![];
+            for key in drawings.as_array().unwrap() {
+                let key = key.as_str().unwrap();
+                used.insert(key.to_string());
+                ops.extend(resources[key].as_array().unwrap().iter().cloned().map(|mut op| {
+                    op.as_object_mut().unwrap().remove("revision");
+                    op
+                }));
+            }
+            element["ops"] = json!(ops);
+            element.as_object_mut().unwrap().remove("key");
+            if let Some(media) = element["media"].as_object_mut() {
+                media.remove("revision");
+            }
+        }
+        resources.retain(|k, _| used.contains(k));
+        for name in ["nodes", "clips"] {
+            for entry in expanded["timeline"][name].as_array_mut().unwrap() {
+                entry.as_object_mut().unwrap().remove("key");
+            }
+        }
+    }
+
+    expanded
 }
 
 fn document(body: &str) -> String {
@@ -211,9 +219,9 @@ fn insertion_deletion_reordering_duplicate_elements_repeats_references_and_draft
 
 #[test]
 fn discarded_responses_and_evicted_cache_entries_never_lose_resources() {
-    let mut worker = Worker::new(1); // Every drawing exceeds this cache budget.
+    let mut worker = PreviewSession::new(1); // Every drawing exceeds this cache budget.
     let xml = document(r#"<dur len="30"><text>Cache</text></dur>"#);
-    let run = |w: &mut Worker, version, base_version| {
+    let run = |w: &mut PreviewSession, version, base_version| {
         wire(w.compile(
             Path::new("-"),
             None,
@@ -345,7 +353,7 @@ fn cached_drawings_keep_analysis_warnings_on_current_source_lines() {
     let mut session = Session::new();
     let xml = document(r#"<dur len="30"><text anchor="c">Warning</text></dur>"#);
     let first = session.compile(Path::new("."), &xml);
-    let next = session.compile(Path::new("."), &xml.replace("<dur", "<!-- new source line --><dur"));
+    let next = session.compile(Path::new("."), &xml.replace("<dur", "<!-- new source line -->\n<dur"));
     assert_success(&first);
     assert_success(&next);
     assert_eq!(next["stats"]["drawHits"], 1);
@@ -356,9 +364,9 @@ fn cached_drawings_keep_analysis_warnings_on_current_source_lines() {
 
 #[test]
 fn deltas_use_only_acknowledged_scenes_and_reset_unknown_bases() {
-    let mut worker = Worker::default();
+    let mut worker = PreviewSession::default();
     let xml = document(&(0..100).map(|i| format!(r#"<dur len="30"><text>Caption {i}</text></dur>"#)).collect::<String>());
-    let run = |w: &mut Worker, version, base_version, xml: &str| {
+    let run = |w: &mut PreviewSession, version, base_version, xml: &str| {
         wire(w.compile(
             Path::new("-"),
             None,
@@ -393,7 +401,7 @@ fn deltas_use_only_acknowledged_scenes_and_reset_unknown_bases() {
     let unknown = run(&mut worker, 7, Some(999), &latest_xml);
     assert_eq!(unknown["update"]["type"], "snapshot");
     assert_eq!(unknown["update"]["resources"].as_object().unwrap().len(), 100);
-    let restarted = run(&mut Worker::default(), 8, Some(7), &latest_xml);
+    let restarted = run(&mut PreviewSession::default(), 8, Some(7), &latest_xml);
     assert_eq!(restarted["update"]["type"], "snapshot");
     assert_ne!(
         restarted["update"]["preview"]["elements"][0]["key"],
