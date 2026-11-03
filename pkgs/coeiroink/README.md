@@ -96,7 +96,7 @@ Unknown speakers are reported with the available speaker/style names. Check `/v1
 - `len`: Total frames, including the gap. Default: rounded-up audio duration + `gap`. Does not change speaking speed.
 - `id`, `at`: Identifier and start timing for the generated `<dur>`; see [timing](../../docs/reference/Syntax.md#timing-attributes).
 
-Ruby `｜表示《よみ》` reads `よみ` and keeps `表示` in the timeline. ASCII `|` and `漢字《かんじ》` also work. `<br />` becomes a space; other nested elements are rejected. Use `<seq>` for successive lines and `<stack>` for speech with subtitles. For lip sync, wrap a line in a [portrait's `Talk`](../portrait/README.md).
+Ruby `｜表示《よみ》` reads `よみ` and keeps `表示` in the timeline. ASCII `|` and `漢字《かんじ》` also work. `<br />` becomes a space; other nested elements are rejected. Use `<seq>` for successive lines and `<stack>` for speech with subtitles. For lip sync, wrap a line in a [portrait's `Talk`](../narrator/README.md).
 
 ### Cache and preview
 
@@ -113,3 +113,5 @@ curl http://127.0.0.1:50032/v1/speakers
 ```
 
 For connection errors, check the engine and port. On Windows, use [WSL mirrored networking](https://learn.microsoft.com/en-us/windows/wsl/networking#mirrored-mode-networking) to reach the engine through `127.0.0.1`.
+
+For custom narrators, `await Coeiroink.prepare({ ...voiceSettings, children })` returns shared audio, display text, and duration. Put `id` and `at` on the components that place it. See [shared audio sources](../speech/README.md#shared-audio-sources) and [composing narrators](../narrator/README.md).

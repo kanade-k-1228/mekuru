@@ -39,20 +39,22 @@ This component combines speech, a portrait, and subtitles into one line. Types a
 
 ```tsx
 // Excerpt from example/src/parts.tsx
-export const Tsuzumi = ({ children, face, show, ...time }: Line) => (
-  <stack {...time}>
-    <tsuzumi.Talk face={face}>
-      <Voisona {...voice}>{children}</Voisona>
-    </tsuzumi.Talk>
-    <Subtitle>{children}</Subtitle>
-    {show}
-  </stack>
-);
+export const Tsuzumi = async ({ children, face, show, ...time }: Line) => {
+  const line = await Voisona.prepare({ ...voice, children });
+  return (
+    <dur len={line.len} {...time}>
+      <stack>
+        <Audio source={line.audio} />
+        <tsuzumi.Talk source={line.audio} face={face} />
+        <Subtitle>{line.display}</Subtitle>
+        {show}
+      </stack>
+    </dur>
+  );
+};
 ```
 
-Audio inside `<stack>` sets the duration; subtitles, the portrait, and elements passed as `show` appear together. See [VoiSona Talk](../../pkgs/voisona/README.md) for speech and [portraits](Portrait.md) for animation.
-
-Use `Subtitle` from [@mekuru/narrator](../../pkgs/narrator/README.md) for shared subtitle behavior: ruby notation becomes display text and explicit line breaks are preserved. The example above wraps this component with custom styling. Speech owns audio duration, and `portrait().Talk` owns lip sync. Additional timed elements can extend the enclosing `<stack>`; use `<dur>` when a fixed duration is needed.
+`Voisona.prepare` prepares one shared audio source for `Audio` and `Talk` (`Audio` is imported from `@mekuru/speech`). `line.display` preserves ruby base text and line breaks. `Subtitle` only adds styles to ordinary `text`. The outer `<dur>` bounds the whole line, including anything passed as `show`. See [composing narrators](../../pkgs/narrator/README.md).
 
 ### Displaying code
 

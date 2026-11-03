@@ -1,24 +1,17 @@
-import { AsyncLocalStorage } from "node:async_hooks";
 import { rename, rm } from "node:fs/promises";
+import { resolve } from "node:path";
+import { builds, context as newContext } from "./context.ts";
 import { toXml } from "./xml.ts";
 
-const output = new AsyncLocalStorage<{ draft: boolean; waits: Set<Promise<unknown>> }>();
-
-export const isDraft = (): boolean => output.getStore()?.draft ?? false;
-
-export const waitFor = (work: Promise<unknown>): void => {
-  work.catch(() => {});
-  output.getStore()?.waits.add(work);
-};
-
 export const writeXml = async (path: string, video: unknown): Promise<void> => {
-  const context = { draft: true, waits: new Set<Promise<unknown>>() };
-  await output.run(context, async () => {
-    const tmp = `${path}.${process.pid}.${crypto.randomUUID()}.tmp`;
+  const context = newContext(true);
+  const file = resolve(context.root, path);
+  await builds.run(context, async () => {
+    const tmp = `${file}.${process.pid}.${crypto.randomUUID()}.tmp`;
     const save = async () => {
       const xml = await toXml(video);
       await Bun.write(tmp, xml);
-      await rename(tmp, path);
+      await rename(tmp, file);
     };
     try {
       await save();

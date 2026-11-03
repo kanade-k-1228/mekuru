@@ -1,8 +1,9 @@
+import { samples } from "@mekuru/audio/wav";
 /** @jsxImportSource @mekuru/core */
-import { join } from "node:path";
-import { fps, type Anchor, type At, type JSX, type Length, type Node, type Time } from "@mekuru/core";
+import { fps, projectRoot, type Anchor, type At, type JSX, type Length, type Node, type Time } from "@mekuru/core";
+import type { AudioSource } from "@mekuru/audio";
 import { FOLDERS, isMany, readParts, type Folder, type Many, type Part, type Parts } from "./folder.ts";
-import { blinks, lipSync, random, samples, type Shot } from "./motion.ts";
+import { blinks, lipSync, random, type Shot } from "./motion.ts";
 
 export { FOLDERS, type Folder, type Part, type Parts } from "./folder.ts";
 
@@ -33,7 +34,7 @@ export interface StandProps<Name extends string> {
 
 export interface TalkProps<Name extends string> {
   face?: FaceOf<Name>;
-  children: Node;
+  source: AudioSource;
 }
 
 export interface Portrait<Name extends string = string> {
@@ -45,36 +46,8 @@ export interface Portrait<Name extends string = string> {
 
 type Chosen = Record<Folder, Part[]>;
 
-interface Element {
-  tag: unknown;
-  props: Record<string, unknown>;
-  children?: unknown[];
-}
-const isElement = (node: unknown): node is Element => typeof node === "object" && node !== null && "tag" in node && "props" in node;
-
-interface Speech {
-  speech: Element;
-  audio: Element;
-  len?: number;
-}
-
-const speechOf = async (node: unknown): Promise<Speech> => {
-  if (Array.isArray(node) && node.length === 1) return speechOf(node[0]);
-  if (isElement(node)) {
-    if (node.tag === "audio") return { speech: node, audio: node };
-    const [audio, ...rest] = node.children ?? [];
-    if (node.tag === "dur" && rest.length === 0 && isElement(audio) && audio.tag === "audio") return { speech: node, audio, len: Number(node.props.len) };
-    if (typeof node.tag === "function") {
-      const props = { ...node.props };
-      if (node.children?.length) props.children = node.children.length === 1 ? node.children[0] : node.children;
-      return speechOf(await node.tag(props));
-    }
-  }
-  throw new Error("<Talk> has one line of speech in it: a speech component such as <Voicevox>, an <audio>, or an <audio> in a <dur>");
-};
-
 export const portrait = <Name extends string = never>(options: PortraitOptions<Name>): Portrait<Name> => {
-  const root = process.cwd();
+  const root = projectRoot();
   const parts = readParts(root, options.src);
   const slot = options.slot ?? `portrait:${options.src}`;
   const every = () => (options.blink === false ? 0 : (options.blink ?? Math.round(4 * fps())));
@@ -169,29 +142,20 @@ export const portrait = <Name extends string = never>(options: PortraitOptions<N
     );
   };
 
-  const Talk = async ({ face, children }: TalkProps<Name>): Promise<Awaited<JSX.Element>> => {
+  const Talk = async ({ face, source }: TalkProps<Name>): Promise<Awaited<JSX.Element>> => {
     const c = faceOf(face);
-    const { speech, audio, len: given } = await speechOf(children);
-    const src = typeof audio.props.src === "string" ? audio.props.src : undefined;
-    const wav = src === undefined ? undefined : Buffer.from(await Bun.file(join(root, src)).arrayBuffer());
-    let len = given !== undefined && Number.isInteger(given) && given > 0 ? given : undefined;
-    if (len === undefined && wav) {
-      const { rate, data } = samples(wav);
-      len = Math.ceil((data.length / rate) * fps() - 1e-6);
-    }
-    const seed = `${slot}:${String(audio.props.label ?? src ?? "")}:${len}`;
-    const eyes = c.目.map((p) => (len !== undefined && canBlink(p) ? seq(blinks(blinking(p, seed), len)) : image(p.src)));
+    const wav = source.status === "ready" ? Buffer.from(await Bun.file(source.src).arrayBuffer()) : undefined;
+    const len = source.len;
+    const seed = `${slot}:${source.label ?? (source.status === "ready" ? source.src : "")}:${len}`;
+    const eyes = c.目.map((p) => (canBlink(p) ? seq(blinks(blinking(p, seed), len)) : image(p.src)));
     const mouth = c.口.map((p) => {
-      if (len === undefined || !wav || p.frames.length === 0) return image(closed(p));
-      return seq(lipSync(wav, [...p.frames, p.src], len, fps()));
+      if (!wav || p.frames.length === 0) return image(closed(p));
+      return seq(lipSync(samples(wav), [...p.frames, p.src], len, fps()));
     });
-    return (
-      <>
-        {speech as unknown as Node}
-        {figure(c, eyes, mouth)}
-      </>
-    );
+    return <dur len={len}>{figure(c, eyes, mouth)}</dur>;
   };
 
   return { parts, faces: Object.keys(faces) as Name[], Stand, Talk };
 };
+
+export { psdPortrait, type PsdPortraitOptions } from "./psd.tsx";

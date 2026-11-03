@@ -60,13 +60,27 @@ export const createSpeech = (synthesize: Synthesize) =>
 - `len`: 全体の長さ（フレーム）。省略時は、音声の長さをフレームに切り上げて `gap` を足します。
 - `id`・`at`: 外側の `<dur>` に渡します。[時間の属性](../../docs/reference/Syntax.jp.md#時間の属性)を参照してください。
 
-`｜表示《よみ》` のルビは「よみ」を合成に、「表示」をラベルに使います。半角の `|` も使え、漢字なら `漢字《かんじ》` のように区切りを省けます。`<br />` は空白になります。ほかの要素や部品をセリフの中に置くとエラーです。
+`｜表示《よみ》` のルビは「よみ」を合成に、「表示」をラベルに使います。半角の `|` も使え、漢字なら `漢字《かんじ》` のように区切りを省けます。`<br />` は空白になります。文字や `<br />` を返す同期・非同期の部品も使えます。それ以外の要素はエラーです。
 
 キャッシュがなければ、`writeXml()` は無音の下書きを出し、合成後に更新します。見積もりは1文字0.15秒と `gap` の合計（`len` 指定時はその値）。下書きの外で呼ぶ `toXml()` は合成を待ちます。
 
+### 共有する音声素材
+
+エンジンの `Voisona.prepare(props)`・`Voicevox.prepare(props)`・`Coeiroink.prepare(props)`・`StyleBertVits2.prepare(props)` は `PreparedLine` を返します。`children` と声・読み・長さの設定を渡し、`id`・`at` は返された素材を配置する側に付けます。`<mekuru>` 内の非同期部品で呼びます。
+
+- `line.audio`: 読み取り専用の `AudioSource`（型は `@mekuru/audio`）。`status` は `draft` または `ready`。`len` は句末の間を含むフレーム数、`label` と `volume` は再生時の設定。完成版の `src` は絶対パスです。
+- `line.len`: `line.audio.len` から取得する長さ。
+- `line.display`: ルビの表記部分・空白・改行を保持した表示用 Node。文字コンポーネントは準備時に一度だけ展開します。
+- `<Audio source={line.audio} id="line" />`: 素材を既存の `<dur><audio /></dur>` に展開します。
+- `readAudio(src, { gap?, len?, label?, volume? })`: 既存の WAV から同じ素材を作ります。`gap` の既定値は 0。相対パスは構築開始時のプロジェクトが基準です。
+
+独自のエンジンでは `prepare(kind, props, who, voice, synthesize)` を使います。引数は `line` と共通で、JSX の代わりに `PreparedLine` を返します。`line` と各エンジンの JSX 部品は、この素材を `Audio` に渡す簡便な API です。
+
+下書きでは見積もりの素材を返して合成を予約し、完成版では実際の WAV と長さを返します。どちらも同じ部品で表示できます。キャッシュ基準・進捗・実行中の合成は一回の構築に属し、import 時点の作業フォルダには依存しません。
+
 ### その他のエクスポート
 
-- `subtitleText(children)`: ルビを表示文字に変換し、`<br />` を保持したNodeを返します。読み上げと同じ入力形式を使います。字幕の配置・装飾には [@mekuru/narrator](../narrator/README.jp.md) の `Subtitle` を使えます。
+- `await subtitleText(children)`: ルビを表示文字に変換し、空白と `<br />` を保持した Node を返します。純粋な文字処理の入口 `@mekuru/speech/text` からも使えます。読み上げと同じ入力形式を使います。字幕の配置・装飾には [@mekuru/narrator](../narrator/README.jp.md) の `Subtitle` を使えます。
 - `voiceOf(props)`: `SpeechProps` のフィールドを除き、残ったエンジンの設定を返します。接続先だけを表す `url` は、キャッシュのキーに使う前に自分で除きます。
 - `joinWavs(parts)`: フォーマットチャンクが同一の WAV バッファを連結します。空でない配列を渡します。リサンプリングや音声形式の変換は行いません。
 
@@ -79,3 +93,5 @@ export const createSpeech = (synthesize: Synthesize) =>
 ### 下書きを独自に扱う場合
 
 `@mekuru/core` の `isDraft()`・`waitFor()` を使い、合成の Promise を登録します。下書きでは `<dur len={estimatedFrames}><audio draft label="..." /></dur>`、完成版では生成済みの `src` を持つ音声を返します。`label` がある音声はタイムラインの読み上げ行に出ます。`waitFor()` が完成版の更新を予約するのは `writeXml()` の中だけです。
+
+`Audio` と `readAudio` は `@mekuru/audio`、`joinWavs` は `@mekuru/audio/wav` が提供します。

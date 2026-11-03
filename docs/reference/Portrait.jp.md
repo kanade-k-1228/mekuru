@@ -2,10 +2,10 @@
 
 [English](Portrait.jp.md)
 
-`@mekuru/portrait` は YMM4 の「動く立ち絵」形式の画像を重ね、まばたき・表情の切り替え・音量に合わせた口パクを行います。
+`@mekuru/narrator` は YMM4 の「動く立ち絵」形式の画像を重ね、まばたき・表情の切り替え・音量に合わせた口パクを行います。
 
 ```sh
-bun add -d @mekuru/portrait
+bun add -d @mekuru/narrator
 ```
 
 ## 部品のフォルダ
@@ -32,7 +32,9 @@ assets/character/pikao-tsuzumi/
 `src/parts.tsx` などで部品を定義し、台本の `<mekuru>` 内に `<Scene />` を置きます。以下は [example の素材の準備スクリプト](../../example/scripts/portrait.ts)で取り込んだ部品を使う例です。
 
 ```tsx
-import { portrait } from "@mekuru/portrait";
+import { portrait } from "@mekuru/narrator";
+
+import { Audio } from "@mekuru/audio";
 import { Voisona } from "@mekuru/voisona";
 
 const actor = portrait({
@@ -41,17 +43,17 @@ const actor = portrait({
   faces: { 笑顔: { 目: "笑顔", 口: "にこ" } },
 });
 
-export const Scene = () => (
-  <stack>
+export const Scene = async () => {
+  const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", children: "こんにちは。" });
+  return <stack>
     <actor.Stand />
-    <actor.Talk face="笑顔">
-      <Voisona voice="suzuki-tsudumi_ja_JP">こんにちは。</Voisona>
-    </actor.Talk>
-  </stack>
-);
+    <Audio source={line.audio} />
+    <actor.Talk source={line.audio} face="笑顔" />
+  </stack>;
+};
 ```
 
-`Stand` は親の終わりまで表示します。`Talk` は読み上げ部品または `<audio>` を一つ受け取り、再生中だけ同じ `slot` の `Stand` と差し替わります。口は WAV の音量に合わせて動き、下書きでは閉じたままです。
+`Stand` は親の終わりまで表示します。`Talk` は共有する音声素材を `source` に受け取り、その長さだけ立ち絵を表示します。音声は `Audio` で別に再生します。同じ `slot` の `Stand` は発言中だけ差し替わります。口は WAV の音量に合わせて動き、下書きでは閉じたままです。既存の WAV は `@mekuru/audio` の `readAudio(src)` で素材にできます。これらの非同期処理は `<mekuru>` 内の部品で行います。
 
 ## オプション
 

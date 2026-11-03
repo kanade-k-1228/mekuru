@@ -1,25 +1,5 @@
 /** @jsxImportSource @mekuru/core */
-import type { Node } from "@mekuru/core";
-import { Fragment } from "@mekuru/core/jsx-runtime";
-
-const BREAK = Symbol("br");
-type Run = string | typeof BREAK;
-
-const runs = (node: Node, out: Run[] = []): Run[] => {
-  if (node === null || node === undefined || typeof node === "boolean") return out;
-  if (Array.isArray(node)) {
-    for (const n of node) runs(n, out);
-  } else if (typeof node === "object" && "tag" in node) {
-    if (node.tag === Fragment) runs(node.children, out);
-    else if (node.tag === "br") out.push(BREAK);
-    else throw new Error(`a line of speech is text (and \`<br />\`), not ${typeof node.tag === "string" ? `<${node.tag}>` : "a component"}`);
-  } else {
-    const last = out[out.length - 1];
-    if (typeof last === "string") out[out.length - 1] = last + String(node);
-    else out.push(String(node));
-  }
-  return out;
-};
+import { resolveText, type Node } from "@mekuru/core";
 
 const isKanji = (c: string) => /[一-鿿㐀-䶿豈-﫿々〆ヶ〇]/.test(c);
 
@@ -83,45 +63,45 @@ const withReadings = (text: string, words: [string, string][]): string => {
   return out;
 };
 
-const normalizedRuns = (children: Node): Run[] => {
-  const line = runs(children);
-  return line.map((run, i) => {
-    if (run === BREAK) return run;
-    let text = run;
-    if (i === 0 || line[i - 1] === BREAK) text = text.trimStart();
-    if (i === line.length - 1 || line[i + 1] === BREAK) text = text.trimEnd();
-    return text;
-  });
-};
+export interface LineText {
+  readonly say: string;
+  readonly show: string;
+  readonly display: Node;
+}
 
-export const subtitleText = (children: Node): Node =>
-  normalizedRuns(children).map((run) =>
-    run === BREAK ? (
-      <br />
-    ) : (
-      rubies(run)
-        .map((piece) => (typeof piece === "string" ? piece : piece.base))
-        .join("")
-    ),
-  );
-
-export const speechText = (children: Node, reading: Readonly<Record<string, string>> = {}): { say: string; show: string } => {
+/** Parse once, then project to spoken text, a timeline label, and display nodes. */
+export const speechText = async (children: Node, reading: Readonly<Record<string, string>> = {}): Promise<LineText> => {
   const words = Object.entries(reading)
     .filter(([word]) => word)
     .sort((a, b) => [...b[0]].length - [...a[0]].length);
-  const line = normalizedRuns(children);
+  const runs = await resolveText(children);
   let say = "";
   let show = "";
-  line.forEach((run) => {
-    if (run === BREAK) {
+  const display: Node[] = [];
+  runs.forEach((run, i) => {
+    if (run === null) {
       say += " ";
       show += " ";
+      display.push(<br />);
       return;
     }
-    for (const piece of rubies(run)) {
-      say += typeof piece === "string" ? withReadings(piece, words) : piece.reading;
-      show += typeof piece === "string" ? piece : piece.base;
+    const pieces = rubies(run);
+    const visible = pieces.map((piece) => (typeof piece === "string" ? piece : piece.base)).join("");
+    let spoken = pieces.map((piece) => (typeof piece === "string" ? withReadings(piece, words) : piece.reading)).join("");
+    let label = visible;
+    if (i === 0 || runs[i - 1] === null) {
+      spoken = spoken.trimStart();
+      label = label.trimStart();
     }
+    if (i === runs.length - 1 || runs[i + 1] === null) {
+      spoken = spoken.trimEnd();
+      label = label.trimEnd();
+    }
+    say += spoken;
+    show += label;
+    display.push(visible);
   });
-  return { say: say.trim(), show: show.trim() };
+  return Object.freeze({ say: say.trim(), show: show.trim(), display });
 };
+
+export const subtitleText = async (children: Node): Promise<Node> => (await speechText(children)).display;

@@ -60,13 +60,27 @@ The cache key contains `kind`, `voice`, and processed text. Include all synthesi
 - `len`: Explicit total duration in frames; otherwise, audio duration rounded up to frames plus `gap`.
 - `id`, `at`: Passed to the surrounding `<dur>`; see [timing syntax](../../docs/reference/Syntax.md#timing-attributes).
 
-Ruby such as `｜表示《よみ》` uses `よみ` for synthesis and `表示` for the label. ASCII `|` also works; kanji can use `漢字《かんじ》` without a separator. `<br />` becomes a space. Other nested elements and components are rejected.
+Ruby such as `｜表示《よみ》` uses `よみ` for synthesis and `表示` for the label. ASCII `|` also works; kanji can use `漢字《かんじ》` without a separator. `<br />` becomes a space. Synchronous and asynchronous components returning text or `<br />` are supported; other elements are rejected.
 
 On a cache miss, `writeXml()` writes a silent draft, then replaces it after synthesis. Its estimate is 0.15 seconds per spoken character plus `gap`, unless `len` is set. Outside draft mode, `toXml()` waits for synthesis.
 
+### Shared audio sources
+
+`Voisona.prepare(props)`, `Voicevox.prepare(props)`, `Coeiroink.prepare(props)`, and `StyleBertVits2.prepare(props)` return a `PreparedLine`. Pass children, voice, pronunciation, and duration settings; put `id` and `at` on the components that place the result. Call preparation in an async component under `<mekuru>`.
+
+- `line.audio`: A readonly `AudioSource` (type exported by `@mekuru/audio`). `status` is `draft` or `ready`; `len` includes trailing silence in frames. `label` and `volume` describe playback. Ready sources have an absolute `src` path.
+- `line.len`: Reads `line.audio.len`.
+- `line.display`: Display nodes preserving ruby base text, whitespace, and breaks. Text components expand once during preparation.
+- `<Audio source={line.audio} id="line" />`: Emits existing `<dur><audio /></dur>` elements.
+- `readAudio(src, { gap?, len?, label?, volume? })`: Creates the same source from an existing WAV. The default gap is zero; relative paths use the project root captured at build start.
+
+Custom engines can call `prepare(kind, props, who, voice, synthesize)` with the same arguments as `line`, receiving a `PreparedLine` instead of JSX. `line` and the engine JSX components are conveniences that render the resource using `Audio`.
+
+Draft preparation returns an estimated source and queues synthesis; the final pass returns the WAV and its actual duration. Both use the same presentation components. Cache roots, progress, and in-flight synthesis belong to the build, independent of the working directory at import time.
+
 ### Other exports
 
-- `subtitleText(children)`: Converts ruby notation to display text and preserves `<br />`, using the same input format as speech. For subtitle placement and styling, use `Subtitle` from [@mekuru/narrator](../narrator/README.md).
+- `await subtitleText(children)`: Converts ruby notation to display text and preserves whitespace and `<br />`. Also available from the text-only entry point `@mekuru/speech/text`, using the same input format as speech. For subtitle placement and styling, use `Subtitle` from [@mekuru/narrator](../narrator/README.md).
 - `voiceOf(props)`: Removes the fields in `SpeechProps` and returns the remaining engine settings. Remove a connection-only `url` yourself before using those settings as a cache key.
 - `joinWavs(parts)`: Joins a nonempty array of WAV buffers with identical format chunks. It does not resample or convert audio formats.
 
@@ -79,3 +93,5 @@ From `@mekuru/speech/engine`:
 ### Custom draft handling
 
 Without `line()`, use `isDraft()` and `waitFor()` from `@mekuru/core`: register the synthesis promise and return `<dur len={estimatedFrames}><audio draft label="..." /></dur>` for the draft, then audio with a completed `src` on the final pass. `label` selects the timeline's speech track. `waitFor()` schedules the final pass only within `writeXml()`.
+
+`Audio` and `readAudio` are provided by `@mekuru/audio`; `joinWavs` is provided by `@mekuru/audio/wav`.
