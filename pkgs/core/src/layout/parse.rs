@@ -272,7 +272,11 @@ impl Ctx<'_> {
             "dur" => Some(Flow::Dur),
             _ => None,
         };
-        let mut style = Style::default();
+        // taffy 0.15 defaults to `Position::Static`; keep every box a containing block so `x`/`y` stay relative to the parent.
+        let mut style = Style {
+            position: Position::Relative,
+            ..Style::default()
+        };
         match flow {
             Some(Flow::Row) => style.flex_direction = FlexDirection::Row,
             Some(Flow::Column) => style.flex_direction = FlexDirection::Column,
@@ -336,20 +340,20 @@ impl Ctx<'_> {
         if let Some(f) = flow
             && let Some(a) = at.word("align", diags, &["start", "center", "end", "stretch"])
         {
-            style.align_items = Some(alignment(&a));
+            style.align_items = alignment(&a);
             if f.overlays() {
-                style.justify_items = Some(alignment(&a));
+                style.justify_items = alignment(&a);
             }
         }
         if let Some(j) = at.word("justify", diags, &["start", "center", "end", "between", "around", "evenly"]) {
-            style.justify_content = Some(match j.as_str() {
+            style.justify_content = match j.as_str() {
                 "start" => JustifyContent::START,
                 "center" => JustifyContent::CENTER,
                 "end" => JustifyContent::END,
                 "between" => JustifyContent::SPACE_BETWEEN,
                 "around" => JustifyContent::SPACE_AROUND,
                 _ => JustifyContent::SPACE_EVENLY,
-            });
+            };
         }
         if at.flag("wrap", diags) == Some(true) {
             style.flex_wrap = FlexWrap::Wrap;
