@@ -1,8 +1,9 @@
 import type { At, FC, Length, Node } from "@mekuru/types";
-import { portrait, type Face, Subtitle as NarratorSubtitle } from "@mekuru/narrator";
+import { psdPortrait, Subtitle as NarratorSubtitle } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
-import { Voisona } from "@mekuru/voisona";
+import { Voicevox, zunda } from "@mekuru/voicevox";
+import type { LayerProps } from "../tutorial/assets/character/zundamon/portrait";
 
 type Children = { children?: Node };
 
@@ -33,9 +34,10 @@ const READING: Record<string, string> = {
   bun: "バン",
   ffmpeg: "エフエフエムペグ",
   WSL: "ダブリューエスエル",
-  "VoiSona Talk": "ボイソナトーク",
-  Voisona: "ボイソナ",
-  "tsuzumi.tsx": "つづみ ティーエスエックス",
+  VOICEVOX: "ボイスボックス",
+  Voicevox: "ボイスボックス",
+  "zundamon.tsx": "ずんだもん ティーエスエックス",
+  PSD: "ピーエスディー",
   API: "エーピーアイ",
   REST: "レスト",
   YouTube: "ユーチューブ",
@@ -85,47 +87,46 @@ const Subtitle: FC<Children> = ({ children }) => (
   <>
     {(
       [
-        ["#B80D14", 9],
+        ["#24472E", 9],
         ["#FFFFFF", 6],
       ] as const
     ).map(([stroke, width]) => (
-      <NarratorSubtitle y="97%" max-w="74%" size={56} weight="bold" color={COLOR.red} stroke={stroke} stroke-width={width}>
+      <NarratorSubtitle y="97%" max-w="74%" size={56} weight="bold" color="#3F782D" stroke={stroke} stroke-width={width}>
         {balance(children)}
       </NarratorSubtitle>
     ))}
   </>
 );
 
-const SRC = "assets/character/pikao-tsuzumi";
-const BASE: Face = { 体: "基本", 髪: null, 目: "基本", 口: "基本", 眉: "基本", 顔色: "基本" };
+const SRC = "tutorial/assets/character/zundamon";
 const FACES = {
-  笑顔: { 体: "喜び", 髪: "両手頬", 目: "笑顔", 口: "にこ", 他: "音符" },
-  ウインク: { 体: "説明", 目: "ウインク", 口: "にこ" },
-  指差し: { 体: "説明" },
-  決め: { 体: "説明", 目: "ウインク", 口: "にこ" },
-  驚き: { 体: "驚き", 目: "驚き", 眉: "上げ", 口: "お", 他: "びっくり" },
-  困り: { 眉: "困り" },
-  はてな: { 体: "考え", 眉: "困り", 他: "はてな" },
-  ドヤ: { 体: "腕組", 目: "ジト目", 眉: "上げ", 口: "にこ" },
-  照れ: { 体: "喜び", 髪: "両手頬", 目: "笑顔", 口: "にこ" },
-} satisfies Record<string, Face>;
+  笑顔: { face: "smile" },
+  ウインク: { face: "wink" },
+  指差し: { face: "normal" },
+  決め: { face: "wink" },
+  驚き: { face: "surprise" },
+  困り: { face: "worry" },
+  はてな: { face: "worry" },
+  ドヤ: { face: "smug" },
+  照れ: { face: "smile" },
+} satisfies Record<string, LayerProps>;
 export type FaceName = keyof typeof FACES;
 
-const tsuzumi = portrait({ src: SRC, x: 1525, y: 1330, h: 1100, z: 10, face: BASE, faces: FACES });
-const big = portrait({ src: SRC, x: 1470, y: 1435, h: 1240, z: 30, slot: "portrait:big", face: BASE, faces: FACES });
-export const TsuzumiStand = tsuzumi.Stand;
+const zundamon = psdPortrait<LayerProps>({ src: SRC, x: 1560, y: 1000, h: 960, z: 10 });
+const big = psdPortrait<LayerProps>({ src: SRC, x: 1510, y: 1140, h: 1150, z: 30, slot: "portrait:big" });
+export const ZundamonStand = zundamon.Stand;
 
-const voice = { name: "tsuzumi", voice: "suzuki-tsudumi_ja_JP", gap: 6, reading: READING };
+const voice = { ...zunda, name: "ずんだもん", gap: 6, reading: READING };
 
 type Line = Children & { id?: string; at?: At; face?: FaceName; show?: Node };
 
-export const Tsuzumi: FC<Line> = async ({ children, face, show, ...time }) => {
-  const line = await Voisona.prepare({ ...voice, children });
+export const Zundamon: FC<Line> = async ({ children, face, show, ...time }) => {
+  const line = await Voicevox.prepare({ ...voice, children });
   return (
     <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
-        <tsuzumi.Talk source={line.audio} face={face} />
+        <zundamon.Talk source={line.audio} {...(face ? FACES[face] : { face: "normal" })} />
         <Subtitle>{line.display}</Subtitle>
         {show}
       </stack>
@@ -134,7 +135,7 @@ export const Tsuzumi: FC<Line> = async ({ children, face, show, ...time }) => {
 };
 
 export const Jingle: FC<{ children: string }> = async ({ children }) => {
-  const line = await Voisona.prepare({ ...voice, children });
+  const line = await Voicevox.prepare({ ...voice, children });
   return (
     <stack>
       <rect w="100%" h="100%" fill={COLOR.pink} z={20} />
@@ -142,12 +143,12 @@ export const Jingle: FC<{ children: string }> = async ({ children }) => {
         {children}
       </text>
       <audio src="assets/chime.wav" volume={0.5} />
-      <big.Stand face="決め" />
+      <big.Stand {...FACES.決め} />
       <seq>
         <dur len={9} />
         <stack>
           <Audio source={line.audio} />
-          <big.Talk source={line.audio} face="決め" />
+          <big.Talk source={line.audio} {...FACES.決め} />
         </stack>
         <dur len={21} />
       </seq>
@@ -183,7 +184,7 @@ export const EndCard: FC<{ top: string; bottom: string; credit: string; len: num
       <text x={70} y="97%" anchor="bl" size={34} weight="bold" color={COLOR.sub} stroke="#FFFFFF" stroke-width={6} z={40}>
         {credit}
       </text>
-      <big.Stand face="決め" />
+      <big.Stand {...FACES.決め} />
     </dur>
   );
 };
