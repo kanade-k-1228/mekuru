@@ -3,8 +3,8 @@ export const FIRST_SCENE = `<stack>
     はじめての動画
   </text>
   <seq>
-    <Tsuzumi>こんにちは、すずきつづみです。</Tsuzumi>
-    <Tsuzumi>今日は Mekuru で動画を作ります。</Tsuzumi>
+    <Zundamon>こんにちは、ずんだもんなのだ。</Zundamon>
+    <Zundamon>今日は Mekuru で動画を作るのだ。</Zundamon>
   </seq>
 </stack>`;
 
@@ -14,8 +14,8 @@ export const SECOND_SCENE = `<stack>
     <text size={48}>台本を書く → 保存して確認 → 書き出す</text>
   </column>
   <seq>
-    <Tsuzumi>台本を保存して、プレビューで確かめます。</Tsuzumi>
-    <Tsuzumi>できあがったら、動画ファイルに書き出しましょう。</Tsuzumi>
+    <Zundamon>台本を保存して、プレビューで確かめます。</Zundamon>
+    <Zundamon>できあがったら、動画ファイルに書き出しましょう。</Zundamon>
   </seq>
 </stack>`;
 
@@ -26,7 +26,7 @@ const indent = (code: string, spaces: number) =>
     .join("\n");
 
 const script = (body: string, withPortrait = false) => `import { type FC, writeXml } from "@mekuru/types";
-import { ${withPortrait ? "Tsuzumi, TsuzumiPortrait" : "Tsuzumi"} } from "./character/tsuzumi";
+import { ${withPortrait ? "Zundamon, ZundamonPortrait" : "Zundamon"} } from "./character/zundamon";
 
 const Video: FC = () => (
   <mekuru size="1920x1080" fps={30}>
@@ -38,5 +38,5 @@ await writeXml(".mekuru/main.xml", <Video />);
 `;
 
 export const FIRST_SCRIPT = script(`<rect w="100%" h="100%" fill="#141C26" />\n${FIRST_SCENE}`);
-export const PORTRAITS = `<TsuzumiPortrait x="85%" h="45%" />`;
+export const PORTRAITS = `<ZundamonPortrait x="85%" h="45%" />`;
 export const FINAL_SCRIPT = script(`<rect w="100%" h="100%" fill="#141C26" />\n${PORTRAITS}\n${FIRST_SCENE}\n${SECOND_SCENE}`, true);

@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "width": 600,
+  "height": 900,
+  "layers": [
+    {
+      "name": "face",
+      "kind": "select",
+      "options": [
+        {
+          "name": "normal",
+          "src": "face/normal.png"
+        },
+        {
+          "name": "smile",
+          "src": "face/smile.png"
+        },
+        {
+          "name": "wink",
+          "src": "face/wink.png"
+        },
+        {
+          "name": "surprise",
+          "src": "face/surprise.png"
+        },
+        {
+          "name": "worry",
+          "src": "face/worry.png"
+        },
+        {
+          "name": "smug",
+          "src": "face/smug.png"
+        }
+      ],
+      "initial": "normal"
+    }
+  ],
+  "files": [
+    "face/normal.png",
+    "face/smile.png",
+    "face/wink.png",
+    "face/surprise.png",
+    "face/worry.png",
+    "face/smug.png"
+  ]
+}

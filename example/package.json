@@ -3,22 +3,27 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "voicevox": "docker run --rm -p 127.0.0.1:50021:50021 voicevox/voicevox_engine:cpu-latest",
     "portrait": "bun scripts/portrait.ts",
     "preview": "bun scripts/portrait.ts && mekuru-compiler --serve --run 'bun --tsconfig-override ../tsconfig.json --hot src/main.tsx' .mekuru/main.xml",
     "build": "bun scripts/portrait.ts && bun --tsconfig-override ../tsconfig.json src/main.tsx && mekuru-compiler .mekuru/main.xml -o tutorial.mp4",
+    "export:vscode": "ffmpeg -hide_banner -y -i tutorial.mp4 -map 0:v:0 -map 0:a:0 -c:v copy -c:a libmp3lame -b:a 192k -movflags +faststart tutorial.vscode.mp4",
     "upload:youtube": "mekuru-youtube",
-    "upload:niconico": "mekuru-niconico"
+    "upload:niconico": "mekuru-niconico",
+    "portrait:source": "bun scripts/create-portrait.ts"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",
     "@mekuru/types": "workspace:*",
     "@mekuru/core": "workspace:*",
     "@mekuru/niconico": "workspace:*",
-    "@mekuru/voisona": "workspace:*",
     "@mekuru/youtube": "workspace:*",
     "typescript": "7.0.2",
     "@mekuru/narrator": "workspace:*",
     "@mekuru/speech": "workspace:*",
-    "@mekuru/audio": "workspace:*"
+    "@mekuru/audio": "workspace:*",
+    "@mekuru/voicevox": "workspace:*",
+    "ag-psd": "^31.0.3",
+    "sharp": "^0.35.5"
   }
 }

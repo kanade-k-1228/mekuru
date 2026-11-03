@@ -8,6 +8,7 @@ node_modules/
 /example/assets/character/sasara/
 /example/assets/character/tsuzumi/
 /example/assets/character/pikao-tsuzumi/
+/example/tutorial/assets/character/zundamon/**/*.png
 
 /npm-out/
 

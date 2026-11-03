@@ -1,17 +1,17 @@
 import { type FC, writeXml } from "@mekuru/types";
-import { Tsuzumi, TsuzumiPortrait } from "./character/tsuzumi";
+import { Zundamon, ZundamonPortrait } from "./character/zundamon";
 
 const Video: FC = () => (
   <mekuru size="1920x1080" fps={30}>
     <rect w="100%" h="100%" fill="#141C26" />
-    <TsuzumiPortrait x="85%" h="45%" />
+    <ZundamonPortrait x="85%" h="45%" />
     <stack>
       <text x="50%" y="35%" anchor="center" size={90}>
         はじめての動画
       </text>
       <seq>
-        <Tsuzumi>こんにちは、すずきつづみです。</Tsuzumi>
-        <Tsuzumi>今日は Mekuru で動画を作ります。</Tsuzumi>
+        <Zundamon>こんにちは、ずんだもんなのだ。</Zundamon>
+        <Zundamon>今日は Mekuru で動画を作るのだ。</Zundamon>
       </seq>
     </stack>
     <stack>
@@ -22,8 +22,8 @@ const Video: FC = () => (
         <text size={48}>台本を書く → 保存して確認 → 書き出す</text>
       </column>
       <seq>
-        <Tsuzumi>台本を保存して、プレビューで確かめます。</Tsuzumi>
-        <Tsuzumi>できあがったら、動画ファイルに書き出しましょう。</Tsuzumi>
+        <Zundamon>台本を保存して、プレビューで確かめます。</Zundamon>
+        <Zundamon>できあがったら、動画ファイルに書き出しましょう。</Zundamon>
       </seq>
     </stack>
   </mekuru>
