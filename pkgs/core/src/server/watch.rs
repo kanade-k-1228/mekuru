@@ -33,6 +33,9 @@ pub(super) fn start(path: PathBuf, app: App) -> Result<JoinHandle<()>> {
         let _watcher = watcher;
         // Read once after the watch is installed, closing the startup read/watch race.
         let mut sample = true;
+        // The text and modification time last handled. Events that change neither are not saves:
+        // macOS reports writes made just before the watch started, and mode changes give events too.
+        let mut seen = None;
         loop {
             if !sample {
                 tokio::select! { _ = app.cancel.cancelled() => break, result = changes.changed() => { if result.is_err() { break; } } }
@@ -60,9 +63,13 @@ pub(super) fn start(path: PathBuf, app: App) -> Result<JoinHandle<()>> {
                     Ok(text) => {
                         failures = 0;
                         if previous.as_ref() == Some(&text) {
-                            let changed = generation != 0 || app.live.lock().unwrap().xml != text;
-                            if changed {
-                                app.changed(text);
+                            let modified = tokio::fs::metadata(&path).await.and_then(|m| m.modified()).ok();
+                            let current = (text, modified);
+                            if seen.as_ref() != Some(&current) {
+                                if generation != 0 || app.live.lock().unwrap().xml != current.0 {
+                                    app.changed(current.0.clone());
+                                }
+                                seen = Some(current);
                             }
                             break;
                         }

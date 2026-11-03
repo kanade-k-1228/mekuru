@@ -19,6 +19,8 @@ const until = async (check: () => boolean | Promise<boolean>) => {
     await Bun.sleep(10);
   }
 };
+// --run intentionally passes a user-provided shell command; quote paths as shell literals.
+const quote = (s: string) => `'${s.replaceAll("'", "'\\''")}'`;
 const state = async (): Promise<StateDto> => (await fetch(`${server?.url}/api/state`)).json() as Promise<StateDto>;
 const snapshot = async (): Promise<SnapshotEvent> => (await fetch(`${server?.url}/api/preview`)).json() as Promise<SnapshotEvent>;
 const save = async (text: string) => {
@@ -181,8 +183,6 @@ test.skipIf(process.platform === "win32")("--run reports stderr, clears it after
     script,
     `const fs = require('fs'); fs.writeFileSync('child.pid', String(process.pid)); console.error('\\x1b[31mscript failed\\x1b[0m'); setInterval(() => {}, 1000);`,
   );
-  // --run intentionally passes a user-provided shell command; quote paths as shell literals.
-  const quote = (s: string) => `'${s.replaceAll("'", "'\\''")}'`;
   server = await startServer({ xml, port: 0, run: `${quote(process.execPath)} ${quote(script)}` });
   await until(async () => (await state()).error?.includes("script failed") ?? false);
   expect((await state()).error).not.toContain("\x1b");
@@ -199,6 +199,16 @@ test.skipIf(process.platform === "win32")("--run reports stderr, clears it after
       return true;
     }
   });
+});
+
+test.skipIf(process.platform === "win32")("--run keeps stderr when the XML gets an event without a write", async () => {
+  await Bun.write(join(root, "script.js"), `console.error('script failed'); setInterval(() => {}, 1000);`);
+  server = await startServer({ xml, port: 0, run: `${quote(process.execPath)} script.js` });
+  await until(async () => (await state()).error?.includes("script failed") ?? false);
+  // macOS reports writes made just before the watch started; a mode change gives such an event everywhere.
+  await chmod(xml, 0o600);
+  await Bun.sleep(300);
+  expect((await state()).error).toContain("script failed");
 });
 
 test("WebSocket handles duplex resync, policy errors and shutdown", async () => {
