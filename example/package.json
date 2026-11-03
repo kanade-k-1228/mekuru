@@ -17,6 +17,7 @@
     "@mekuru/portrait": "workspace:*",
     "@mekuru/voisona": "workspace:*",
     "@mekuru/youtube": "workspace:*",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "@mekuru/narrator": "workspace:*"
   }
 }

@@ -31,3 +31,5 @@ Choose speech engines during setup, then edit `src/main.tsx`. `<seq>` plays elem
 | [`@mekuru/voisona`](pkgs/voisona/README.md)                   | VoiSona Talk                    |
 | [`@mekuru/coeiroink`](pkgs/coeiroink/README.md)               | COEIROINK                       |
 | [`@mekuru/style-bert-vits2`](pkgs/style-bert-vits2/README.md) | Style-Bert-VITS2                |
+
+See [@mekuru/narrator](pkgs/narrator/README.md) to compose your own narrator from speech, a portrait, and subtitles.

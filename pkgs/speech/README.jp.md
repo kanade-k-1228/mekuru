@@ -66,6 +66,7 @@ export const createSpeech = (synthesize: Synthesize) =>
 
 ### その他のエクスポート
 
+- `subtitleText(children)`: ルビを表示文字に変換し、`<br />` を保持したNodeを返します。読み上げと同じ入力形式を使います。字幕の配置・装飾には [@mekuru/narrator](../narrator/README.jp.md) の `Subtitle` を使えます。
 - `voiceOf(props)`: `SpeechProps` のフィールドを除き、残ったエンジンの設定を返します。接続先だけを表す `url` は、キャッシュのキーに使う前に自分で除きます。
 - `joinWavs(parts)`: フォーマットチャンクが同一の WAV バッファを連結します。空でない配列を渡します。リサンプリングや音声形式の変換は行いません。
 

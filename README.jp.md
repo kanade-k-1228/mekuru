@@ -31,3 +31,5 @@ bun run build   # video.mp4
 | [`@mekuru/voisona`](pkgs/voisona/README.jp.md)                   | VoiSona Talk                    |
 | [`@mekuru/coeiroink`](pkgs/coeiroink/README.jp.md)               | COEIROINK                       |
 | [`@mekuru/style-bert-vits2`](pkgs/style-bert-vits2/README.jp.md) | Style-Bert-VITS2                |
+
+独自のナレータ（音声＋立ち絵＋字幕）の組み立てには [@mekuru/narrator](pkgs/narrator/README.jp.md) を参照してください。

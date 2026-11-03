@@ -52,6 +52,8 @@ export const Tsuzumi = ({ children, face, show, ...time }: Line) => (
 
 `<stack>` 内の音声が長さを決め、字幕・立ち絵・`show` に渡した要素を同時に表示します。声は [VoiSona Talk](../../pkgs/voisona/README.jp.md)、立ち絵は [portrait](Portrait.jp.md) を参照してください。
 
+字幕の共通部品は [@mekuru/narrator](../../pkgs/narrator/README.jp.md) の `Subtitle` を使います。ルビを表示文字に変換し、明示改行を保ちます。上の例の `Subtitle` はこの部品に独自の装飾を加えたものです。音声の長さは音声部品、口パクは `portrait().Talk` が担当します。追加要素に長さがあれば `<stack>` 全体が長くなることがあり、必要に応じて `<dur>` で制御します。
+
 ### コードを表示する
 
 `<text pre>` は改行と空白を保持し、共通のインデントと前後の空行を除きます。行番号や強調枠の実装例は [parts.tsx の Code・CodeMark](../../example/src/parts.tsx) にあります。行の高さは `size × line-height` です。
