@@ -1,7 +1,7 @@
 /target/
 
 node_modules/
-/pkgs/cli/viewer/
+/pkgs/core/viewer/
 
 .mekuru/
 /example/*.mp4

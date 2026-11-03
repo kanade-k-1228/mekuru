@@ -1,4 +1,4 @@
-import { writeXml } from "@mekuru/core";
+import { writeXml } from "@mekuru/types";
 import {
   Arrow,
   COLOR,

@@ -11,7 +11,7 @@
     "build:release": "bun run --cwd pkgs/viewer build && cargo build --workspace --release --locked",
     "typecheck": "tsc --noEmit && tsc --noEmit -p pkgs/viewer",
     "check": "biome check . && bun run typecheck && cargo fmt --check && cargo clippy --workspace --all-targets --locked -- -D warnings",
-    "test": "bun test && cargo test --workspace --locked",
+    "test": "bun run build && bun test && cargo test --workspace --locked",
     "fmt": "biome check --write . && cargo fmt"
   },
   "devDependencies": {

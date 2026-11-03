@@ -1,4 +1,4 @@
-import type { At, IntrinsicElements, Node } from "@mekuru/core";
+import type { At, IntrinsicElements, Node } from "@mekuru/types";
 
 export type Children = { children?: Node };
 

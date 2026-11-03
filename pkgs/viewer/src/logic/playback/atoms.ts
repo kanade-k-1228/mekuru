@@ -2,11 +2,11 @@ import { atom } from "jotai";
 import { durationAtom, fpsAtom, scheduleAtom } from "../server";
 import { clamp } from "../math";
 
-const seekTimeAtom = atom(0);
+import { seekTimeAtom } from "./position";
 export const timeAtom = atom(
   (get) => clamp(get(seekTimeAtom), 0, get(durationAtom)),
-  (_get, set, t: number) => {
-    set(seekTimeAtom, t);
+  (get, set, t: number) => {
+    set(seekTimeAtom, clamp(t, 0, get(durationAtom)));
   },
 );
 

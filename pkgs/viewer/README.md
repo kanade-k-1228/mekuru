@@ -2,7 +2,7 @@
 
 [日本語](README.jp.md)
 
-The browser preview and timeline UI for Mekuru Movie Maker, built with React, Jotai, and Vite. This is a private workspace package bundled with [@mekuru/cli](../cli/README.md).
+The browser preview and timeline UI for Mekuru Movie Maker, built with React, Jotai, and Vite. This is a private workspace package bundled with [@mekuru/core](../core/README.md).
 
 For development, start `mekuru-server` on port 3333, then run these commands from the repository root with Bun 1.4 or later:
 
@@ -12,7 +12,9 @@ bun run --cwd pkgs/viewer dev
 ```
 
 - Open `http://localhost:5173`; API and media requests are proxied to port 3333.
-- `bun run --cwd pkgs/viewer build` writes the production UI to `pkgs/cli/viewer/`.
+- `bun run --cwd pkgs/viewer build` writes the production UI to `pkgs/core/viewer/`.
 - `src/view/` contains the UI; `src/logic/` contains state and calculations.
 
 See [development](../../docs/dev/Developer.md) for compiler setup and running the example project.
+
+Run `bun run build` from the repository root to embed UI changes in the native server.

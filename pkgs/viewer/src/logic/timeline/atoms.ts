@@ -1,7 +1,6 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import type { TimelineDto } from "@mekuru/protocol";
-import { durationAtom, scheduleAtom } from "../server";
+import { durationAtom, timelineAtom } from "../server";
 import { clamp } from "../math";
 import { buildLayout, RULER_H, SCROLLBAR_SIZE, viewport, type ViewState } from "./model";
 
@@ -9,9 +8,8 @@ export const timelineViewAtom = atom<ViewState>({ zoom: 1, start: 0 });
 export const timelineWidthAtom = atom(800);
 export const timelineMetricsAtom = atom((get) => viewport(get(durationAtom), get(timelineWidthAtom), get(timelineViewAtom)));
 
-const EMPTY: TimelineDto = { nodes: [], clips: [] };
-export const timelineLayoutAtom = atom((get) => buildLayout(get(scheduleAtom)?.timeline ?? EMPTY));
-export const hasEstimatedAtom = atom((get) => get(scheduleAtom)?.timeline.clips.some((c) => c.estimated) ?? false);
+export const timelineLayoutAtom = atom((get) => buildLayout(get(timelineAtom)));
+export const hasEstimatedAtom = atom((get) => get(timelineAtom).clips.some((c) => c.estimated));
 
 export const followAtom = atom(null, (get, set, time: number) => {
   const view = get(timelineViewAtom);

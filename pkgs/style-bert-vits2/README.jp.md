@@ -13,17 +13,17 @@ Mekuru Movie Maker のセリフを、Style-Bert-VITS2 の API サーバーで読
 Bun 1.4 以上・libx264 付き ffmpeg・ffprobe・日本語フォントを用意し、プロジェクトに追加します。
 
 ```sh
-bun add -d @mekuru/core @mekuru/cli @mekuru/style-bert-vits2
+bun add -d @mekuru/types @mekuru/core @mekuru/style-bert-vits2
 ```
 
-`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/core"` を設定します。`bun create @mekuru` では設定済みです。
+`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/types"` を設定します。`bun create @mekuru` では設定済みです。
 
 ## 簡単な使い方
 
 `src/main.tsx` に保存します。
 
 ```tsx
-import { writeXml } from "@mekuru/core";
+import { writeXml } from "@mekuru/types";
 import { StyleBertVits2 } from "@mekuru/style-bert-vits2";
 
 const text = "こんにちは。";

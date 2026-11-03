@@ -37,6 +37,8 @@ bun run build   # video.mp4
 
 Choose speech engines during setup, then edit `src/main.tsx`. `<seq>` plays elements in order; `<stack>` plays them together. See the [first-video tutorial](example/README.md) for a complete example.
 
+[@mekuru/types](pkgs/types/README.md) provides TSX types, the JSX runtime and XML output. [@mekuru/core](pkgs/core/README.md) provides the native compiler and preview server, including the viewer and platform binaries. Generated projects include both packages.
+
 ## Speech engines
 
 | Package                                                       | Engines                         |

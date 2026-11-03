@@ -8,6 +8,7 @@ export interface Compilation {
   preview: PreviewDto | null;
   diagnostics: Diagnostic[];
 }
+/** Compilation status; it never contains drawing data. */
 export interface StateDto {
   path: string;
   version: number;
@@ -15,8 +16,64 @@ export interface StateDto {
   status: "building" | "ready" | "error";
   error: string | null;
   diagnostics: Diagnostic[];
-  preview: PreviewDto | null;
 }
+
+export type Keyed<T> = T & { key: string };
+export interface SharedPreviewDto extends Omit<PreviewDto, "elements" | "timeline"> {
+  version: number;
+  elements: SharedElement[];
+  timeline: { nodes: Keyed<TimelineNode>[]; clips: Keyed<TimelineClip>[] };
+}
+export interface SharedElement extends Omit<SceneElement, "ops" | "chunks"> {
+  key: string;
+  drawings: string[];
+}
+export type Resources = Record<string, DrawOp[]>;
+export interface WorkerRequest {
+  version: number;
+  xml: string;
+  /** Last scene accepted by the CLI, never an intermediate discarded result. */
+  baseVersion: number | null;
+}
+export interface WorkerCompilation {
+  version: number;
+  /** null on compilation failure; unchanged scenes retain the acknowledged version. */
+  previewVersion: number | null;
+  diagnostics: Diagnostic[];
+  update: PreviewUpdate | null;
+  stats: { drawHits: number; drawMisses: number; compileMs: number; diffMs: number };
+}
+export type PreviewUpdate = Omit<SnapshotEvent, "state"> | Omit<PatchEvent, "state">;
+export interface CollectionPatch<T> {
+  upsert: T[];
+  remove: string[];
+  order?: string[];
+}
+export interface SnapshotEvent {
+  type: "snapshot";
+  state: StateDto;
+  preview: SharedPreviewDto | null;
+  resources: Resources;
+}
+export interface StatusEvent {
+  type: "status";
+  state: StateDto;
+}
+export interface PatchEvent {
+  type: "patch";
+  state: StateDto;
+  baseVersion: number;
+  version: number;
+  scene: Pick<PreviewDto, "width" | "height" | "fps" | "duration">;
+  elements: CollectionPatch<SharedElement>;
+  nodes: CollectionPatch<Keyed<TimelineNode>>;
+  clips: CollectionPatch<Keyed<TimelineClip>>;
+  resources: Resources;
+  removedResources: string[];
+}
+export type PreviewEvent = SnapshotEvent | StatusEvent | PatchEvent;
+/** Browser-to-server JSON message over /api/ws. */
+export type PreviewCommand = { type: "resync" };
 
 export interface PreviewDto {
   width: number;
@@ -28,20 +85,41 @@ export interface PreviewDto {
 }
 export type Bounds = [number, number, number, number];
 export type Fade = [start: number, end: number, fadeIn: number, fadeOut: number, level: number];
+export interface TextOp {
+  kind: "text";
+  text: string;
+  x: number;
+  y: number;
+  width: number | null;
+  font: string;
+  fontSrc: string | null;
+  fontRevision: string | null;
+  size: number;
+  color: string;
+  bold: boolean;
+  align: "left" | "center" | "right";
+  lineHeight: number;
+  stroke: string | null;
+  strokeWidth: number;
+  transform: [number, number, number, number, number, number] | null;
+}
 export type DrawOp =
+  | TextOp
   | {
       kind: "path";
       d: string;
       color: string;
       stroke: { width: number; lineCap: "butt" | "round" | "square"; lineJoin: "miter" | "round" | "bevel"; dash: number[] } | null;
     }
-  | { kind: "image"; src: string; bounds: Bounds; transform: [number, number, number, number, number, number] | null };
+  | { kind: "image"; src: string; revision?: string; bounds: Bounds; transform: [number, number, number, number, number, number] | null };
 export interface MediaMap {
   from: number;
   end: number;
   segments: [outStart: number, outEnd: number, srcStart: number, rate: number][];
 }
 export interface SceneElement {
+  key?: string;
+  chunks?: { id: string; ops: DrawOp[] }[];
   id: number;
   kind: "view" | "video" | "audio";
   start: number;
@@ -50,12 +128,13 @@ export interface SceneElement {
   fades: Fade[];
   ops: DrawOp[];
   bounds: Bounds | null;
-  media: { src: string; gain: number; map: MediaMap } | null;
+  media: { src: string; revision?: string; gain: number; map: MediaMap } | null;
   repeat: [from: number, period: number, until: number][];
   hidden: [start: number, end: number][];
 }
 
 export interface TimelineNode {
+  key?: string;
   id: number;
   parent: number | null;
   depth: number;
@@ -71,6 +150,7 @@ export interface TimelineNode {
 export type ClipLane = "speech" | "visual" | "video" | "audio";
 
 export interface TimelineClip {
+  key?: string;
   tag: string;
   lane: ClipLane;
   line: number;
@@ -84,4 +164,30 @@ export interface TimelineClip {
 export interface TimelineDto {
   nodes: TimelineNode[];
   clips: TimelineClip[];
+}
+
+export interface FrameRate {
+  num: number;
+  den: number;
+}
+export interface FrameInterval {
+  startFrame: number;
+  endFrame: number;
+}
+export interface TimelineEntry extends FrameInterval {
+  id: string;
+  parent: string | null;
+  sourceId: string | null;
+  kind: "seq" | "par" | "repeat" | "view" | "video" | "audio";
+  repeat: { fromFrame: number; periodFrames: number; untilFrame: number }[];
+}
+export interface ResolvedTimeline {
+  fps: FrameRate;
+  frames: number;
+  estimated: boolean;
+  entries: TimelineEntry[];
+}
+export interface TimelineCompilation {
+  timeline: ResolvedTimeline | null;
+  diagnostics: Diagnostic[];
 }

@@ -9,17 +9,17 @@ Shared components for building your own narrator from synthesized speech, a port
 Requires Bun 1.4 or later.
 
 ```sh
-bun add -d @mekuru/core @mekuru/narrator
+bun add -d @mekuru/types @mekuru/narrator
 ```
 
-Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/core"` in `tsconfig.json`. Install your speech engine separately and provide portrait image assets.
+Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` in `tsconfig.json`. Install your speech engine separately and provide portrait image assets.
 
 ## Compose a narrator
 
 This example also uses `@mekuru/voisona` and `@mekuru/speech`. Replace `src` with your portrait folder.
 
 ```tsx
-import type { At, Node } from "@mekuru/core";
+import type { At, Node } from "@mekuru/types";
 import { portrait, Subtitle, type Face } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
@@ -74,7 +74,7 @@ Defaults: `x="50%"`, `y="95%"`, `anchor="b"`, `max-w="90%"`, `align="center"`, `
 Converts ruby notation to display text while retaining `<br />`. Use it to build custom subtitles. This is a re-export of the same function from `@mekuru/speech/text`.
 
 ```tsx
-import type { Node } from "@mekuru/core";
+import type { Node } from "@mekuru/types";
 import { subtitleText } from "@mekuru/narrator";
 
 const MySubtitle = async ({ children }: { children?: Node }) => (
@@ -144,3 +144,40 @@ Version 1 supports 8-bit RGB raster artwork, normal blending, opacity, and raste
 Nested groups also expand into same-named directories, including hidden source layers. Option groups additionally have a composite PNG for rendering (e.g. `face/smile.png` alongside `face/smile/linework.png`). Individual source PNGs bake their own masks and opacity; parent group effects are baked into the composite.
 
 `Audio` and `readAudio` are provided by `@mekuru/audio`; `joinWavs` is provided by `@mekuru/audio/wav`.
+
+## Caption intervals and SRT
+
+`@mekuru/narrator/captions` provides pure `captionCues` and `toSrt` functions.
+`captionCues(texts, frames)` partitions integer frames into contiguous intervals
+`{ text, offset, frames }`, reserving one frame per cue and allocating the rest
+by cumulative weights. Default weights count non-whitespace Unicode code points.
+An optional `{ weights }` supplies project-specific weights; alternatively
+`{ boundaries: [0, ..., frames] }` supplies every boundary. Boundaries must be
+strictly increasing integers. Invalid or insufficient durations are rejected;
+empty text arrays are valid only with zero frames.
+
+```tsx
+import { Subtitle } from "@mekuru/narrator";
+import { captionCues, toSrt } from "@mekuru/narrator/captions";
+import { compileTimeline, timelineIntervals } from "@mekuru/core/timeline";
+const cues = captionCues(["First line", "Second\nline"], 90);
+cues[cues.length - 1].frames += 15; // hold the final caption after allocation
+const captions = <seq>{cues.map((cue, i) =>
+  <dur id={`caption-${i}`} len={cue.frames}><Subtitle>{cue.text}</Subtitle></dur>
+)}</seq>;
+// Include captions in your document and write its XML before compiling.
+const { timeline, diagnostics } = await compileTimeline(".mekuru/main.xml");
+if (!timeline) throw new Error(JSON.stringify(diagnostics));
+const absolute = cues.flatMap((cue, i) => {
+  const matches = timeline.entries.filter(e => e.sourceId === `caption-${i}`);
+  if (matches.length !== 1) throw new Error("Select a unique caption clock");
+  return timelineIntervals(matches[0]).map(span => ({ ...span, text: cue.text }));
+});
+const srt = toSrt(absolute, timeline.fps);
+```
+
+SRT uses compiler-resolved absolute frames, rounds each boundary to milliseconds,
+sorts by start time, and preserves multiline text. It rejects invalid intervals
+or intervals that round to zero milliseconds. It does not infer audio duration.
+Caption styles, IDs and text splitting remain project choices. To retain exact
+legacy timing, pass its full boundaries instead of adopting the new allocator.

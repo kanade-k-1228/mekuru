@@ -1,6 +1,6 @@
 import { samples } from "@mekuru/audio/wav";
-/** @jsxImportSource @mekuru/core */
-import { fps, projectRoot, type Anchor, type At, type JSX, type Length, type Node, type Time } from "@mekuru/core";
+/** @jsxImportSource @mekuru/types */
+import { fps, projectRoot, type Anchor, type At, type JSX, type Length, type Node, type Time } from "@mekuru/types";
 import type { AudioSource } from "@mekuru/audio";
 import { FOLDERS, isMany, readParts, type Folder, type Many, type Part, type Parts } from "./folder.ts";
 import { blinks, lipSync, random, type Shot } from "./motion.ts";

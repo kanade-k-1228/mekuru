@@ -6,6 +6,7 @@ const backend: Record<string, ProxyOptions> = {
   "/files": { target: "http://127.0.0.1:3333" },
   "/api": {
     target: "http://127.0.0.1:3333",
+    ws: true,
     changeOrigin: false,
     configure(proxy) {
       proxy.on("proxyRes", (proxyRes, _req, res) => {
@@ -21,7 +22,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: { proxy: backend },
   build: {
-    outDir: "../cli/viewer",
+    outDir: "../core/viewer",
     emptyOutDir: true,
     chunkSizeWarningLimit: 1500,
   },

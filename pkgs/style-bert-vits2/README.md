@@ -13,17 +13,17 @@ Start `python server_fastapi.py` in the engine folder (`Server.bat` on Windows).
 Requires Bun 1.4+, ffmpeg with libx264, ffprobe, and Japanese fonts. Install in the project folder:
 
 ```sh
-bun add -d @mekuru/core @mekuru/cli @mekuru/style-bert-vits2
+bun add -d @mekuru/types @mekuru/core @mekuru/style-bert-vits2
 ```
 
-In `tsconfig.json`, set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/core"` (already set by `bun create @mekuru`).
+In `tsconfig.json`, set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` (already set by `bun create @mekuru`).
 
 ## Quick start
 
 Save as `src/main.tsx`:
 
 ```tsx
-import { writeXml } from "@mekuru/core";
+import { writeXml } from "@mekuru/types";
 import { StyleBertVits2 } from "@mekuru/style-bert-vits2";
 
 const text = "こんにちは。";

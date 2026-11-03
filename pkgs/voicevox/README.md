@@ -11,17 +11,17 @@ Start [VOICEVOX](https://voicevox.hiroshiba.jp/how_to_use/) on Windows, macOS, o
 Requires Bun 1.4+, ffmpeg with libx264, ffprobe, and Japanese fonts. Install in the project folder:
 
 ```sh
-bun add -d @mekuru/core @mekuru/cli @mekuru/voicevox
+bun add -d @mekuru/types @mekuru/core @mekuru/voicevox
 ```
 
-In `tsconfig.json`, set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/core"` (already set by `bun create @mekuru`).
+In `tsconfig.json`, set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` (already set by `bun create @mekuru`).
 
 ## Quick start
 
 Save as `src/main.tsx`:
 
 ```tsx
-import { writeXml } from "@mekuru/core";
+import { writeXml } from "@mekuru/types";
 import { Voicevox } from "@mekuru/voicevox";
 
 const text = "こんにちは。";

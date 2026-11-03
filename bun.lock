@@ -14,11 +14,11 @@
       "name": "mekuru-tutorial",
       "devDependencies": {
         "@mekuru/audio": "workspace:*",
-        "@mekuru/cli": "workspace:*",
         "@mekuru/core": "workspace:*",
         "@mekuru/narrator": "workspace:*",
         "@mekuru/niconico": "workspace:*",
         "@mekuru/speech": "workspace:*",
+        "@mekuru/types": "workspace:*",
         "@mekuru/voisona": "workspace:*",
         "@mekuru/youtube": "workspace:*",
         "@types/bun": "1.4.2",
@@ -29,20 +29,7 @@
       "name": "@mekuru/audio",
       "version": "0.0.0",
       "dependencies": {
-        "@mekuru/core": "workspace:^",
-      },
-    },
-    "pkgs/cli": {
-      "name": "@mekuru/cli",
-      "version": "0.0.0",
-      "bin": {
-        "mekuru-server": "./src/mekuru-server.ts",
-        "mekuru-compiler": "./src/mekuru-compiler.ts",
-      },
-      "dependencies": {
-        "@mekuru/platform": "workspace:^",
-        "@mekuru/protocol": "workspace:^",
-        "commander": "^14.0.3",
+        "@mekuru/types": "workspace:^",
       },
     },
     "pkgs/coeiroink": {
@@ -53,17 +40,21 @@
         "@mekuru/speech": "workspace:^",
       },
       "devDependencies": {
-        "@mekuru/core": "workspace:*",
+        "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
       },
     },
     "pkgs/core": {
       "name": "@mekuru/core",
       "version": "0.0.0",
+      "bin": {
+        "mekuru-compiler": "./bin/mekuru-compiler.js",
+        "mekuru-server": "./bin/mekuru-server.js",
+      },
       "dependencies": {
-        "hono": "^4.13.0",
+        "@mekuru/protocol": "workspace:^",
       },
     },
     "pkgs/create": {
@@ -87,15 +78,16 @@
       },
       "dependencies": {
         "@mekuru/audio": "workspace:^",
+        "@mekuru/protocol": "workspace:^",
         "@mekuru/speech": "workspace:^",
         "ag-psd": "^31.0.3",
         "sharp": "^0.35.5",
       },
       "devDependencies": {
-        "@mekuru/core": "workspace:*",
+        "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
       },
     },
     "pkgs/niconico": {
@@ -125,10 +117,10 @@
         "@mekuru/audio": "workspace:^",
       },
       "devDependencies": {
-        "@mekuru/core": "workspace:*",
+        "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
       },
     },
     "pkgs/style-bert-vits2": {
@@ -139,10 +131,17 @@
         "@mekuru/speech": "workspace:^",
       },
       "devDependencies": {
-        "@mekuru/core": "workspace:*",
+        "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
+      },
+    },
+    "pkgs/types": {
+      "name": "@mekuru/types",
+      "version": "0.0.0",
+      "dependencies": {
+        "hono": "^4.13.0",
       },
     },
     "pkgs/viewer": {
@@ -175,10 +174,10 @@
         "@mekuru/speech": "workspace:^",
       },
       "devDependencies": {
-        "@mekuru/core": "workspace:*",
+        "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
       },
     },
     "pkgs/voisona": {
@@ -189,10 +188,10 @@
         "@mekuru/speech": "workspace:^",
       },
       "devDependencies": {
-        "@mekuru/core": "workspace:*",
+        "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/core": "workspace:^",
+        "@mekuru/types": "workspace:^",
       },
     },
     "pkgs/youtube": {
@@ -298,8 +297,6 @@
 
     "@mekuru/audio": ["@mekuru/audio@workspace:pkgs/audio"],
 
-    "@mekuru/cli": ["@mekuru/cli@workspace:pkgs/cli"],
-
     "@mekuru/coeiroink": ["@mekuru/coeiroink@workspace:pkgs/coeiroink"],
 
     "@mekuru/core": ["@mekuru/core@workspace:pkgs/core"],
@@ -317,6 +314,8 @@
     "@mekuru/speech": ["@mekuru/speech@workspace:pkgs/speech"],
 
     "@mekuru/style-bert-vits2": ["@mekuru/style-bert-vits2@workspace:pkgs/style-bert-vits2"],
+
+    "@mekuru/types": ["@mekuru/types@workspace:pkgs/types"],
 
     "@mekuru/viewer": ["@mekuru/viewer@workspace:pkgs/viewer"],
 

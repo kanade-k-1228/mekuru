@@ -1,0 +1,46 @@
+use anyhow::{Context, Result};
+use image::imageops::FilterType;
+use std::path::Path;
+use tiny_skia::Pixmap;
+
+pub fn dims(path: &Path) -> Result<(u32, u32)> {
+    use crate::util::lru::{FileStamp, Lru, file_stamp};
+    use std::sync::{LazyLock, Mutex};
+    static CACHE: LazyLock<Mutex<Lru<FileStamp, (u32, u32)>>> = LazyLock::new(|| Mutex::new(Lru::new(1024 * 1024)));
+    let key = file_stamp(path);
+    if let Some(size) = CACHE.lock().unwrap().get(&key) {
+        return Ok(*size);
+    }
+    let size = image::image_dimensions(path).with_context(|| format!("cannot read image {}", path.display()))?;
+    CACHE.lock().unwrap().insert(key, size, path.as_os_str().len() + 128);
+    Ok(size)
+}
+
+pub fn load(path: &Path, w: u32, h: u32) -> Result<Pixmap> {
+    let img = image::open(path).with_context(|| format!("cannot decode image {}", path.display()))?;
+    let mut rgba = img.to_rgba8();
+    let (w, h) = (w.max(1), h.max(1));
+    premultiply(&mut rgba);
+    if (rgba.width(), rgba.height()) != (w, h) {
+        rgba = image::imageops::resize(&rgba, w, h, FilterType::CatmullRom);
+        for p in rgba.pixels_mut() {
+            let a = p[3];
+            for v in p.0.iter_mut().take(3) {
+                *v = (*v).min(a);
+            }
+        }
+    }
+    let size = tiny_skia::IntSize::from_wh(w, h).context("empty image")?;
+    Pixmap::from_vec(rgba.into_raw(), size).context("invalid image buffer")
+}
+
+fn premultiply(img: &mut image::RgbaImage) {
+    for p in img.pixels_mut() {
+        let a = p[3] as u32;
+        if a < 255 {
+            for v in p.0.iter_mut().take(3) {
+                *v = ((*v as u32 * a + 127) / 255) as u8;
+            }
+        }
+    }
+}

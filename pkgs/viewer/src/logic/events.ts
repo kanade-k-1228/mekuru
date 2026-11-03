@@ -1,27 +1,76 @@
-import type { StateDto } from "@mekuru/protocol";
+import type { PreviewCommand, PreviewDto, PreviewEvent, StateDto } from "@mekuru/protocol";
+import { previewStore } from "./preview";
 export type ConnState = "connecting" | "open" | "reconnecting";
 export interface Connection {
   conn: ConnState;
   server: StateDto | null;
+  preview: PreviewDto | null;
+  previewVersion: number;
+  previewError: string | null;
 }
+export const initialConnection: Connection = { conn: "connecting", server: null, preview: null, previewVersion: 0, previewError: null };
+
+export const previewSocketUrl = (href: string): string => {
+  const url = new URL("/api/ws", href);
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  return url.href;
+};
+
 export const connectEvents = (set: (update: (state: Connection) => Connection) => void) => {
-  let es: EventSource;
-  let retry: ReturnType<typeof setTimeout> | undefined;
+  let socket: WebSocket | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const store = previewStore();
+  const disconnect = () => {
+    const source = socket;
+    socket = null;
+    clearTimeout(timer);
+    source?.close();
+  };
   const connect = () => {
-    es = new EventSource("/api/events");
-    es.onopen = () => set((s) => ({ ...s, conn: "open" }));
-    es.onerror = () => {
-      set((s) => ({ ...s, conn: "reconnecting" }));
-      if (es.readyState === EventSource.CLOSED) retry = setTimeout(connect, 1000);
+    const source = new WebSocket(previewSocketUrl(globalThis.location?.href ?? "http://localhost"));
+    socket = source;
+    let phase: "waiting" | "ready" | "resyncing" = "waiting";
+    const active = () => socket === source;
+    const reconnect = (error?: string) => {
+      if (!active()) return;
+      disconnect();
+      set((s) => ({ ...s, conn: "reconnecting", previewError: error ?? s.previewError }));
+      timer = setTimeout(connect, 1000);
     };
-    es.addEventListener("state", (ev) => {
-      const server = JSON.parse((ev as MessageEvent<string>).data) as StateDto;
-      set(() => ({ conn: "open", server }));
-    });
+    const resync = (error: string) => {
+      if (!active() || phase === "resyncing") return;
+      phase = "resyncing";
+      set((s) => ({ ...s, conn: "reconnecting", previewError: error }));
+      try {
+        source.send(JSON.stringify({ type: "resync" } satisfies PreviewCommand));
+        timer = setTimeout(() => reconnect("preview resynchronization timed out"), 3000);
+      } catch {
+        reconnect(error);
+      }
+    };
+    source.onopen = () => {
+      if (active()) set((s) => ({ ...s, conn: "open" }));
+    };
+    source.onerror = source.onclose = () => reconnect();
+    source.onmessage = (ev: MessageEvent<string>) => {
+      if (!active()) return;
+      try {
+        const event = JSON.parse(ev.data) as PreviewEvent;
+        if (event.type === "status") {
+          set((s) => ({ ...s, server: event.state }));
+        } else if (event.type === "snapshot" || event.type === "patch") {
+          if (event.type === "patch" && phase !== "ready") return;
+          const preview = store.apply(event);
+          const version = event.type === "snapshot" ? (event.preview?.version ?? 0) : event.version;
+          phase = "ready";
+          clearTimeout(timer);
+          set((s) => ({ ...s, conn: "open", server: event.state, preview, previewVersion: version, previewError: null }));
+        } else throw new Error("unknown preview event");
+      } catch (e) {
+        resync(e instanceof Error ? e.message : String(e));
+      }
+    };
   };
   connect();
-  return () => {
-    clearTimeout(retry);
-    es.close();
-  };
+  return disconnect;
 };

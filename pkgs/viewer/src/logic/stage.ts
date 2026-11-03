@@ -3,7 +3,7 @@ import type { SceneElement } from "@mekuru/protocol";
 import { observeSize } from "./observe";
 import { playingAtom, timeAtom } from "./playback/atoms";
 import { envelope, frames, intervalIndex, mediaAt, shownAt, span } from "./playback/time";
-import { scheduleAtom } from "./server";
+import { elementsAtom, scheduleAtom } from "./server";
 import { clamp } from "./math";
 
 const boxAtom = atom<{ width: number; height: number } | null>(null);
@@ -20,7 +20,7 @@ export interface Shown {
   media?: { position: number; play: boolean; rate: number; volume: number };
 }
 
-const indexAtom = atom((get) => intervalIndex((get(scheduleAtom)?.elements ?? []).map((element, order) => ({ ...span(element), order, element }))));
+const indexAtom = atom((get) => intervalIndex(get(elementsAtom).map((element, order) => ({ ...span(element), order, element }))));
 
 export const stageAtom = atom((get): Shown[] => {
   const schedule = get(scheduleAtom);

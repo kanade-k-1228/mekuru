@@ -2,7 +2,7 @@ import { useAtomValue } from "jotai";
 import { RefreshCw } from "lucide-react";
 import type { StateDto } from "@mekuru/protocol";
 import { keysAtom } from "../logic/playback/atoms";
-import { connAtom, serverAtom } from "../logic/server";
+import { connAtom, previewErrorAtom, previewLoadingAtom, scheduleAtom, serverAtom } from "../logic/server";
 import { PREVIEW_MIN_HEIGHT, TIMELINE_MIN_HEIGHT, timelineHeightAtom } from "../logic/timeline/atoms";
 import { Preview } from "./preview/Preview";
 import { ResizeHandle } from "./timeline/ResizeHandle";
@@ -32,8 +32,13 @@ const Connecting = () => {
 const Workspace = ({ server }: { server: StateDto }) => {
   useAtomValue(keysAtom);
   const timelineHeight = useAtomValue(timelineHeightAtom);
-  const sched = server.preview;
-  const errors = server.error ? [{ title: "Error in the script (showing the last version that worked)", text: server.error }] : [];
+  const sched = useAtomValue(scheduleAtom);
+  const loading = useAtomValue(previewLoadingAtom);
+  const previewError = useAtomValue(previewErrorAtom);
+  const errors = [
+    ...(server.error ? [{ title: "Error in the script (showing the last version that worked)", text: server.error }] : []),
+    ...(previewError ? [{ title: "Could not load the preview", text: previewError }] : []),
+  ];
 
   const rows = `minmax(${PREVIEW_MIN_HEIGHT}px,1fr) minmax(${TIMELINE_MIN_HEIGHT}px,${timelineHeight}px) auto`;
 
@@ -59,7 +64,7 @@ const Workspace = ({ server }: { server: StateDto }) => {
           ))}
         <div className="relative flex min-h-0 flex-1 flex-col">
           {sched && <Preview schedule={sched} />}
-          {server.status === "building" && <Reloading />}
+          {(server.status === "building" || loading) && <Reloading />}
         </div>
       </main>
       <div className="relative min-h-0">

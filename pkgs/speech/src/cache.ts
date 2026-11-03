@@ -1,6 +1,6 @@
 import { mkdir, rename, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { buildValue, projectRoot } from "@mekuru/core";
+import { buildValue, projectRoot } from "@mekuru/types";
 import { showSpeech } from "./progress.ts";
 const CACHE_VERSION = 1;
 

@@ -1,5 +1,5 @@
-/** @jsxImportSource @mekuru/core */
-import type { JSX } from "@mekuru/core";
+/** @jsxImportSource @mekuru/types */
+import type { JSX } from "@mekuru/types";
 import { Audio } from "@mekuru/audio";
 import type { PreparedLine, SpeechProps } from "./index.tsx";
 

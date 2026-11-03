@@ -1,5 +1,5 @@
-/** @jsxImportSource @mekuru/core */
-import type { IntrinsicElements } from "@mekuru/core";
+/** @jsxImportSource @mekuru/types */
+import type { IntrinsicElements } from "@mekuru/types";
 export * from "./portrait/index.tsx";
 export { subtitleText } from "@mekuru/speech/text";
 

@@ -1,5 +1,5 @@
-/** @jsxImportSource @mekuru/core */
-import { resolveText, type Node } from "@mekuru/core";
+/** @jsxImportSource @mekuru/types */
+import { resolveText, type Node } from "@mekuru/types";
 
 const isKanji = (c: string) => /[一-鿿㐀-䶿豈-﫿々〆ヶ〇]/.test(c);
 
