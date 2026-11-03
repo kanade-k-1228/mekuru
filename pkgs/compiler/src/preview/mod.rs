@@ -1,3 +1,4 @@
+use crate::typography::font::FontBook;
 mod source;
 
 use crate::{
@@ -6,124 +7,14 @@ use crate::{
     lang::diag::Diag,
     media::Fps,
     prepare,
-    render::{
-        shapes,
-        text::{draw::text_paths, font::FontBook},
-        transform_paths,
-        vector::PaintedPath,
-        video_bounds,
-    },
+    render::{shapes, text::draw::text_paths, transform_paths, vector::PaintedPath, video_bounds},
     schedule::{Schedule, SrcMap},
 };
-use serde::Serialize;
 use std::{collections::BTreeMap, fmt::Write, path::Path};
 use tiny_skia::{LineCap, LineJoin, PathSegment, Transform};
 
-#[derive(Serialize)]
-pub struct Compilation {
-    pub preview: Option<Preview>,
-    pub diagnostics: Vec<Diagnostic>,
-}
-
-#[derive(Serialize)]
-pub struct Diagnostic {
-    pub code: String,
-    pub severity: &'static str,
-    pub line: u32,
-    pub message: String,
-}
-
-#[derive(Serialize)]
-pub struct Preview {
-    pub width: u32,
-    pub height: u32,
-    pub fps: f64,
-    pub duration: f64,
-    pub elements: Vec<Element>,
-    pub timeline: Timeline,
-}
-
-#[derive(Serialize)]
-pub struct Element {
-    id: usize,
-    kind: &'static str,
-    start: f64,
-    end: f64,
-    opacity: f32,
-    fades: Vec<[f64; 5]>,
-    ops: Vec<Op>,
-    media: Option<Media>,
-    bounds: Option<[f32; 4]>,
-    repeat: Vec<[f64; 3]>,
-    hidden: Vec<[f64; 2]>,
-}
-
-#[derive(Serialize)]
-#[serde(tag = "kind", rename_all = "camelCase")]
-pub enum Op {
-    Path {
-        d: String,
-        color: String,
-        stroke: Option<Stroke>,
-    },
-    Image {
-        src: String,
-        bounds: [f32; 4],
-        transform: Option<[f32; 6]>,
-    },
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Stroke {
-    width: f32,
-    line_cap: &'static str,
-    line_join: &'static str,
-    dash: Vec<f32>,
-}
-
-#[derive(Serialize)]
-pub struct Media {
-    src: String,
-    gain: f32,
-    map: MediaMap,
-}
-#[derive(Serialize)]
-pub struct MediaMap {
-    from: f64,
-    end: f64,
-    segments: Vec<[f64; 4]>,
-}
-
-#[derive(Serialize, Default)]
-pub struct Timeline {
-    nodes: Vec<TimelineNode>,
-    clips: Vec<Clip>,
-}
-#[derive(Serialize)]
-pub struct TimelineNode {
-    id: usize,
-    parent: Option<usize>,
-    depth: usize,
-    kind: &'static str,
-    tag: &'static str,
-    label: String,
-    line: u32,
-    start: f64,
-    end: f64,
-    pin: Option<f64>,
-}
-#[derive(Serialize)]
-pub struct Clip {
-    tag: String,
-    lane: &'static str,
-    line: u32,
-    start: f64,
-    end: f64,
-    label: String,
-    estimated: bool,
-    freezes: Vec<[f64; 2]>,
-}
+mod dto;
+pub use dto::*;
 
 pub fn compile(path: &Path, root: Option<&Path>, xml: String) -> Compilation {
     let source = source::format(&xml).unwrap_or(xml);

@@ -143,6 +143,7 @@ impl<'a> Attrs<'a> {
             let r = match k {
                 ValKind::Str(s) => s.split_once(':').and_then(|(id, q)| {
                     Some(Ref {
+                        target: None,
                         id: id.to_string(),
                         pos: frames(lex::number(q)?)?,
                     })

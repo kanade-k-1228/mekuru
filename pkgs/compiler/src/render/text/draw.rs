@@ -1,17 +1,8 @@
-use super::{font::FontBook, layout::layout};
 use crate::ir::TextSpec;
 use crate::render::vector::PaintedPath;
 use crate::settings::Align;
+use crate::typography::{font::FontBook, layout::layout};
 use tiny_skia::{LineCap, LineJoin, Stroke, Transform};
-
-pub fn measure_text(fonts: &FontBook, spec: &TextSpec) -> Option<(f32, f32)> {
-    let buffer = layout(fonts, spec)?;
-    Some(
-        buffer
-            .layout_runs()
-            .fold((0.0_f32, 0.0_f32), |(w, h), run| (w.max(run.line_w), h.max(run.line_top + run.line_height))),
-    )
-}
 
 pub fn text_paths(fonts: &FontBook, spec: &TextSpec, scale: f32) -> Option<Vec<PaintedPath>> {
     let buffer = layout(fonts, spec)?;

@@ -81,7 +81,7 @@ impl FontBook {
         system.db().faces().find_map(|f| f.families.first().map(|(name, _)| name.clone()))
     }
 
-    pub(super) fn glyph_path(&self, glyph: &LayoutGlyph) -> GlyphPath {
+    pub(crate) fn glyph_path(&self, glyph: &LayoutGlyph) -> GlyphPath {
         let key = (glyph.font_id, glyph.font_weight, glyph.glyph_id);
         if let Some(path) = self.glyphs.lock().unwrap().get(&key) {
             return path.clone();

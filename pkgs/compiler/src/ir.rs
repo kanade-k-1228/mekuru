@@ -39,6 +39,7 @@ pub enum Target {
 pub struct Ref {
     pub id: String,
     pub pos: i64,
+    pub target: Option<Target>,
 }
 
 impl std::fmt::Display for Ref {

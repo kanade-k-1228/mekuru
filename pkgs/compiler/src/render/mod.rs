@@ -6,9 +6,17 @@ use crate::ir::{ElemId, ElemKind, ImageSpec, VideoSpec, ViewOp, scaled};
 use crate::media::Fps;
 use crate::media::probe::VideoStream;
 use crate::media::video::VideoReader;
-use crate::pipeline::RenderCtx;
-use crate::render::text::font::FontBook;
+use crate::{ir::Script, prepare::Prepared, schedule::Schedule};
+
+#[derive(Clone, Copy)]
+pub struct RenderInput<'a> {
+    pub script: &'a Script,
+    pub prepared: &'a Prepared,
+    pub sched: &'a Schedule,
+}
+
 use crate::settings::Settings;
+use crate::typography::font::FontBook;
 use anyhow::Result;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -130,7 +138,7 @@ struct VideoSlot {
 type Key = Vec<(ElemId, u8, i64)>;
 
 pub struct FrameRenderer<'a> {
-    ctx: RenderCtx<'a>,
+    ctx: RenderInput<'a>,
     fonts: Arc<FontBook>,
     pub target: RenderTarget,
     order: Vec<ElemId>,
@@ -145,15 +153,15 @@ pub struct FrameRenderer<'a> {
 const SPRITE_BUDGET: usize = 512 << 20;
 
 impl<'a> FrameRenderer<'a> {
-    pub fn new(ctx: &RenderCtx<'a>, target: RenderTarget) -> Result<Self> {
+    pub fn new(ctx: &RenderInput<'a>, target: RenderTarget) -> Result<Self> {
         let ctx = *ctx;
-        let script = &ctx.project.script;
+        let script = &ctx.script;
         let mut order: Vec<ElemId> = script.elems.iter().filter(|e| e.kind.is_visual()).map(|e| e.id).collect();
         order.sort_by_key(|&id| (script.elems[id].z, script.elems[id].order));
         let canvas = Pixmap::new(target.width, target.height).ok_or_else(|| anyhow::anyhow!("invalid output size"))?;
         Ok(FrameRenderer {
             ctx,
-            fonts: ctx.project.fonts(),
+            fonts: crate::typography::font_book(&ctx.script.settings, &ctx.script.base_dir),
             target,
             order,
             sprites: HashMap::new(),
@@ -174,7 +182,7 @@ impl<'a> FrameRenderer<'a> {
             return s.clone();
         }
         let s = self.target.scale;
-        let elem = &self.ctx.project.script.elems[id];
+        let elem = &self.ctx.script.elems[id];
         let sprite = match &elem.kind {
             ElemKind::View(v) => {
                 let ops = v.ops.clone();
@@ -224,7 +232,7 @@ impl<'a> FrameRenderer<'a> {
 
     fn video_slot(&mut self, id: ElemId) -> Option<&mut VideoSlot> {
         if !self.videos.contains_key(&id) {
-            let script = &self.ctx.project.script;
+            let script = &self.ctx.script;
             let ElemKind::Video(v) = &script.elems[id].kind else { return None };
             let probe = self.ctx.prepared.media.get(&id)?.probe;
             let vs = probe.video?;
@@ -246,8 +254,7 @@ impl<'a> FrameRenderer<'a> {
 
     pub fn render(&mut self, t: f64) -> Result<bool> {
         let fps = self.target.fps.as_f64();
-        let RenderCtx { project, sched, .. } = self.ctx;
-        let script = &project.script;
+        let RenderInput { script, sched, .. } = self.ctx;
         let doc = script.settings.rate();
         let mut key: Key = vec![];
         for &id in &self.order {

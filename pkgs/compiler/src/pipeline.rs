@@ -180,7 +180,14 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
         out,
     };
     let mut enc = Encoder::spawn(&args)?;
-    let mut renderer = FrameRenderer::new(ctx, target)?;
+    let mut renderer = FrameRenderer::new(
+        &crate::render::RenderInput {
+            script: &ctx.project.script,
+            prepared: ctx.prepared,
+            sched: ctx.sched,
+        },
+        target,
+    )?;
     let mut last_report = Instant::now();
     for k in 0..frames {
         let t = first + k as f64 * step;

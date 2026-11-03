@@ -76,7 +76,7 @@ Wrap scenes containing only text or shapes in `<dur>`. An empty `<dur len={9} />
 
 ### Timing attributes
 
-- `id="intro"`: a reference name, unique within the document.
+- `id="intro"`: a reference name, unique within its clock. Each `repeat` body has its own clock.
 - `at`: start time.
   - `at={60}`: 60 frames after its position in the sequence. Inside `<seq>`, this follows the previous child with a duration; otherwise, it follows the parent's start.
   - `at="intro"`: start with `intro`, equivalent to `at="intro:0"`. Inside `<seq>`, use the later of the preceding child's end and `intro`'s start.
@@ -105,14 +105,16 @@ Wrap scenes containing only text or shapes in `<dur>`. An empty `<dur len={9} />
 - Repeats media placed inside it, or the sequence inside a `<seq>`. Media with `<hold>`, `<speed>`, or `<cut>` plays the same way each cycle.
 - `fadein` and `fadeout` on `<repeat>` apply to the entire run; on its contents, they apply each cycle.
 - Repeats can be nested. Audio plays each cycle.
-- E321:
-  - No content has a duration.
-  - Names are used inside the repeat: `id`, `slot`, or `at="id"`. Each cycle must behave identically. These attributes are allowed on `<repeat>` itself.
+- The body has its own clock. Its `id` and `at="id"` references resolve within that body and identify the same position each cycle. Different bodies may reuse names; duplicate names in one clock produce E319.
+- References cannot cross clock boundaries (E318). Outside code can reference `<repeat id="loop">` itself as `at="loop:60"`. A nested repeat body has a separate clock; the nested `<repeat>` itself belongs to the enclosing clock.
+- `slot` works inside the body. Each occurrence competes using its actual start time.
+- E321: No content has a duration.
 
 ### `slot`
 
 - A name available on any element.
 - When elements with the same `slot` overlap, only the latest-starting element is drawn. Ties use the later element in document order.
+- Repeated content competes using the start of each occurrence. When an override ends, the previous active holder returns. A `slot` on the repeat itself covers the entire run.
 - Audio is unaffected.
 
 ### `<hold>`

@@ -1,8 +1,12 @@
+mod model;
+pub use model::*;
+mod graph;
 use crate::ir::*;
 use crate::lang::diag::Diag;
 use crate::lang::span::Span;
 use crate::media::Fps;
-use std::collections::{BTreeMap, BTreeSet};
+use graph::Graph;
+use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 
 pub const EPS: f64 = 1e-6;
 const NONE: i64 = i64::MIN / 4;
@@ -13,301 +17,6 @@ fn up(frames: f64) -> i64 {
 
 fn show(frames: f64) -> String {
     if frames.fract() == 0.0 { format!("{frames}") } else { format!("{frames:.2}") }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct MediaInfo {
-    pub len: f64,
-    pub has_audio: bool,
-}
-
-pub trait MediaDb {
-    fn info(&self, e: &Elem) -> Option<MediaInfo>;
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct SrcSeg {
-    pub t0: f64,
-    pub t1: f64,
-    pub s0: f64,
-    pub rate: f64,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct SrcMap {
-    pub segs: Vec<SrcSeg>,
-    pub from: f64,
-    pub end: f64,
-}
-
-impl SrcMap {
-    pub fn at(&self, t: f64) -> f64 {
-        let i = self.segs.partition_point(|s| s.t0 <= t + EPS);
-        let seg = self.segs.get(i.saturating_sub(1));
-        let pos = seg.map_or(self.from, |s| s.s0 + s.rate * (t - s.t0).max(0.0));
-        pos.min(self.end)
-    }
-
-    pub fn freezes(&self) -> impl Iterator<Item = (f64, f64)> + '_ {
-        self.segs
-            .iter()
-            .filter(|g| g.rate == 0.0 && (up(g.t0) as f64) < g.t1 - EPS)
-            .map(|g| (g.t0, g.t1))
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct NodeTime {
-    pub start: i64,
-    pub end: i64,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Fade {
-    pub start: f64,
-    pub end: f64,
-    pub fade_in: f64,
-    pub fade_out: f64,
-    pub level: usize,
-}
-
-impl Fade {
-    fn shifted(self, by: f64) -> Fade {
-        Fade {
-            start: self.start + by,
-            end: self.end + by,
-            level: 0,
-            ..self
-        }
-    }
-
-    pub fn at(&self, t: f64) -> f64 {
-        let mut a = 1.0f64;
-        if self.fade_in > EPS {
-            a = a.min((t - self.start) / self.fade_in);
-        }
-        if self.fade_out > EPS {
-            a = a.min((self.end - t) / self.fade_out);
-        }
-        a.clamp(0.0, 1.0)
-    }
-}
-
-fn fit_fades(fade_in: i64, fade_out: i64, span: i64) -> ((f64, f64), bool) {
-    let (fi, fo) = (fade_in as f64, fade_out as f64);
-    if fade_in + fade_out > span && span > 0 {
-        let k = span as f64 / (fi + fo);
-        ((fi * k, fo * k), true)
-    } else {
-        ((fi, fo), false)
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Repeat {
-    pub from: i64,
-    pub period: i64,
-    pub until: i64,
-}
-
-impl Repeat {
-    pub fn first_round(&self, t: f64) -> Option<f64> {
-        let (from, until) = (self.from as f64, self.until as f64);
-        (from <= t && t < until).then(|| from + (t - from).rem_euclid(self.period as f64))
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct ElemTime {
-    pub start: i64,
-    pub end: i64,
-    pub fade_in: f64,
-    pub fade_out: f64,
-    pub outer: Vec<Fade>,
-    pub src: Option<SrcMap>,
-    pub repeat: Vec<Repeat>,
-    pub hidden: Vec<(i64, i64)>,
-}
-
-impl ElemTime {
-    pub fn rounds(&self, t: f64) -> Option<Vec<f64>> {
-        let mut out = vec![t];
-        for r in &self.repeat {
-            out.push(r.first_round(*out.last()?)?);
-        }
-        Some(out)
-    }
-
-    pub fn local(&self, t: f64) -> Option<f64> {
-        self.repeat.iter().try_fold(t, |u, r| r.first_round(u))
-    }
-
-    pub fn active(&self, t: f64) -> bool {
-        let within = |a: i64, b: i64, u: f64| a as f64 <= u && u < b as f64;
-        self.local(t).is_some_and(|u| within(self.start, self.end, u)) && !self.hidden.iter().any(|&(a, b)| within(a, b, t))
-    }
-
-    fn own_fade(&self) -> Fade {
-        Fade {
-            start: self.start as f64,
-            end: self.end as f64,
-            fade_in: self.fade_in,
-            fade_out: self.fade_out,
-            level: self.repeat.len(),
-        }
-    }
-
-    pub fn fades(&self) -> Vec<Fade> {
-        std::iter::once(self.own_fade()).chain(self.outer.iter().copied()).collect()
-    }
-
-    pub fn envelope(&self, t: f64) -> f64 {
-        let Some(u) = self.rounds(t) else { return 0.0 };
-        self.fades().iter().map(|f| f.at(u[f.level])).product()
-    }
-}
-
-fn unroll(chain: &[Repeat], a: f64, b: f64) -> Vec<(f64, f64, Vec<f64>)> {
-    let mut out = vec![(a, b, vec![0.0; chain.len() + 1])];
-    for (level, r) in chain.iter().enumerate().rev() {
-        let mut next = vec![];
-        for (a, b, shift) in out {
-            let mut k = 0;
-            while r.from + k * r.period < r.until {
-                let by = (k * r.period) as f64;
-                let (x, y) = (a + by, (b + by).min(r.until as f64));
-                if y > x + EPS {
-                    let mut shift = shift.clone();
-                    shift[level + 1..].iter_mut().for_each(|s| *s += by);
-                    next.push((x, y, shift));
-                }
-                k += 1;
-            }
-        }
-        out = next;
-    }
-    out.into_iter().map(|(a, b, shift)| (a, b - a, shift)).collect()
-}
-
-fn merge(mut v: Vec<(i64, i64)>) -> Vec<(i64, i64)> {
-    v.sort();
-    let mut out: Vec<(i64, i64)> = Vec::with_capacity(v.len());
-    for (a, b) in v {
-        match out.last_mut() {
-            Some(last) if a <= last.1 => last.1 = last.1.max(b),
-            _ => out.push((a, b)),
-        }
-    }
-    out
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct AudioClip {
-    pub elem: ElemId,
-    pub at: f64,
-    pub len: f64,
-    pub src: f64,
-    pub rate: f64,
-    pub gain: f32,
-    pub env: Vec<Fade>,
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct Schedule {
-    pub total: i64,
-    pub nodes: Vec<NodeTime>,
-    pub elems: Vec<ElemTime>,
-    pub audio: Vec<AudioClip>,
-    pub diags: Vec<Diag>,
-}
-
-impl Schedule {
-    fn failed(s: &Script, diags: Vec<Diag>) -> Schedule {
-        let nothing = ElemTime {
-            start: 0,
-            end: 0,
-            fade_in: 0.0,
-            fade_out: 0.0,
-            outer: vec![],
-            src: None,
-            repeat: vec![],
-            hidden: vec![],
-        };
-        Schedule {
-            total: 0,
-            nodes: vec![NodeTime { start: 0, end: 0 }; s.nodes.len()],
-            elems: vec![nothing; s.elems.len()],
-            audio: vec![],
-            diags,
-        }
-    }
-}
-
-struct Edge {
-    from: usize,
-    to: usize,
-    w: i64,
-    cause: Option<Target>,
-}
-
-struct Graph {
-    base: Vec<i64>,
-    edges: Vec<Edge>,
-}
-
-impl Graph {
-    fn add(&mut self, from: usize, to: usize, w: i64, cause: Option<Target>) {
-        self.edges.push(Edge { from, to, w, cause });
-    }
-
-    fn solve(&self) -> (Vec<i64>, Vec<bool>) {
-        let n = self.base.len();
-        let mut waits = vec![0usize; n];
-        let mut out = vec![vec![]; n];
-        for (k, e) in self.edges.iter().enumerate() {
-            waits[e.to] += 1;
-            out[e.from].push(k);
-        }
-        let mut val = self.base.clone();
-        let mut done = vec![false; n];
-        let mut ready: Vec<usize> = (0..n).filter(|&v| waits[v] == 0).collect();
-        while let Some(v) = ready.pop() {
-            done[v] = true;
-            for &k in &out[v] {
-                let e = &self.edges[k];
-                val[e.to] = val[e.to].max(val[v] + e.w);
-                waits[e.to] -= 1;
-                if waits[e.to] == 0 {
-                    ready.push(e.to);
-                }
-            }
-        }
-        (val, done)
-    }
-
-    fn loops(&self, done: &[bool]) -> BTreeSet<Target> {
-        let left = |e: &Edge| !done[e.from] && !done[e.to];
-        let mut out = vec![vec![]; self.base.len()];
-        for e in self.edges.iter().filter(|e| left(e)) {
-            out[e.from].push(e.to);
-        }
-        let mut found = BTreeSet::new();
-        for e in self.edges.iter().filter(|e| left(e)) {
-            let Some(x) = e.cause.filter(|x| !found.contains(x)) else { continue };
-            let mut seen = vec![false; self.base.len()];
-            let mut todo = vec![e.to];
-            while let Some(v) = todo.pop() {
-                if v == e.from {
-                    found.insert(x);
-                    break;
-                }
-                if !std::mem::replace(&mut seen[v], true) {
-                    todo.extend(&out[v]);
-                }
-            }
-        }
-        found
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -509,7 +218,7 @@ impl<'a> Solver<'a> {
 
     fn reference(&self, x: Target) -> Option<(&'a str, Target, i64)> {
         let r = self.time(x).at.as_ref()?;
-        Some((r.id.as_str(), *self.s.ids.get(&r.id)?, r.pos))
+        Some((r.id.as_str(), r.target?, r.pos))
     }
 
     fn loops(&mut self, g: &Graph, done: &[bool]) {
@@ -811,7 +520,7 @@ impl<'a> Solver<'a> {
             }
             out
         };
-        let hidden = self.hidden();
+        let hidden = self.hidden(&repeats);
         let hidden_in = |e: &Elem| {
             let mut out = hidden.get(&Target::Elem(e.id)).cloned().unwrap_or_default();
             let mut n = Some(e.node);
@@ -887,31 +596,59 @@ impl<'a> Solver<'a> {
         }
     }
 
-    fn hidden(&self) -> BTreeMap<Target, Vec<(i64, i64)>> {
+    fn hidden(&self, repeats: &[Vec<Repeat>]) -> BTreeMap<Target, Vec<(i64, i64)>> {
         let s = self.s;
         let mut slots: BTreeMap<&str, Vec<(Target, i64, i64, u32)>> = BTreeMap::new();
         for x in targets(s) {
             let (start, end) = self.shown[self.ix(x)];
-            let at = match x {
-                Target::Node(n) => s.nodes[n].span.lo,
-                Target::Elem(e) => s.elems[e].site.lo,
+            let (order, chain): (u32, &[Repeat]) = match x {
+                Target::Node(n) => (s.nodes[n].span.lo, s.nodes[n].parent.map_or(&[], |p| repeats[p].as_slice())),
+                Target::Elem(e) => (s.elems[e].site.lo, &repeats[s.elems[e].node]),
             };
             if let Some(name) = &self.time(x).slot
                 && end > start
             {
-                slots.entry(name.as_str()).or_default().push((x, start, end, at));
+                for (at, len, _) in unroll(chain, start as f64, end as f64) {
+                    slots.entry(name.as_str()).or_default().push((x, up(at), up(at + len), order));
+                }
             }
         }
-        let mut hidden: BTreeMap<Target, Vec<(i64, i64)>> = BTreeMap::new();
+        let total = self.shown[0].1;
+        let mut hidden = BTreeMap::new();
         for holders in slots.values_mut() {
             holders.sort_by_key(|h| (h.1, h.3));
-            for (k, a) in holders.iter().enumerate() {
-                for b in &holders[k + 1..] {
-                    let (lo, hi) = (a.1.max(b.1), a.2.min(b.2));
-                    if hi > lo {
-                        hidden.entry(a.0).or_default().push((lo, hi));
-                    }
+            let marks: Vec<_> = holders.iter().flat_map(|h| [h.1, h.2]).collect::<BTreeSet<_>>().into_iter().collect();
+            let mut visible: BTreeMap<Target, Vec<(i64, i64)>> = holders.iter().map(|h| (h.0, vec![])).collect();
+            let mut active = BinaryHeap::new();
+            let mut next = 0;
+            for w in marks.windows(2) {
+                let (a, b) = (w[0], w[1]);
+                while next < holders.len() && holders[next].1 <= a {
+                    let h = holders[next];
+                    active.push((h.1, h.3, next));
+                    next += 1;
                 }
+                while active.peek().is_some_and(|&(_, _, i)| holders[i].2 <= a) {
+                    active.pop();
+                }
+                if let Some(&(_, _, i)) = active.peek() {
+                    visible.get_mut(&holders[i].0).expect("slot holder").push((a, b));
+                }
+            }
+            // Visibility is in global time; the same target can win again in another round.
+            for (target, spans) in visible {
+                let mut gaps = vec![];
+                let mut at = 0;
+                for (a, b) in merge(spans) {
+                    if a > at {
+                        gaps.push((at, a));
+                    }
+                    at = b;
+                }
+                if at < total {
+                    gaps.push((at, total));
+                }
+                hidden.insert(target, gaps);
             }
         }
         hidden

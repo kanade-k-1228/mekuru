@@ -11,6 +11,7 @@ pub mod progress;
 pub mod render;
 pub mod schedule;
 pub mod settings;
+pub mod typography;
 pub mod util;
 
 use anyhow::{Context, Result};
@@ -82,8 +83,8 @@ impl Project {
         schedule::schedule(&self.script, media)
     }
 
-    pub fn fonts(&self) -> std::sync::Arc<render::text::font::FontBook> {
-        lang::expand::font_book(&self.script.settings, &self.script.base_dir)
+    pub fn fonts(&self) -> std::sync::Arc<typography::font::FontBook> {
+        typography::font_book(&self.script.settings, &self.script.base_dir)
     }
 
     pub fn default_output(&self) -> PathBuf {

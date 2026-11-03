@@ -87,7 +87,7 @@ git push origin 0.3.0
 - TSX → XML: [core/src/xml.ts](../../pkgs/core/src/xml.ts)。部品を展開し、省略・別名を正規化
 - XML の解析: [compiler/src/lang](../../pkgs/compiler/src/lang)。厳格な属性・参照の検査
 - 配置: [compiler/src/layout](../../pkgs/compiler/src/layout)。taffy で文書全体を配置し、時間の木に変換
-- 時間の計算: [compiler/src/schedule.rs](../../pkgs/compiler/src/schedule.rs)。依存順に解決。循環は E510、到達できない参照は E504
+- 時間の計算: [compiler/src/schedule/mod.rs](../../pkgs/compiler/src/schedule/mod.rs)。依存順に解決。循環は E510、到達できない参照は E504
 - 描画: [compiler/src/render](../../pkgs/compiler/src/render)。cosmic-text で組版、Skrifa で文字輪郭、tiny-skia で描画
 - 出力: [compiler/src/pipeline.rs](../../pkgs/compiler/src/pipeline.rs)。音声の速度変更・ミックス・エンコード
 - ビューア: [viewer/src/view](../../pkgs/viewer/src/view) は UI、[viewer/src/logic](../../pkgs/viewer/src/logic) は状態と計算
