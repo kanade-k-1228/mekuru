@@ -87,7 +87,7 @@ A failed workflow can be rerun. `--tolerate-republish` handles versions already 
 - TSX → XML: [core/src/xml.ts](../../pkgs/core/src/xml.ts): expand components and normalize omissions and aliases
 - XML parsing: [compiler/src/lang](../../pkgs/compiler/src/lang): strict attribute and reference validation
 - Layout: [compiler/src/layout](../../pkgs/compiler/src/layout): lay out the document with taffy and convert it to a timing tree
-- Timing: [compiler/src/schedule.rs](../../pkgs/compiler/src/schedule.rs): resolve dependencies; cycles are E510, unreachable references are E504
+- Timing: [compiler/src/schedule/mod.rs](../../pkgs/compiler/src/schedule/mod.rs): resolve dependencies; cycles are E510, unreachable references are E504
 - Rendering: [compiler/src/render](../../pkgs/compiler/src/render): cosmic-text for shaping, Skrifa for glyph outlines, tiny-skia for drawing
 - Output: [compiler/src/pipeline.rs](../../pkgs/compiler/src/pipeline.rs): audio speed changes, mixing, and encoding
 - Viewer: [viewer/src/view](../../pkgs/viewer/src/view) for UI; [viewer/src/logic](../../pkgs/viewer/src/logic) for state and calculations

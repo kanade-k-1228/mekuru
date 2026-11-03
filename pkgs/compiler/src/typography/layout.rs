@@ -6,7 +6,7 @@ use cosmic_text::{
     skrifa::{FontRef, MetadataProvider, Tag},
 };
 
-pub(super) fn layout(fonts: &FontBook, spec: &TextSpec) -> Option<Buffer> {
+pub(crate) fn layout(fonts: &FontBook, spec: &TextSpec) -> Option<Buffer> {
     let st = &spec.style;
     if !st.size.is_finite() || st.size <= 0.0 || !st.line_height.is_finite() || st.line_height <= 0.0 {
         return None;

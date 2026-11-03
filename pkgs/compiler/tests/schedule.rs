@@ -645,15 +645,130 @@ fn nested_repeats_map_time_round_by_round() {
 }
 
 #[test]
-fn repeat_needs_something_with_a_length_and_nothing_named_inside() {
+fn repeat_needs_something_with_a_length() {
     for body in [
-        r#"<dur len="1"><stack><repeat><dur len="1"><rect id="a" w="1" h="1"/></dur></repeat></stack></dur>"#,
-        r#"<dur len="1"><stack><repeat><dur len="1"><rect w="1" h="1" slot="s"/></dur></repeat></stack></dur>"#,
         r#"<dur len="1"><stack><repeat><rect w="1" h="1"/></repeat></stack></dur>"#,
         r#"<dur len="1"><stack><dur len="1"><repeat><rect w="1" h="1"/></repeat></dur></stack></dur>"#,
     ] {
         let p = project(body);
         assert!(codes(&p).contains(&"E321"), "{body}: {:?}", p.diags);
+    }
+}
+
+#[test]
+fn repeat_references_stay_in_their_clock_and_names_can_be_reused() {
+    let (p, s) = compile(
+        r#"
+        <dur len="13"><stack>
+          <repeat id="loop"><stack>
+            <dur id="cue" len="4"/>
+            <dur at="cue:1" len="2"><rect w="17" h="1"/></dur>
+          </stack></repeat>
+          <repeat><stack>
+            <dur id="cue" len="3"/>
+            <dur at="cue:2" len="1"><rect w="19" h="1"/></dur>
+          </stack></repeat>
+          <rect id="outside" at="loop:6" w="23" h="1"/>
+        </stack></dur>
+    "#,
+    );
+    clean(&s);
+    for t in 0..13 {
+        assert_eq!(marked(&p, &s, "w=\"17\"").active(t as f64), matches!(t % 4, 1 | 2));
+        assert_eq!(marked(&p, &s, "w=\"19\"").active(t as f64), t % 3 == 2);
+        assert_eq!(elem(&p, &s, "outside").active(t as f64), t >= 6);
+    }
+    for body in [
+        r#"<dur id="outside" len="10"><repeat><dur len="2" at="outside:0"/></repeat></dur>"#,
+        r#"<dur len="10"><stack><repeat><dur id="inside" len="2"/></repeat><rect at="inside:0"/></stack></dur>"#,
+        r#"<dur len="10"><repeat><stack><dur id="outer" len="4"/><repeat><dur at="outer:0" len="2"/></repeat></stack></repeat></dur>"#,
+    ] {
+        assert!(codes(&project(body)).contains(&"E318"), "{body}");
+    }
+    assert!(
+        codes(&project(
+            r#"<dur len="10"><repeat><stack><dur id="a" len="1"/><dur id="a" len="2"/></stack></repeat></dur>"#
+        ))
+        .contains(&"E319")
+    );
+    let (_, cycle) = compile(r#"<dur len="10"><repeat><stack><dur id="a" at="b:0" len="1"/><dur id="b" at="a:0" len="1"/></stack></repeat></dur>"#);
+    assert!(cycle.diags.iter().any(|d| d.code == "E510"));
+}
+
+#[test]
+fn repeated_slots_match_explicit_rounds_and_do_not_hide_audio() {
+    let round = r#"<stack slot="actor"><rect w="17" h="1"/><audio src="voice.wav"/></stack>"#;
+    let repeat = format!(r#"<repeat><seq><dur len="2">{round}</dur><dur len="2"/></seq></repeat>"#);
+    let expanded: String = (0..4).map(|k| format!(r#"<dur delay="{}" len="2">{round}</dur>"#, k * 4)).collect();
+    let scene = |body: &str| {
+        format!(
+            r#"<dur len="14"><stack>
+        <rect slot="actor" w="13" h="1"/>{body}
+        <dur delay="7" len="4"><rect slot="actor" w="19" h="1"/></dur>
+        </stack></dur>"#
+        )
+    };
+    let (p, s) = compile(&scene(&repeat));
+    let (q, t) = compile(&scene(&expanded));
+    clean(&s);
+    clean(&t);
+    let visible = |p: &Project, s: &Schedule, at: f64| {
+        p.script
+            .elems
+            .iter()
+            .filter(|e| e.kind.is_visual() && s.elems[e.id].active(at))
+            .filter_map(|e| match &e.kind {
+                ElemKind::View(v) => v.ops.iter().find_map(|op| match op {
+                    ViewOp::Rect(r) => Some(r.w as i64),
+                    _ => None,
+                }),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+    };
+    for frame in 0..28 {
+        let at = frame as f64 / 2.0;
+        assert_eq!(visible(&p, &s, at), visible(&q, &t, at), "at {at}");
+        assert_eq!(visible(&p, &s, at).len(), 1, "one actor at {at}");
+    }
+    assert_eq!(visible(&p, &s, 8.0), vec![17]); // a new round replaces the interruption
+    assert_eq!(visible(&p, &s, 10.0), vec![19]); // then restores it
+    assert_eq!(visible(&p, &s, 11.0), vec![13]); // then the idle portrait
+    let audio = |s: &Schedule| s.audio.iter().map(|a| (a.at, a.len, a.src, a.rate, a.gain)).collect::<Vec<_>>();
+    assert_eq!(audio(&s), audio(&t));
+    assert_eq!(s.audio.len(), 4);
+}
+
+#[test]
+fn nested_repeats_restart_slots_but_a_slot_on_repeat_covers_the_whole_run() {
+    let (p, s) = compile(
+        r#"<dur len="13"><stack>
+        <rect id="idle" slot="actor" w="1" h="1"/>
+        <repeat><seq>
+          <dur len="5"><repeat><seq>
+            <dur len="1"><rect slot="actor" w="17" h="1"/></dur><dur len="1"/>
+          </seq></repeat></dur>
+          <dur len="2"/>
+        </seq></repeat>
+    </stack></dur>"#,
+    );
+    clean(&s);
+    let talk = marked(&p, &s, "w=\"17\"");
+    for t in 0..13 {
+        let speaking = t % 7 < 5 && t % 7 % 2 == 0;
+        assert_eq!(talk.active(t as f64), speaking, "{t}");
+        assert_eq!(elem(&p, &s, "idle").active(t as f64), !speaking, "{t}");
+    }
+    let (p, s) = compile(
+        r#"<dur len="10"><stack>
+        <repeat slot="actor"><dur len="2"><rect w="17" h="1"/></dur></repeat>
+        <dur delay="3" len="7"><rect id="override" slot="actor" w="19" h="1"/></dur>
+    </stack></dur>"#,
+    );
+    clean(&s);
+    for t in 3..10 {
+        assert!(!marked(&p, &s, "w=\"17\"").active(t as f64));
+        assert!(elem(&p, &s, "override").active(t as f64));
     }
 }
 

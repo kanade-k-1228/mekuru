@@ -559,6 +559,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 
 [[package]]
+name = "mekuru-compiler"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "cosmic-text",
+ "env_logger",
+ "image",
+ "rayon",
+ "roxmltree",
+ "serde",
+ "serde_json",
+ "sha2",
+ "taffy",
+ "tiny-skia",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -759,24 +777,6 @@ name = "ryu"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28d3b2b1366ec20994f1fd18c3c594f05c5dd4bc44d8bb0c1c632c8d6829481f"
-
-[[package]]
-name = "mekuru-compiler"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "clap",
- "cosmic-text",
- "env_logger",
- "image",
- "rayon",
- "roxmltree",
- "serde",
- "serde_json",
- "sha2",
- "taffy",
- "tiny-skia",
-]
 
 [[package]]
 name = "self_cell"

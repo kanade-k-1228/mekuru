@@ -3,11 +3,9 @@ use super::diag::{Diag, did_you_mean};
 use super::span::Span;
 use crate::ir::*;
 use crate::layout;
-use crate::render::text::font::FontBook;
-use crate::settings::{Settings, resolve_font};
-use std::collections::{BTreeMap, BTreeSet};
+use crate::typography::font_book;
+use std::collections::BTreeMap;
 use std::path::Path;
-use std::sync::Arc;
 
 pub(crate) fn lower(doc: &Document, base_dir: &Path, diags: &mut Vec<Diag>, preview: bool) -> Script {
     let fonts = font_book(&doc.settings, base_dir);
@@ -19,22 +17,58 @@ pub(crate) fn lower(doc: &Document, base_dir: &Path, diags: &mut Vec<Diag>, prev
     };
     let layout::Lowered { mut nodes, mut elems, names } = layout::lower(&doc.root, &ctx, diags);
 
-    let mut ids = BTreeMap::new();
+    // Each repeat body has its own clock. The repeat itself belongs to its parent's clock.
+    let scope = |mut parent: Option<NodeId>| {
+        while let Some(n) = parent {
+            if nodes[n].kind == NodeKind::Repeat {
+                return Some(n);
+            }
+            parent = nodes[n].parent;
+        }
+        None
+    };
+    let node_scopes: Vec<_> = nodes.iter().map(|n| scope(n.parent)).collect();
+    let elem_scopes: Vec<_> = elems.iter().map(|e| scope(Some(e.node))).collect();
+    let mut scopes: BTreeMap<Option<NodeId>, BTreeMap<String, Target>> = BTreeMap::new();
     for (name, target, span) in names {
+        let scope = match target {
+            Target::Node(n) => node_scopes[n],
+            Target::Elem(e) => elem_scopes[e],
+        };
         if !name.starts_with(|c: char| c.is_alphabetic() || c == '_') {
             diags.push(Diag::new("E319", span, format!("invalid id `{name}`: an id starts with a letter")));
-        } else if ids.insert(name.clone(), target).is_some() {
-            diags.push(Diag::new("E319", span, format!("the id `{name}` is used twice")));
+        } else if scopes.entry(scope).or_default().insert(name.clone(), target).is_some() {
+            diags.push(Diag::new("E319", span, format!("the id `{name}` is used twice in the same clock")));
         }
     }
-    let named: BTreeSet<Target> = ids.values().copied().collect();
-    check_repeats(&nodes, &elems, &named, diags);
+    let mut check = |t: &mut Time, span: Span, scope: Option<NodeId>| {
+        if let Some(r) = &mut t.at {
+            let ids = scopes.entry(scope).or_default();
+            if let Some(target) = ids.get(&r.id) {
+                r.target = Some(*target);
+            } else {
+                let hint = did_you_mean(&r.id, ids.keys().map(String::as_str));
+                diags.push(Diag::new(
+                    "E318",
+                    span,
+                    format!("unknown id `{}` in this clock{hint}; references cannot cross a repeat body", r.id),
+                ));
+                t.at = None;
+            }
+        }
+    };
+    for n in &mut nodes {
+        check(&mut n.t, n.head, node_scopes[n.id]);
+    }
+    for e in &mut elems {
+        check(&mut e.t, e.site, elem_scopes[e.id]);
+    }
+    let ids = scopes.remove(&None).unwrap_or_default();
     let mut idx: Vec<usize> = (0..elems.len()).collect();
     idx.sort_by_key(|&i| elems[i].site.lo);
     for (rank, i) in idx.into_iter().enumerate() {
         elems[i].order = rank as u32;
     }
-    check_refs(&mut nodes, &mut elems, &ids, diags);
     Script {
         settings: doc.settings.clone(),
         nodes,
@@ -42,52 +76,4 @@ pub(crate) fn lower(doc: &Document, base_dir: &Path, diags: &mut Vec<Diag>, prev
         ids,
         base_dir: base_dir.to_path_buf(),
     }
-}
-
-fn check_repeats(nodes: &[Node], elems: &[Elem], named: &BTreeSet<Target>, diags: &mut Vec<Diag>) {
-    let in_repeat = |mut n: Option<NodeId>| {
-        while let Some(i) = n {
-            if nodes[i].kind == NodeKind::Repeat {
-                return true;
-            }
-            n = nodes[i].parent;
-        }
-        false
-    };
-    let refers = |t: &Time| t.slot.is_some() || t.at.is_some();
-    let msg = "inside a `<repeat>`, nothing can have a name or refer to one (`id`, `slot`, `at`)";
-    for n in nodes {
-        if in_repeat(n.parent) && (named.contains(&Target::Node(n.id)) || refers(&n.t)) {
-            diags.push(Diag::new("E321", n.head, msg));
-        }
-    }
-    for e in elems {
-        if in_repeat(Some(e.node)) && (named.contains(&Target::Elem(e.id)) || refers(&e.t)) {
-            diags.push(Diag::new("E321", e.site, msg));
-        }
-    }
-}
-
-fn check_refs(nodes: &mut [Node], elems: &mut [Elem], ids: &BTreeMap<String, Target>, diags: &mut Vec<Diag>) {
-    let mut check = |t: &mut Time, span: Span| {
-        if let Some(r) = &t.at
-            && !ids.contains_key(&r.id)
-        {
-            let hint = did_you_mean(&r.id, ids.keys().map(String::as_str));
-            diags.push(Diag::new("E318", span, format!("unknown id `{}`{hint}", r.id)));
-            t.at = None;
-        }
-    };
-    for n in nodes.iter_mut() {
-        check(&mut n.t, n.head);
-    }
-    for e in elems.iter_mut() {
-        check(&mut e.t, e.site);
-    }
-}
-
-pub(crate) fn font_book(st: &Settings, base: &Path) -> Arc<FontBook> {
-    let fonts: Vec<String> = st.fonts.iter().map(|f| resolve_font(f, base)).collect();
-    let extra: Vec<std::path::PathBuf> = fonts.iter().map(std::path::PathBuf::from).filter(|p| p.is_file()).collect();
-    FontBook::shared(&fonts, &extra)
 }
