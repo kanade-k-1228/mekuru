@@ -33,13 +33,13 @@ bun install
 
 ## 部品
 
-部品は props を受け取り、要素を返す関数です。`async` にでき、配列・条件分岐・フラグメントを使えます。hooks や状態は持ちません。
+部品は props を受け取り、要素を返す関数です。`async` にでき、配列・条件分岐・フラグメントを使えます。hooks や状態は持ちません。型は `@mekuru/types` の `FC<Props>` で付けます。
 
 次は、音声・立ち絵・字幕を一つのセリフとして扱う部品です。型と補助部品は [example/src/parts.tsx](../../example/src/parts.tsx) にあります。
 
 ```tsx
 // example/src/parts.tsx（抜粋）
-export const Tsuzumi = async ({ children, face, show, ...time }: Line) => {
+export const Tsuzumi: FC<Line> = async ({ children, face, show, ...time }) => {
   const line = await Voisona.prepare({ ...voice, children });
   return (
     <dur len={line.len} {...time}>

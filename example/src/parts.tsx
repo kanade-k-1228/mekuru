@@ -1,4 +1,4 @@
-import type { At, Length, Node } from "@mekuru/types";
+import type { At, FC, Length, Node } from "@mekuru/types";
 import { portrait, type Face, Subtitle as NarratorSubtitle } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
@@ -81,7 +81,7 @@ const balance = (text: Node): Node => {
   );
 };
 
-const Subtitle = ({ children }: Children) => (
+const Subtitle: FC<Children> = ({ children }) => (
   <>
     {(
       [
@@ -119,7 +119,7 @@ const voice = { name: "tsuzumi", voice: "suzuki-tsudumi_ja_JP", gap: 6, reading:
 
 type Line = Children & { id?: string; at?: At; face?: FaceName; show?: Node };
 
-export const Tsuzumi = async ({ children, face, show, ...time }: Line) => {
+export const Tsuzumi: FC<Line> = async ({ children, face, show, ...time }) => {
   const line = await Voisona.prepare({ ...voice, children });
   return (
     <dur len={line.len} {...time}>
@@ -133,7 +133,7 @@ export const Tsuzumi = async ({ children, face, show, ...time }: Line) => {
   );
 };
 
-export const Jingle = async ({ children }: { children: string }) => {
+export const Jingle: FC<{ children: string }> = async ({ children }) => {
   const line = await Voisona.prepare({ ...voice, children });
   return (
     <stack>
@@ -155,13 +155,13 @@ export const Jingle = async ({ children }: { children: string }) => {
   );
 };
 
-export const Exit = () => (
+export const Exit: FC = () => (
   <dur len={36}>
     <rect x={1150} w={770} h="100%" fill="#FFFFFF" fadein={24} z={15} />
   </dur>
 );
 
-export const EndCard = ({ top, bottom, credit, len }: { top: string; bottom: string; credit: string; len: number }) => {
+export const EndCard: FC<{ top: string; bottom: string; credit: string; len: number }> = ({ top, bottom, credit, len }) => {
   const [cx, cy, n] = [620, 560, 36];
   const rays = Array.from({ length: n }, (_, i) => {
     const at = (k: number) => {
@@ -188,7 +188,7 @@ export const EndCard = ({ top, bottom, credit, len }: { top: string; bottom: str
   );
 };
 
-export const Step = ({ n, children }: { n?: string } & Children) => (
+export const Step: FC<{ n?: string } & Children> = ({ n, children }) => (
   <row x={60} y={36} gap={22} align="center">
     {n && (
       <text size={72} weight="bold" color={COLOR.orange} stroke="#FFFFFF" stroke-width={8}>
@@ -201,13 +201,13 @@ export const Step = ({ n, children }: { n?: string } & Children) => (
   </row>
 );
 
-export const Keyword = ({ x, y, size = 140, anchor, children }: { x: Length; y: Length; size?: number; anchor?: "tl" | "c" | "t" } & Children) => (
+export const Keyword: FC<{ x: Length; y: Length; size?: number; anchor?: "tl" | "c" | "t" } & Children> = ({ x, y, size = 140, anchor, children }) => (
   <text x={x} y={y} anchor={anchor} size={size} weight="bold" color="#1A1A1A" stroke="#FFFFFF" stroke-width={12}>
     {children}
   </text>
 );
 
-export const Label = ({
+export const Label: FC<{ x: Length; y: Length; anchor?: "tl" | "c" | "b" | "l"; size?: number; color?: string; at?: At } & Children> = ({
   x,
   y,
   anchor = "c",
@@ -215,21 +215,21 @@ export const Label = ({
   color = COLOR.orange,
   at,
   children,
-}: { x: Length; y: Length; anchor?: "tl" | "c" | "b" | "l"; size?: number; color?: string; at?: At } & Children) => (
+}) => (
   <text x={x} y={y} anchor={anchor} size={size} weight="bold" color={color} stroke="#FFFFFF" stroke-width={9} at={at} fadein={5} z={50}>
     {children}
   </text>
 );
 
-export const Mark = ({ x, y, w, h, at }: { x: Length; y: Length; w: Length; h: Length; at?: At }) => (
+export const Mark: FC<{ x: Length; y: Length; w: Length; h: Length; at?: At }> = ({ x, y, w, h, at }) => (
   <rect x={x} y={y} w={w} h={h} stroke={COLOR.red} stroke-width={7} radius={10} at={at} fadein={5} z={50} />
 );
 
-export const Arrow = ({ x1, y1, x2, y2, at }: { x1: number; y1: number; x2: number; y2: number; at?: At }) => (
+export const Arrow: FC<{ x1: number; y1: number; x2: number; y2: number; at?: At }> = ({ x1, y1, x2, y2, at }) => (
   <line p={`${x1}:${y1},${x2}:${y2}`} head="end" stroke={COLOR.orange} stroke-width={14} at={at} fadein={5} z={50} />
 );
 
-export const Point = ({ children, size = 46 }: Children & { size?: number }) => (
+export const Point: FC<Children & { size?: number }> = ({ children, size = 46 }) => (
   <row gap={22} align="center">
     <circle w={24} h={24} fill={COLOR.red} />
     <text size={size} weight="bold" color={COLOR.ink}>
@@ -238,7 +238,7 @@ export const Point = ({ children, size = 46 }: Children & { size?: number }) => 
   </row>
 );
 
-export const Note = ({ children, size = 36 }: Children & { size?: number }) => (
+export const Note: FC<Children & { size?: number }> = ({ children, size = 36 }) => (
   <text size={size} color={COLOR.sub}>
     {children}
   </text>
@@ -252,7 +252,7 @@ export interface CodeAt {
 const LH = 1.45;
 const PAD: [number, number] = [18, 24];
 
-export const Code = ({ at: { x, y, size }, w, children }: { at: CodeAt; w?: number; children: string }) => (
+export const Code: FC<{ at: CodeAt; w?: number; children: string }> = ({ at: { x, y, size }, w, children }) => (
   <column x={x} y={y} w={w} fill="#FAFAFA" stroke="#C8C8C8" stroke-width={3} radius={8} padding={PAD}>
     <row gap={24}>
       <text pre font={MONO} size={size} line-height={LH} color="#A8A8A8" align="right">
@@ -268,7 +268,7 @@ export const Code = ({ at: { x, y, size }, w, children }: { at: CodeAt; w?: numb
   </column>
 );
 
-export const CodeMark = ({ code: { x, y, size }, from, to = from, w, at }: { code: CodeAt; from: number; to?: number; w: number; at?: At }) => {
+export const CodeMark: FC<{ code: CodeAt; from: number; to?: number; w: number; at?: At }> = ({ code: { x, y, size }, from, to = from, w, at }) => {
   const lh = size * LH;
   return <Mark x={x + 8} y={y + PAD[0] + (from - 1) * lh - 4} w={w} h={(to - from + 1) * lh + 8} at={at} />;
 };
@@ -276,7 +276,7 @@ export const CodeMark = ({ code: { x, y, size }, from, to = from, w, at }: { cod
 const TERM_BAR = 46;
 const TERM_LH = 1.75;
 
-export const Terminal = ({ at: { x, y, size }, w, children }: { at: CodeAt; w?: Length; children: string }) => {
+export const Terminal: FC<{ at: CodeAt; w?: Length; children: string }> = ({ at: { x, y, size }, w, children }) => {
   let command = false;
   return (
     <column x={x} y={y} w={w} fill="#1F2229" radius={12} padding={[0, 0, 22, 0]}>
@@ -311,7 +311,7 @@ export const Terminal = ({ at: { x, y, size }, w, children }: { at: CodeAt; w?: 
   );
 };
 
-export const TermMark = ({ term: { x, y, size }, from, to = from, w, at }: { term: CodeAt; from: number; to?: number; w: number; at?: At }) => {
+export const TermMark: FC<{ term: CodeAt; from: number; to?: number; w: number; at?: At }> = ({ term: { x, y, size }, from, to = from, w, at }) => {
   const lh = size * TERM_LH;
   return <Mark x={x + 10} y={y + TERM_BAR + 4 + (from - 1) * lh - 8} w={w} h={(to - from) * lh + size * 1.4 + 16} at={at} />;
 };
@@ -319,7 +319,7 @@ export const TermMark = ({ term: { x, y, size }, from, to = from, w, at }: { ter
 const ROW = 56;
 export type Entry = readonly [depth: number, name: string, note?: string];
 
-export const Tree = ({ at: { x, y, size }, w, entries }: { at: CodeAt; w: number; entries: readonly Entry[] }) => (
+export const Tree: FC<{ at: CodeAt; w: number; entries: readonly Entry[] }> = ({ at: { x, y, size }, w, entries }) => (
   <column x={x} y={y} w={w} fill="#F4F4F6" stroke="#D3D3D8" stroke-width={3} radius={8} padding={[16, 24]}>
     {entries.map(([depth, name, note]) => (
       <row h={ROW} gap={16} align="center" padding={[0, 0, 0, depth * 38]}>
@@ -341,11 +341,11 @@ export const Tree = ({ at: { x, y, size }, w, entries }: { at: CodeAt; w: number
   </column>
 );
 
-export const TreeMark = ({ tree: { x, y }, from, to = from, w, at }: { tree: CodeAt; from: number; to?: number; w: number; at?: At }) => (
+export const TreeMark: FC<{ tree: CodeAt; from: number; to?: number; w: number; at?: At }> = ({ tree: { x, y }, from, to = from, w, at }) => (
   <Mark x={x + 8} y={y + 16 + (from - 1) * ROW} w={w} h={(to - from + 1) * ROW} at={at} />
 );
 
-export const Shot = ({ x, y, src, w, h }: { x: Length; y: Length; src: string; w?: Length; h?: Length }) => (
+export const Shot: FC<{ x: Length; y: Length; src: string; w?: Length; h?: Length }> = ({ x, y, src, w, h }) => (
   <column x={x} y={y} stroke="#BDBDBD" stroke-width={3} radius={4}>
     <image src={src} w={w} h={h} />
   </column>

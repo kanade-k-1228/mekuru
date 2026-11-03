@@ -19,6 +19,7 @@ bun add -d @mekuru/types @mekuru/speech
 次の再利用できるアダプターを `src/speech.tsx` に保存します。
 
 ```tsx
+import type { FC } from "@mekuru/types";
 import { line, voiceOf, type SpeechProps } from "@mekuru/speech";
 
 interface CustomSpeechProps extends SpeechProps {
@@ -27,8 +28,8 @@ interface CustomSpeechProps extends SpeechProps {
 
 type Synthesize = (text: string, output: string, voice: { speaker: string }) => Promise<void>;
 
-export const createSpeech = (synthesize: Synthesize) =>
-  async (props: CustomSpeechProps) => {
+export const createSpeech = (synthesize: Synthesize): FC<CustomSpeechProps> =>
+  async (props) => {
     const voice = voiceOf(props);
     return line("my-engine", props, props.speaker, voice, (text, output) =>
       synthesize(text, output, voice),

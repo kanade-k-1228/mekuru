@@ -1,8 +1,9 @@
+import type { FC } from "@mekuru/types";
 import { Audio } from "@mekuru/audio";
 import { Voisona } from "@mekuru/voisona";
 import { Portrait, READING, Subtitle, type Line, type PortraitProps } from "../parts";
 
-export const Tsuzumi = async ({ children, ...time }: Line) => {
+export const Tsuzumi: FC<Line> = async ({ children, ...time }) => {
   const line = await Voisona.prepare({ name: "tsuzumi", voice: "suzuki-tsudumi_ja_JP", gap: 6, reading: READING, children });
   return (
     <dur len={line.len} {...time}>
@@ -14,4 +15,4 @@ export const Tsuzumi = async ({ children, ...time }: Line) => {
   );
 };
 
-export const TsuzumiPortrait = (props: PortraitProps) => <Portrait src="assets/character/tsuzumi.png" x="85%" {...props} />;
+export const TsuzumiPortrait: FC<PortraitProps> = (props) => <Portrait src="assets/character/tsuzumi.png" x="85%" {...props} />;

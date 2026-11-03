@@ -32,6 +32,7 @@ assets/character/pikao-tsuzumi/
 Define a component in `src/parts.tsx` and place `<Scene />` inside the script's `<mekuru>`. This example uses parts copied by the [example asset preparation script](../../example/scripts/portrait.ts).
 
 ```tsx
+import type { FC } from "@mekuru/types";
 import { portrait } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
@@ -43,7 +44,7 @@ const actor = portrait({
   faces: { 笑顔: { 目: "笑顔", 口: "にこ" } },
 });
 
-export const Scene = async () => {
+export const Scene: FC = async () => {
   const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", children: "こんにちは。" });
   return <stack>
     <actor.Stand />

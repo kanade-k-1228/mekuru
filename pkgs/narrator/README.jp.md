@@ -19,7 +19,7 @@ bun add -d @mekuru/types @mekuru/narrator
 次は `@mekuru/voisona`・`@mekuru/speech` を追加したプロジェクトでの例です。`src` は自分の立ち絵フォルダに置き換えます。
 
 ```tsx
-import type { At, Node } from "@mekuru/types";
+import type { At, FC, Node } from "@mekuru/types";
 import { portrait, Subtitle, type Face } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
@@ -29,7 +29,7 @@ const actor = portrait({ src: "assets/character/tsuzumi" });
 type TsuzumiProps = { children?: Node; face?: Face; id?: string; at?: At };
 
 export const TsuzumiStand = actor.Stand;
-export const Tsuzumi = async ({ children, face, id, at }: TsuzumiProps) => {
+export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
   const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", children });
   return (
     <dur len={line.len} id={id} at={at}>
@@ -74,10 +74,10 @@ export const Tsuzumi = async ({ children, face, id, at }: TsuzumiProps) => {
 ルビを表示文字に変換し、`<br />` を保持したNodeを返します。独自の字幕に使えます。`@mekuru/speech/text` が提供する同じ非同期関数の再エクスポートです。
 
 ```tsx
-import type { Node } from "@mekuru/types";
+import type { FC, Node } from "@mekuru/types";
 import { subtitleText } from "@mekuru/narrator";
 
-const MySubtitle = async ({ children }: { children?: Node }) => (
+const MySubtitle: FC<{ children?: Node }> = async ({ children }) => (
   <text x="50%" y="95%" anchor="b" size={48}>
     {await subtitleText(children)}
   </text>
@@ -123,6 +123,7 @@ bun x mekuru-psd assets/source/sasara.psd --out assets/sasara
 生成先には `グループ名/選択肢名.png`、`レイヤ名.png`、描画順・初期値などを記録した `portrait.json`、props 型の `portrait.d.ts` ができます。画像は元キャンバスの寸法・座標を維持します。再実行時は生成対象を更新し、以前のメタデータに記録された不要な画像だけを削除します。生成先はこの素材専用のディレクトリにしてください。
 
 ```tsx
+import type { FC } from "@mekuru/types";
 import { psdPortrait } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
@@ -132,7 +133,7 @@ import type { LayerProps } from "./assets/sasara/portrait";
 const Sasara = psdPortrait<LayerProps>({ src: "assets/sasara" });
 
 <Sasara.Stand face="smile" glass />;
-const Line = async () => {
+const Line: FC = async () => {
   const source = await readAudio("assets/voice/line.wav");
   return <stack><Audio source={source} /><Sasara.Talk source={source} face="angry" /></stack>;
 };

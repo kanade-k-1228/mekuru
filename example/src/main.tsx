@@ -1,4 +1,4 @@
-import { writeXml } from "@mekuru/types";
+import { type FC, writeXml } from "@mekuru/types";
 import {
   Arrow,
   COLOR,
@@ -486,7 +486,7 @@ const voice = () => (
 
 const ADD: CodeAt = { x: 70, y: 160, size: 26 };
 const FRAME = { x: 110, y: 470, w: 640, h: 360 };
-const Figure = ({ at, color }: { at: number; color: string }) => (
+const Figure: FC<{ at: number; color: string }> = ({ at, color }) => (
   <rect x={FRAME.x + FRAME.w * at} y={FRAME.y + FRAME.h} anchor="b" w={FRAME.h * 0.45 * 0.6} h={FRAME.h * 0.45} fill={color} radius={40} />
 );
 
@@ -528,7 +528,7 @@ const portraitStep = () => (
 );
 
 const SECOND: CodeAt = { x: 60, y: 150, size: 27 };
-const Scene = ({ x, title }: { x: number; title: string }) => (
+const Scene: FC<{ x: number; title: string }> = ({ x, title }) => (
   <column x={x} y={700} w={440} h={110} fill="#141C26" radius={10} justify="center" align="center">
     <text size={36} color="#FFFFFF">
       {title}
@@ -690,7 +690,7 @@ const outro = () => (
   </stack>
 );
 
-const Tutorial = () => (
+const Tutorial: FC = () => (
   <mekuru size="1920x1080" fps={30} font="Rounded Mplus 1c">
     <rect w="100%" h="100%" fill="#FFFFFF" />
     <repeat fadein={30} fadeout={60}>

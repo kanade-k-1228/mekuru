@@ -1,7 +1,7 @@
-import { writeXml } from "@mekuru/types";
+import { type FC, writeXml } from "@mekuru/types";
 import { Tsuzumi, TsuzumiPortrait } from "./character/tsuzumi";
 
-const Video = () => (
+const Video: FC = () => (
   <mekuru size="1920x1080" fps={30}>
     <rect w="100%" h="100%" fill="#141C26" />
     <TsuzumiPortrait x="85%" h="45%" />

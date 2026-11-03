@@ -13,6 +13,7 @@ bun add -d @mekuru/types
 ```
 
 - `tsconfig.json` の `jsx` を `react-jsx`、`jsxImportSource` を `@mekuru/types` に設定します。
+- 部品の型は `FC<Props>` で付けます。
 - `writeXml(path, video)` で部品を展開して XML を書き出し、`toXml(video)` で XML 文字列を取得できます。
 - 非同期の読み上げ部品は、先に下書きを書き出し、音声合成が終わると更新できます。
 - XML のプレビューと動画への書き出しには [@mekuru/core](../core/README.jp.md) を使います。
