@@ -39,7 +39,7 @@ This component combines speech, a portrait, and subtitles into one line. Types a
 
 ```tsx
 // Excerpt from example/src/parts.tsx
-export const Tsuzumi = async ({ children, face, show, ...time }: Line) => {
+export const Tsuzumi: FC<Line> = async ({ children, face, show, ...time }) => {
   const line = await Voisona.prepare({ ...voice, children });
   return (
     <dur len={line.len} {...time}>

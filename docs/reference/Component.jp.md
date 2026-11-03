@@ -39,7 +39,7 @@ bun install
 
 ```tsx
 // example/src/parts.tsx（抜粋）
-export const Tsuzumi = async ({ children, face, show, ...time }: Line) => {
+export const Tsuzumi: FC<Line> = async ({ children, face, show, ...time }) => {
   const line = await Voisona.prepare({ ...voice, children });
   return (
     <dur len={line.len} {...time}>

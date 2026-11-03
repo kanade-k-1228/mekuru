@@ -25,10 +25,10 @@ const indent = (code: string, spaces: number) =>
     .map((line) => " ".repeat(spaces) + line)
     .join("\n");
 
-const script = (body: string, withPortrait = false) => `import { writeXml } from "@mekuru/types";
+const script = (body: string, withPortrait = false) => `import { type FC, writeXml } from "@mekuru/types";
 import { ${withPortrait ? "Tsuzumi, TsuzumiPortrait" : "Tsuzumi"} } from "./character/tsuzumi";
 
-const Video = () => (
+const Video: FC = () => (
   <mekuru size="1920x1080" fps={30}>
 ${indent(body, 4)}
   </mekuru>
