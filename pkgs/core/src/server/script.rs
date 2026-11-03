@@ -49,15 +49,12 @@ fn plain(bytes: &[u8]) -> String {
 
 pub(super) fn start(command: String, app: App) -> JoinHandle<()> {
     tokio::spawn(async move {
-        let mut cmd = if cfg!(windows) {
-            let mut cmd = Command::new("cmd");
-            cmd.args(["/C", &command]);
-            cmd
-        } else {
-            let mut cmd = Command::new("sh");
-            cmd.args(["-c", &command]);
-            cmd
-        };
+        let mut cmd = Command::new(if cfg!(windows) { "cmd" } else { "sh" });
+        // --run is shell source; cmd.exe needs its own quoting rather than C argv escaping.
+        #[cfg(windows)]
+        cmd.args(["/D", "/S", "/C"]).raw_arg(format!("\"{command}\""));
+        #[cfg(not(windows))]
+        cmd.args(["-c", &command]);
         cmd.current_dir(&app.root)
             .stdin(Stdio::null())
             .stdout(Stdio::inherit())

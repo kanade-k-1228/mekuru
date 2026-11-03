@@ -5,6 +5,9 @@ use std::{path::PathBuf, time::Duration};
 use tokio::{sync::watch, task::JoinHandle};
 
 pub(super) fn start(path: PathBuf, app: App) -> Result<JoinHandle<()>> {
+    // Filesystem events resolve directory aliases such as macOS's /var -> /private/var.
+    // Resolve only the parent: --run may create the XML after the watcher starts.
+    let path = path.parent().unwrap().canonicalize()?.join(path.file_name().unwrap());
     let (changed, mut changes) = watch::channel(0u64);
     let target = path.clone();
     let handler = move |result: notify::Result<notify::Event>| match result {

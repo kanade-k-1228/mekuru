@@ -91,7 +91,13 @@ test("streams media ranges, HEAD, revised asset URLs and rejects outside paths",
 });
 
 test("native patches reconstruct the reconnect snapshot, retain failures and recover from edits", async () => {
-  server = await startServer({ xml, port: 0 });
+  let watched = xml;
+  if (process.platform !== "win32") {
+    const alias = join(root, "linked");
+    await symlink(join(root, ".mekuru"), alias);
+    watched = join(alias, "scene.xml");
+  }
+  server = await startServer({ xml: watched, root, port: 0 });
   await until(async () => (await state()).status === "ready");
   const connection = await connect();
   const store = previewStore();

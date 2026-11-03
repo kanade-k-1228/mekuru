@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, mkdir, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { findCompiler } from "../npm/compiler.js";
@@ -21,10 +21,10 @@ test("native serve rejects invalid options and reports a missing XML file", asyn
 
 test("--run creates a missing XML file using the explicit project root", async () => {
   const root = await mkdtemp(join(tmpdir(), "mekuru-native-run-"));
-  const project = join(root, "project");
+  const project = join(root, "project space");
   await mkdir(project);
   const xml = join(root, "output/scene.xml");
-  const script = join(root, "write.cjs");
+  const script = join(root, "write script.cjs");
   const source = '<mekuru><seq><dur len="30"><text>Created by script</text></dur></seq></mekuru>';
   await Bun.write(join(project, "asset.txt"), "explicit project root");
   await Bun.write(
@@ -39,10 +39,10 @@ test("--run creates a missing XML file using the explicit project root", async (
     for (;;) {
       const preview = await fetch(`${server.url}/api/preview`);
       if (preview.ok && JSON.stringify(await preview.json()).includes("Created by script")) break;
-      if (Date.now() > deadline) throw new Error("script XML was not compiled");
+      if (Date.now() > deadline) throw new Error(`script XML was not compiled: ${await (await fetch(`${server.url}/api/state`)).text()}`);
       await Bun.sleep(10);
     }
-    expect(await Bun.file(join(project, "cwd.txt")).text()).toBe(project);
+    expect(await Bun.file(join(project, "cwd.txt")).text()).toBe(await realpath(project));
     expect(await (await fetch(`${server.url}/files/asset.txt`)).text()).toBe("explicit project root");
     await expect(startServer({ xml, port: Number(new URL(server.url).port) })).rejects.toThrow("cannot listen");
   } finally {
