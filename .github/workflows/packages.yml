@@ -19,6 +19,8 @@ defaults:
 
 env:
   RELEASE: ${{ startsWith(github.ref, 'refs/tags/') }}
+  # Line tables keep file:line in backtraces but link faster and keep target/ caches small.
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
 
 jobs:
   check:
@@ -37,11 +39,11 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           lookup-only: ${{ startsWith(github.ref, 'refs/tags/') }}
-          save-if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          # Only main saves: PR caches would push main's out of the 10 GB limit.
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: bun ci
       - run: bun run check
       - run: bun run test
-      - run: bun run --cwd pkgs/viewer build
 
   check-msrv:
     timeout-minutes: 30
@@ -56,12 +58,11 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           lookup-only: ${{ startsWith(github.ref, 'refs/tags/') }}
-          save-if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: cargo check --workspace --all-targets --locked
 
   build:
     timeout-minutes: 60
-    needs: [check, check-msrv]
     strategy:
       fail-fast: false
       matrix:
@@ -70,7 +71,8 @@ jobs:
           - { platform: linux-arm64, target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm }
           - { platform: linux-x64-musl, target: x86_64-unknown-linux-musl, os: ubuntu-22.04 }
           - { platform: linux-arm64-musl, target: aarch64-unknown-linux-musl, os: ubuntu-22.04-arm }
-          - { platform: darwin-x64, target: x86_64-apple-darwin, os: macos-15-intel }
+          # Cross-compiled on Apple Silicon and smoke-tested under Rosetta 2.
+          - { platform: darwin-x64, target: x86_64-apple-darwin, os: macos-15 }
           - { platform: darwin-arm64, target: aarch64-apple-darwin, os: macos-15 }
           - { platform: win32-x64, target: x86_64-pc-windows-msvc, os: windows-latest }
           - { platform: win32-arm64, target: aarch64-pc-windows-msvc, os: windows-11-arm }
@@ -88,12 +90,15 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           lookup-only: ${{ startsWith(github.ref, 'refs/tags/') }}
-          save-if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
           key: ${{ matrix.target }}
       - run: bun ci
       - if: env.RELEASE == 'true'
         run: bun scripts/release.ts stamp "$GITHUB_REF_NAME"
       - run: bun run --cwd pkgs/viewer build
+      - if: matrix.platform == 'darwin-x64'
+        name: Install Rosetta 2 to run the x64 compiler
+        run: arch -x86_64 /usr/bin/true 2> /dev/null || sudo softwareupdate --install-rosetta --agree-to-license
       - name: Build and smoke-test the compiler
         run: |
           args=(--workspace --locked --target "${{ matrix.target }}")
@@ -133,7 +138,7 @@ jobs:
 
   release:
     timeout-minutes: 30
-    needs: build
+    needs: required
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     environment: release
