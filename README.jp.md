@@ -6,10 +6,24 @@
 
 ## 必要なもの
 
+次のコマンドでBunとffmpegを確認し、未導入ならインストールします。
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.sh | bash
+```
+
 - [Bun](https://bun.sh/) 1.4 以上。パッケージは TypeScript ソースを直接実行します。
 - libx264 付き [ffmpeg・ffprobe](https://ffmpeg.org/) と日本語フォント（既定: Rounded Mplus 1c）。
 - 使用する声の音声合成エンジン。
 - Windows では WSL で実行します。
+
+自動導入はUbuntu/Debian（WSLを含む）のaptと、macOSの [Homebrew](https://brew.sh/) に対応します。aptには管理者権限が必要です。Bunがなければ公式インストーラで1.4.4を導入します。音声エンジンと日本語フォントは別途用意してください。
+
+条件を満たす既存ツールは再利用し、古いBunやlibx264のないffmpegは更新方法を案内して停止します。`MEKURU_FFMPEG`・`MEKURU_FFPROBE` による指定も利用できます。確認だけ行う場合は次を実行します。
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.sh | bash -s -- --check
+```
 
 ## はじめる
 

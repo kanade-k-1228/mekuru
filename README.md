@@ -6,10 +6,24 @@ Create explainer videos by writing scripts in text. Scenes adapt to speech durat
 
 ## Requirements
 
+Check Bun and ffmpeg, and install them if missing:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.sh | bash
+```
+
 - [Bun](https://bun.sh/) 1.4 or later; packages run directly from TypeScript source.
 - [ffmpeg / ffprobe](https://ffmpeg.org/) with libx264, and Japanese fonts (default: Rounded Mplus 1c).
 - A speech engine for the selected voice.
 - On Windows, run Mekuru in WSL.
+
+Automatic installation supports apt on Ubuntu/Debian (including WSL) and [Homebrew](https://brew.sh/) on macOS. apt requires administrator privileges. If Bun is missing, its official installer installs version 1.4.4. Set up a speech engine and Japanese fonts separately.
+
+Compatible existing tools are reused. An outdated Bun or ffmpeg without libx264 produces an error with update instructions. `MEKURU_FFMPEG` and `MEKURU_FFPROBE` overrides are respected. To check without installing anything:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.sh | bash -s -- --check
+```
 
 ## Quick start
 
