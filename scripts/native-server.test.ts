@@ -139,7 +139,7 @@ test("native patches reconstruct the reconnect snapshot, retain failures and rec
   }
 });
 
-test("settles chunked writes and catches the latest edit while compilation is busy", async () => {
+test("settles chunked writes and catches the latest edit during rapid saves", async () => {
   server = await startServer({ xml, port: 0 });
   await until(async () => (await state()).status === "ready");
   const version = (await state()).version;
@@ -155,7 +155,7 @@ test("settles chunked writes and catches the latest edit while compilation is bu
     await connection.next();
     // Observe the queued notification even if compilation finishes between HTTP polls.
     // Keep this a watcher/queue test, without a large font-dependent rendering workload.
-    await save(previewXml(1000, 1, "ja"));
+    await save(previewXml(200, 1, "ja"));
     await until(async () => (await connection.next()).state.status === "building");
     await save(previewXml(100, 3, "ja"));
     await Bun.sleep(30);
