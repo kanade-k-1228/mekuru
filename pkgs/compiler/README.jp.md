@@ -19,3 +19,5 @@ cargo build -p mekuru-compiler --release --locked
 - 公開パッケージを使うプロジェクトでは、通常 [@mekuru/cli](../cli/README.jp.md) 経由で起動します。
 
 [XML の構文](../../docs/reference/Syntax.jp.md) と [開発](../../docs/dev/Developer.jp.md)
+
+- `--emit-timeline` は台本ID・整数フレーム区間・反復情報・診断を描画パスなしで返します。[タイムラインAPI](../cli/README.jp.md#公開apiと軽量タイムライン)を参照してください。

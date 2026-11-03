@@ -198,6 +198,7 @@ pub struct AudioClip {
 
 #[derive(Clone, Debug, Default)]
 pub struct Schedule {
+    pub repeats: Vec<Vec<Repeat>>,
     pub total: i64,
     pub nodes: Vec<NodeTime>,
     pub elems: Vec<ElemTime>,
@@ -218,6 +219,7 @@ impl Schedule {
             hidden: vec![],
         };
         Schedule {
+            repeats: vec![vec![]; s.nodes.len()],
             total: 0,
             nodes: vec![NodeTime { start: 0, end: 0 }; s.nodes.len()],
             elems: vec![nothing; s.elems.len()],

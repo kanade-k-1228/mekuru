@@ -19,3 +19,5 @@ cargo build -p mekuru-compiler --release --locked
 - Published projects normally launch this compiler through [@mekuru/cli](../cli/README.md).
 
 See [XML syntax](../../docs/reference/Syntax.md) and [development](../../docs/dev/Developer.md).
+
+- `--emit-timeline` emits source IDs, integer frame intervals, repeat chains, and diagnostics without drawing paths. See [the timeline API](../cli/README.md#programmatic-apis).

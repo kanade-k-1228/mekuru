@@ -37,8 +37,10 @@ struct Cli {
     #[arg(long)]
     emit_preview: bool,
     /// Serve versioned preview requests as JSON Lines over stdin/stdout.
-    #[arg(long, conflicts_with = "emit_preview")]
+    #[arg(long, conflicts_with_all = ["emit_preview", "emit_timeline"])]
     preview_worker: bool,
+    #[arg(long, conflicts_with_all = ["emit_preview", "preview_worker", "output", "scale", "fps", "from", "to", "preset", "crf", "no_audio", "preview"])]
+    emit_timeline: bool,
 }
 
 fn main() {
@@ -64,6 +66,7 @@ fn run(cli: Cli) -> Result<()> {
         preview,
         emit_preview,
         preview_worker,
+        emit_timeline,
     } = cli;
     if preview_worker {
         let mut worker = mekuru_compiler::preview::Worker::default();
@@ -77,12 +80,17 @@ fn run(cli: Cli) -> Result<()> {
         }
         return Ok(());
     }
-    if emit_preview {
+    if emit_preview || emit_timeline {
         let source = if script == Path::new("-") {
             std::io::read_to_string(std::io::stdin())?
         } else {
             std::fs::read_to_string(&script)?
         };
+        if emit_timeline {
+            let result = mekuru_compiler::timeline::compile(&script, root.as_deref(), source);
+            serde_json::to_writer(std::io::stdout().lock(), &result)?;
+            return Ok(());
+        }
         let result = mekuru_compiler::preview::compile(&script, root.as_deref(), source);
         serde_json::to_writer(std::io::stdout().lock(), &result)?;
         return Ok(());

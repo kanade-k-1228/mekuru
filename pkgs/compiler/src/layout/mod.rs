@@ -96,6 +96,7 @@ impl Out {
     fn node(&mut self, n: &VNode, parent: Option<usize>, flow: Flow, hold: Option<Hold>) -> usize {
         let id = self.nodes.len();
         self.nodes.push(Node {
+            source_id: n.times.id.clone(),
             id,
             parent,
             kind: flow.kind(),
@@ -122,6 +123,7 @@ impl Out {
         let z = n.times.z.unwrap_or(look.z);
         let opacity = look.opacity * n.times.opacity.unwrap_or(1.0);
         self.elems.push(Elem {
+            source_id: n.times.id.clone(),
             id,
             node: look.node,
             site: n.span,
@@ -159,6 +161,7 @@ impl Out {
         let id = self.elems.len();
         let kind = ElemKind::View(ViewSpec { ops });
         self.elems.push(Elem {
+            source_id: None,
             id,
             node: look.node,
             site,

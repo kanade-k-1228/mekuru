@@ -141,3 +141,29 @@ export interface TimelineDto {
   nodes: TimelineNode[];
   clips: TimelineClip[];
 }
+
+export interface FrameRate {
+  num: number;
+  den: number;
+}
+export interface FrameInterval {
+  startFrame: number;
+  endFrame: number;
+}
+export interface TimelineEntry extends FrameInterval {
+  id: string;
+  parent: string | null;
+  sourceId: string | null;
+  kind: "seq" | "par" | "repeat" | "view" | "video" | "audio";
+  repeat: { fromFrame: number; periodFrames: number; untilFrame: number }[];
+}
+export interface ResolvedTimeline {
+  fps: FrameRate;
+  frames: number;
+  estimated: boolean;
+  entries: TimelineEntry[];
+}
+export interface TimelineCompilation {
+  timeline: ResolvedTimeline | null;
+  diagnostics: Diagnostic[];
+}

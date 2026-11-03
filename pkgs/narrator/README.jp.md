@@ -145,3 +145,16 @@ const Line = async () => {
 入れ子のグループも同名のディレクトリに展開し、非表示の内部レイヤも保存します。選択肢となる子グループは描画用の合成 PNG も生成します（例：`face/smile.png` と `face/smile/線画.png`）。内部レイヤの PNG はそのレイヤ自身のマスク・不透明度を反映し、親グループの効果は合成 PNG に反映します。
 
 `Audio` と `readAudio` は `@mekuru/audio`、`joinWavs` は `@mekuru/audio/wav` が提供します。
+
+## 字幕の配分とSRT
+
+`@mekuru/narrator/captions` の `captionCues(texts, frames, options?)` は
+`{ text, offset, frames }[]` を返します。各字幕に1フレームを確保し、残りを
+空白・改行を除くUnicodeコードポイント数で配分します。総尺不足はエラーです。
+独自の `weights`、または先頭0・末尾framesの全 `boundaries` を指定できます。
+余韻は配分後に最後のキューのframesへ加え、既存のseq・durで描画します。
+
+`toSrt(cues, fps)` には `{ text, startFrame, endFrame }[]` と有理数fpsを渡します。
+時刻はコンパイラで確定した絶対フレームを使い、ミリ秒への丸めは出力時に行います。
+スタイル・字幕ID・台本の分割規則は動画側に残ります。
+[描画とSRTで同じ字幕を使う例](README.md#caption-intervals-and-srt)を参照してください。

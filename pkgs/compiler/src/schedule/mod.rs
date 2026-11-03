@@ -588,6 +588,7 @@ impl<'a> Solver<'a> {
             self.diags.push(Diag::new("W555", Span::default(), "the video is empty (total length is 0)"));
         }
         Schedule {
+            repeats,
             total,
             nodes,
             elems,

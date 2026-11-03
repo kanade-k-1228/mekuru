@@ -26,6 +26,9 @@
     "@mekuru/platform": "workspace:^"
   },
   "exports": {
-    "./*": "./*"
+    "./*": "./*",
+    "./compiler": "./src/compiler.ts",
+    "./server": "./src/server.ts",
+    "./timeline": "./src/timeline.ts"
   }
 }

@@ -82,6 +82,7 @@ pub struct Hold {
 
 #[derive(Clone, Debug)]
 pub struct Node {
+    pub source_id: Option<String>,
     pub id: NodeId,
     pub parent: Option<NodeId>,
     pub kind: NodeKind,
@@ -95,6 +96,7 @@ pub struct Node {
 
 #[derive(Clone, Debug)]
 pub struct Elem {
+    pub source_id: Option<String>,
     pub id: ElemId,
     pub node: NodeId,
     pub site: Span,

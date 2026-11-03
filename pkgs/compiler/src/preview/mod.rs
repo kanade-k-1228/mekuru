@@ -25,34 +25,9 @@ pub fn compile(path: &Path, root: Option<&Path>, xml: String) -> Compilation {
 
 fn compile_internal(path: &Path, root: Option<&Path>, xml: String, worker: Option<&mut Worker>) -> Compilation {
     let source = source::format(&xml).unwrap_or(xml);
-    let p = Project::from_source_mode(path, root, source, true);
-    let mut diags = p.diags.clone();
-    let preview = if p.has_errors() {
-        None
-    } else {
-        let prepared = prepare::inspect(&p.script);
-        diags.extend(prepared.diags.iter().cloned());
-        if diags.iter().any(Diag::is_error) {
-            None
-        } else {
-            let sched = p.schedule(&prepared);
-            diags.extend(sched.diags.iter().cloned());
-            if diags.iter().any(Diag::is_error) {
-                None
-            } else {
-                Some(scene(&p, &prepared, &sched, &mut diags, worker))
-            }
-        }
-    };
-    let diagnostics = diags
-        .iter()
-        .map(|d| Diagnostic {
-            code: d.code.into(),
-            severity: if d.is_error() { "error" } else { "warning" },
-            line: p.index.line(d.span.lo),
-            message: d.msg.clone(),
-        })
-        .collect();
+    let (p, analysis, mut diags) = crate::analysis::analyze(path, root, source);
+    let preview = analysis.map(|(prepared, sched)| scene(&p, &prepared, &sched, &mut diags, worker));
+    let diagnostics = crate::analysis::diagnostics(&p, &diags);
     Compilation { preview, diagnostics }
 }
 
