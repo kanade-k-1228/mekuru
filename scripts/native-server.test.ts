@@ -150,15 +150,23 @@ test("settles chunked writes and catches the latest edit while compilation is bu
   await appendFile(xml, text.slice(split));
   await until(async () => (await state()).status === "ready" && (await state()).version > version);
   expect((await state()).version).toBe(version + 1);
-  await save(previewXml(4000, 1, "ja"));
-  await until(async () => (await state()).status === "building");
-  await save(previewXml(100, 3, "ja"));
-  await Bun.sleep(30);
-  await save(previewXml(100, 4, "ja"));
-  await until(async () => {
-    const full = await snapshot();
-    return full.state.status === "ready" && JSON.stringify(full.resources).includes("修正 4");
-  });
+  const connection = connect();
+  try {
+    await connection.next();
+    // Observe the queued notification even if compilation finishes between HTTP polls.
+    // Keep this a watcher/queue test, without a large font-dependent rendering workload.
+    await save(previewXml(1000, 1, "ja"));
+    await until(async () => (await connection.next()).state.status === "building");
+    await save(previewXml(100, 3, "ja"));
+    await Bun.sleep(30);
+    await save(previewXml(100, 4, "ja"));
+    await until(async () => {
+      const full = await snapshot();
+      return full.state.status === "ready" && JSON.stringify(full.resources).includes("修正 4");
+    });
+  } finally {
+    connection.close();
+  }
 }, 15000);
 
 test.skipIf(process.platform === "win32")("--run reports stderr, clears it after a write, and stops child processes on shutdown", async () => {
