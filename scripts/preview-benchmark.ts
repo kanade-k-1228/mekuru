@@ -1,4 +1,4 @@
-/** Run after `cargo build`: bun scripts/preview-benchmark.ts [text-count] [edits]. */
+/** Run after `cargo build`: bun scripts/preview-benchmark.ts [text-count] [edits] [en|ja]. */
 import { lineReader } from "../pkgs/cli/src/lines.ts";
 import { findCompiler } from "../pkgs/cli/src/compiler.ts";
 import { previewEvent, sharePreview, type SharedPreview } from "../pkgs/cli/src/share.ts";
@@ -7,13 +7,20 @@ import type { PreviewEvent, StateDto, WorkerCompilation } from "../pkgs/protocol
 
 const count = Number(process.argv[2] ?? 500);
 const edits = Number(process.argv[3] ?? 10);
+const language = process.argv[4] ?? "en";
 if (![count, edits].every((n) => Number.isInteger(n) && n > 0)) throw new Error("text-count and edits must be positive integers");
+if (language !== "en" && language !== "ja") throw new Error("language must be en or ja");
 const compiler = findCompiler();
+const caption = (i: number, edit: number) => {
+  const changed = i === Math.floor(count / 2);
+  return language === "ja"
+    ? `プレビュー計測用の字幕 ${changed ? `修正 ${edit}` : `番号 ${i}`} 日本語の折り返しを確認します`
+    : `Caption ${changed ? `edited ${edit}` : `number ${i}`} for preview benchmark`;
+};
 const xml = (edit: number) =>
   `<mekuru size="640x360" fps="30"><seq>${Array.from(
     { length: count },
-    (_, i) =>
-      `<dur len="30"><text x="10" y="20" size="32">Caption ${i === Math.floor(count / 2) ? `edited ${edit}` : `number ${i}`} for preview benchmark</text></dur>`,
+    (_, i) => `<dur len="30"><text x="10" y="20" size="32">${caption(i, edit)}</text></dur>`,
   ).join("")}</seq></mekuru>`;
 const median = (values: number[]) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 const baseline = [];
@@ -69,6 +76,7 @@ const repeated = samples.slice(1);
 const output = {
   count,
   edits,
+  language,
   compiler,
   baseline: { medianMs: median(baseline.map((s) => s.wallMs)), bytes: baseline[0].bytes },
   first: samples[0],

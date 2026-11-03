@@ -37,7 +37,6 @@ pub struct Stats {
 pub(super) struct Drawing {
     pub id: String,
     ops: Arc<Vec<Op>>,
-    pub failed: bool,
 }
 
 pub struct Worker {
@@ -92,7 +91,7 @@ impl Worker {
         } else {
             self.stats.draw_misses += 1;
             let mut ops = vec![];
-            let failed = draw_op(op, Transform::identity(), fonts, root, &mut ops).is_err();
+            draw_op(op, Transform::identity(), fonts, root, &mut ops);
             for op in &mut ops {
                 if let Op::Image { src, revision: stamp, .. } = op {
                     *stamp = Some(revision(&root.join(src)));
@@ -102,7 +101,6 @@ impl Worker {
             let drawing = Drawing {
                 id: sha256_hex(&bytes),
                 ops: Arc::new(ops),
-                failed,
             };
             self.drawings
                 .insert(key.clone(), drawing.clone(), key.len() + bytes.len() + drawing.ops.len() * 128 + 256);

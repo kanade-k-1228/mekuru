@@ -80,7 +80,26 @@ export interface PreviewDto {
 }
 export type Bounds = [number, number, number, number];
 export type Fade = [start: number, end: number, fadeIn: number, fadeOut: number, level: number];
+export interface TextOp {
+  kind: "text";
+  text: string;
+  x: number;
+  y: number;
+  width: number | null;
+  font: string;
+  fontSrc: string | null;
+  fontRevision: string | null;
+  size: number;
+  color: string;
+  bold: boolean;
+  align: "left" | "center" | "right";
+  lineHeight: number;
+  stroke: string | null;
+  strokeWidth: number;
+  transform: [number, number, number, number, number, number] | null;
+}
 export type DrawOp =
+  | TextOp
   | {
       kind: "path";
       d: string;

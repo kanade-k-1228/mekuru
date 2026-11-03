@@ -7,10 +7,9 @@ pub use worker::{Request, Response, Worker};
 use crate::{
     Project,
     ir::*,
-    lang::diag::Diag,
     media::Fps,
     prepare,
-    render::{shapes, text::draw::text_paths, transform_paths, vector::PaintedPath, video_bounds},
+    render::{shapes, transform_paths, vector::PaintedPath, video_bounds},
     schedule::{Schedule, SrcMap},
 };
 use std::{collections::BTreeMap, fmt::Write, path::Path};
@@ -25,8 +24,8 @@ pub fn compile(path: &Path, root: Option<&Path>, xml: String) -> Compilation {
 
 fn compile_internal(path: &Path, root: Option<&Path>, xml: String, worker: Option<&mut Worker>) -> Compilation {
     let source = source::format(&xml).unwrap_or(xml);
-    let (p, analysis, mut diags) = crate::analysis::analyze(path, root, source);
-    let preview = analysis.map(|(prepared, sched)| scene(&p, &prepared, &sched, &mut diags, worker));
+    let (p, analysis, diags) = crate::analysis::analyze(path, root, source);
+    let preview = analysis.map(|(prepared, sched)| scene(&p, &prepared, &sched, worker));
     let diagnostics = crate::analysis::diagnostics(&p, &diags);
     Compilation { preview, diagnostics }
 }
@@ -42,6 +41,10 @@ fn media_map(src: &SrcMap, fps: Fps) -> MediaMap {
         end: s(src.end),
         segments: src.segs.iter().map(|g| [s(g.t0), s(g.t1), s(g.s0), g.rate]).collect(),
     }
+}
+
+fn color([r, g, b, a]: [u8; 4]) -> String {
+    format!("#{r:02x}{g:02x}{b:02x}{a:02x}")
 }
 
 fn path_op(p: PaintedPath) -> Op {
@@ -85,17 +88,44 @@ fn path_op(p: PaintedPath) -> Op {
     }
 }
 
-fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &mut Vec<Op>) -> Result<(), ()> {
+fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &mut Vec<Op>) {
     let paths = match op {
         ViewOp::Transformed(m, inner) => return draw_op(inner, t.pre_concat(*m), fonts, base_dir, ops),
         ViewOp::Rect(r) => shapes::rect_paths(r, 1.0),
         ViewOp::Circle(c) => shapes::circle_paths(c, 1.0),
         ViewOp::Poly(l) => shapes::poly_paths(l, 1.0),
-        ViewOp::Text(text) => match text_paths(fonts, text, 1.0) {
-            Some(paths) => paths,
-            None if text.text.trim().is_empty() => vec![],
-            None => return Err(()),
-        },
+        ViewOp::Text(text) => {
+            let st = &text.style;
+            let (font, path) = fonts.preview_font(st.font.as_deref());
+            let font_src = path.as_deref().and_then(|path| {
+                let path = path.canonicalize().ok()?;
+                let root = base_dir.canonicalize().ok()?;
+                path.strip_prefix(root).ok().map(|p| p.to_string_lossy().replace('\\', "/"))
+            });
+            let font_revision = font_src.as_ref().and(path.as_deref()).map(worker::revision);
+            ops.push(Op::Text {
+                text: text.text.clone(),
+                x: text.x,
+                y: text.y,
+                width: text.width,
+                font,
+                font_src,
+                font_revision,
+                size: st.size,
+                color: color(st.color),
+                bold: st.bold,
+                align: match st.align {
+                    crate::settings::Align::Left => "left",
+                    crate::settings::Align::Center => "center",
+                    crate::settings::Align::Right => "right",
+                },
+                line_height: st.line_height,
+                stroke: st.stroke.map(color),
+                stroke_width: st.stroke_width,
+                transform: (!t.is_identity()).then_some([t.sx, t.ky, t.kx, t.sy, t.tx, t.ty]),
+            });
+            vec![]
+        }
         ViewOp::Image(img) => {
             let transform = (!t.is_identity()).then_some([t.sx, t.ky, t.kx, t.sy, t.tx, t.ty]);
             ops.push(Op::Image {
@@ -108,10 +138,9 @@ fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &m
         }
     };
     ops.extend(transform_paths(paths, t).into_iter().map(path_op));
-    Ok(())
 }
 
-fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, diags: &mut Vec<Diag>, mut worker: Option<&mut Worker>) -> Preview {
+fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, mut worker: Option<&mut Worker>) -> Preview {
     let script = &p.script;
     let st = &script.settings;
     let fps = st.rate();
@@ -146,15 +175,11 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, diags: &mu
         match &e.kind {
             ElemKind::View(view) => {
                 for op in &view.ops {
-                    let failed = if let Some(w) = worker.as_mut() {
+                    if let Some(w) = worker.as_mut() {
                         let drawing = w.draw(op, &fonts, &script.base_dir);
                         drawings.push(drawing.id.clone());
-                        drawing.failed
                     } else {
-                        draw_op(op, Transform::identity(), &fonts, &script.base_dir, &mut ops).is_err()
-                    };
-                    if failed {
-                        diags.push(Diag::new("W560", e.site, "text could not be drawn; install a font or set `font`"));
+                        draw_op(op, Transform::identity(), &fonts, &script.base_dir, &mut ops);
                     }
                 }
             }

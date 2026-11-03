@@ -35,3 +35,33 @@ fn preview_and_renderer_agree_on_a_static_scene() {
     assert!(preview["timeline"]["nodes"].is_array());
     assert!(preview["timeline"]["clips"].is_array());
 }
+
+#[test]
+fn preview_emits_text_styles_and_transform_without_glyph_paths() {
+    let xml = r##"<mekuru><dur len="30"><text x="20" y="30" w="200" size="32" color="#123456" stroke="#ffffff" stroke-width="3" weight="bold" align="right" line-height="1.5" rotate="15">日本語&lt;b&gt;<br/>次の行</text></dur></mekuru>"##;
+    let result = serde_json::to_value(preview::compile(Path::new("fixture.xml"), None, xml.into())).unwrap();
+    assert_eq!(result["diagnostics"], serde_json::json!([]));
+    let ops: Vec<_> = result["preview"]["elements"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|e| e["ops"].as_array().unwrap())
+        .collect();
+    assert_eq!(ops.len(), 1);
+    let text = ops[0];
+    assert_eq!(text["kind"], "text");
+    assert_eq!(text["text"], "日本語<b>\n次の行");
+    assert_eq!(text["x"], 20.0);
+    assert_eq!(text["y"], 30.0);
+    assert_eq!(text["width"], 200.5);
+    assert_eq!(text["size"], 32.0);
+    assert_eq!(text["color"], "#123456ff");
+    assert_eq!(text["stroke"], "#ffffffff");
+    assert_eq!(text["strokeWidth"], 3.0);
+    assert_eq!(text["bold"], true);
+    assert_eq!(text["align"], "right");
+    assert_eq!(text["lineHeight"], 1.5);
+    assert_eq!(text["transform"].as_array().unwrap().len(), 6);
+    assert!(text["d"].is_null());
+    assert!(!text["font"].as_str().unwrap().is_empty());
+}

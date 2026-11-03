@@ -1,12 +1,12 @@
+/** @jsxImportSource react */
 import { useAtomValue } from "jotai";
-import { memo, useEffect, useRef, type CSSProperties, type Ref } from "react";
-import type { DrawOp, SceneElement } from "@mekuru/protocol";
+import { memo, useCallback, useEffect, useMemo, useRef, type CSSProperties, type Ref } from "react";
+import type { DrawOp, SceneElement, TextOp } from "@mekuru/protocol";
 import { stageAtom, type Shown } from "../../logic/stage";
 
-const fileUrl = (src: string, revision?: string) =>
-  `/files/${src.split("/").map(encodeURIComponent).join("/")}${revision ? `?v=${encodeURIComponent(revision)}` : ""}`;
+import { attachTextFont, fileUrl, fallbackFont } from "../../logic/fonts";
 
-const Drawing = memo(({ ops }: { ops: DrawOp[] }) => (
+const Vector = ({ ops }: { ops: Exclude<DrawOp, TextOp>[] }) => (
   <>
     {ops.map((op, i) => {
       if (op.kind === "image") {
@@ -39,21 +39,82 @@ const Drawing = memo(({ ops }: { ops: DrawOp[] }) => (
       );
     })}
   </>
-));
+);
 
-const Chunks = memo(({ chunks }: { chunks: NonNullable<SceneElement["chunks"]> }) => {
+const Text = ({ op }: { op: TextOp }) => {
+  const { font, fontSrc, fontRevision } = op;
+  const ref = useCallback((el: HTMLDivElement | null) => (el ? attachTextFont(el, { font, fontSrc, fontRevision }) : undefined), [font, fontSrc, fontRevision]);
+  return (
+    <div style={{ position: "absolute", inset: 0, transform: op.transform ? `matrix(${op.transform.join(",")})` : undefined, transformOrigin: "0 0" }}>
+      <div
+        ref={ref}
+        style={{
+          position: "absolute",
+          left: op.x,
+          top: op.y,
+          width: op.width ?? "max-content",
+          fontFamily: fallbackFont(op.font),
+          fontSize: op.size,
+          fontWeight: op.bold ? 700 : 400,
+          fontStyle: "normal",
+          letterSpacing: "normal",
+          lineHeight: op.lineHeight,
+          textAlign: op.align,
+          color: op.color,
+          whiteSpace: "pre-wrap",
+          overflowWrap: "anywhere",
+          WebkitTextStroke: op.stroke ? `${Math.max(0, op.strokeWidth) * 2}px ${op.stroke}` : undefined,
+          paintOrder: "stroke fill",
+        }}
+      >
+        {op.text}
+      </div>
+    </div>
+  );
+};
+
+type Part = { key: number; text: TextOp } | { key: number; ops: Exclude<DrawOp, TextOp>[] };
+export const Drawing = memo(({ ops, width, height }: { ops: DrawOp[]; width: number; height: number }) => {
+  const parts = useMemo(() => {
+    const result: Part[] = [];
+    ops.forEach((op, key) => {
+      if (op.kind === "text") result.push({ key, text: op });
+      else {
+        const last = result.at(-1);
+        if (last && "ops" in last) last.ops.push(op);
+        else result.push({ key, ops: [op] });
+      }
+    });
+    return result;
+  }, [ops]);
+  return (
+    <>
+      {parts.map((part) =>
+        "text" in part ? (
+          <Text key={part.key} op={part.text} />
+        ) : (
+          <svg key={part.key} width={width} height={height} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+            <Vector ops={part.ops} />
+          </svg>
+        ),
+      )}
+    </>
+  );
+});
+
+const Chunks = memo(({ chunks, width, height }: { chunks: NonNullable<SceneElement["chunks"]>; width: number; height: number }) => {
   const counts = new Map<string, number>();
   return chunks.map((chunk) => {
     const occurrence = counts.get(chunk.id) ?? 0;
     counts.set(chunk.id, occurrence + 1);
-    return <Drawing key={`${chunk.id}:${occurrence}`} ops={chunk.ops} />;
+    return <Drawing key={`${chunk.id}:${occurrence}`} ops={chunk.ops} width={width} height={height} />;
   });
 });
 
 const Layer = memo(({ element, opacity, width, height }: { element: SceneElement; opacity: number; width: number; height: number }) => (
-  <svg width={width} height={height} style={{ position: "absolute", inset: 0, opacity, overflow: "visible" }}>
-    {element.chunks ? <Chunks chunks={element.chunks} /> : <Drawing ops={element.ops} />}
-  </svg>
+  <div style={{ position: "absolute", inset: 0, opacity }}>
+    {element.chunks ? <Chunks chunks={element.chunks} width={width} height={height} /> : <Drawing ops={element.ops} width={width} height={height} />}
+  </div>
 ));
 
 const Media = ({ element, state, opacity }: { element: SceneElement; state: NonNullable<Shown["media"]>; opacity: number }) => {

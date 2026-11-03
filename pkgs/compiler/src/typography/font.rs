@@ -78,6 +78,31 @@ impl FontBook {
         book
     }
 
+    /// Resolve the same requested/default font as layout, preserving its file source.
+    pub(crate) fn preview_font(&self, requested: Option<&str>) -> (String, Option<std::path::PathBuf>) {
+        let mut system = self.system.lock().unwrap();
+        let selected = self.family(&mut system, requested).unwrap_or_else(|| "sans-serif".into());
+        let path = Path::new(&selected).is_file().then(|| std::path::PathBuf::from(&selected));
+        let family = path
+            .as_ref()
+            .and_then(|path| {
+                // File fonts are preloaded with their original family names before
+                // layout registers a path alias. Send the real family for CSS fallback.
+                system
+                    .db()
+                    .faces()
+                    .filter(|face| match &face.source {
+                        fontdb::Source::File(p) | fontdb::Source::SharedFile(p, _) => p == path,
+                        _ => false,
+                    })
+                    .flat_map(|face| &face.families)
+                    .find(|(name, _)| name != &selected)
+                    .map(|(name, _)| name.clone())
+            })
+            .unwrap_or_else(|| if path.is_some() { "sans-serif".into() } else { selected });
+        (family, path)
+    }
+
     pub(super) fn family(&self, system: &mut FontSystem, requested: Option<&str>) -> Option<String> {
         if let Some(name) = requested {
             let path = Path::new(name);

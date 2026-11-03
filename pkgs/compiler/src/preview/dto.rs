@@ -46,6 +46,27 @@ pub struct Element {
 #[derive(Clone, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Op {
+    Text {
+        text: String,
+        x: f32,
+        y: f32,
+        width: Option<f32>,
+        font: String,
+        #[serde(rename = "fontSrc")]
+        font_src: Option<String>,
+        #[serde(rename = "fontRevision")]
+        font_revision: Option<String>,
+        size: f32,
+        color: String,
+        bold: bool,
+        align: &'static str,
+        #[serde(rename = "lineHeight")]
+        line_height: f32,
+        stroke: Option<String>,
+        #[serde(rename = "strokeWidth")]
+        stroke_width: f32,
+        transform: Option<[f32; 6]>,
+    },
     Path {
         d: String,
         color: String,

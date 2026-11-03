@@ -201,24 +201,47 @@ fn file_metadata_invalidates_image_and_font_caches() {
     // Discover fonts portably from the same database used by the compiler.
     let mut db = cosmic_text::fontdb::Database::new();
     db.load_system_fonts();
-    let files: Vec<_> = db
+    let mut files: Vec<_> = db
         .faces()
         .filter_map(|face| match &face.source {
             cosmic_text::fontdb::Source::File(path) | cosmic_text::fontdb::Source::SharedFile(path, _) => Some(path.clone()),
             _ => None,
         })
         .collect();
+    files.sort();
+    files.dedup();
     if files.len() < 2 {
         return;
     }
     let font = dir.0.join("custom.ttf");
-    std::fs::copy(&files[0], &font).unwrap();
-    let xml = document(r#"<dur len="30"><text font="custom.ttf">Font test</text></dur>"#);
-    assert_success(&session.compile(&dir.0, &xml));
-    std::fs::copy(&files[1], &font).unwrap();
-    let changed = session.compile(&dir.0, &xml);
-    assert_success(&changed);
-    assert_eq!(changed["stats"]["drawMisses"], 1);
+    for xml in [
+        document(r#"<dur len="30"><text font="custom.ttf">Font test</text></dur>"#),
+        document(r#"<dur len="30"><text>Font test</text></dur>"#).replace("fps=\"30\"", "fps=\"30\" font=\"custom.ttf\""),
+    ] {
+        std::fs::copy(&files[0], &font).unwrap();
+        let first = session.compile(&dir.0, &xml);
+        assert_success(&first);
+        let ops = first["resources"].as_object().unwrap().values().next().unwrap();
+        assert_eq!(ops[0]["kind"], "text");
+        assert_eq!(ops[0]["fontSrc"], "custom.ttf");
+        assert!(!ops[0]["font"].as_str().unwrap().contains("custom.ttf"));
+        let revision = ops[0]["fontRevision"].clone();
+        assert!(revision.is_string());
+        std::fs::copy(&files[1], &font).unwrap();
+        let changed = session.compile(&dir.0, &xml);
+        assert_success(&changed);
+        assert_eq!(changed["stats"]["drawMisses"], 1);
+        let ops = changed["resources"].as_object().unwrap().values().next().unwrap();
+        assert_ne!(ops[0]["fontRevision"], revision);
+        assert_ne!(first["preview"]["elements"][0]["drawings"], changed["preview"]["elements"][0]["drawings"]);
+    }
+    // An external font may inform layout but is not published through /files/.
+    let xml = document(&format!(r#"<dur len="30"><text font="{}">External</text></dur>"#, files[0].to_string_lossy()));
+    let external = session.compile(&dir.0, &xml);
+    assert_success(&external);
+    let ops = external["resources"].as_object().unwrap().values().next().unwrap();
+    assert!(ops[0]["fontSrc"].is_null());
+    assert!(ops[0]["fontRevision"].is_null());
 }
 
 #[test]
@@ -255,15 +278,15 @@ fn media_probe_changes_and_hold_edits_match_single_shot() {
 }
 
 #[test]
-fn cached_drawing_warnings_use_current_source_lines() {
+fn cached_drawings_keep_analysis_warnings_on_current_source_lines() {
     let mut session = Session::new();
-    let xml = document(r#"<dur len="30"><text size="0">Invisible</text></dur>"#);
+    let xml = document(r#"<dur len="30"><text anchor="c">Warning</text></dur>"#);
     let first = session.compile(Path::new("."), &xml);
     let next = session.compile(Path::new("."), &xml.replace("<dur", "<!-- new source line --><dur"));
     assert_success(&first);
     assert_success(&next);
     assert_eq!(next["stats"]["drawHits"], 1);
     assert_eq!(next["resources"], json!({}));
-    assert_eq!(first["diagnostics"][0]["code"], "W560");
+    assert_eq!(first["diagnostics"][0]["code"], "W357");
     assert_ne!(first["diagnostics"][0]["line"], next["diagnostics"][0]["line"]);
 }
