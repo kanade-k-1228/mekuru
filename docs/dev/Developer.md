@@ -11,8 +11,7 @@
 - [pkgs/create](../../pkgs/create/README.md): Project generator
 - [pkgs/speech](../../pkgs/speech/README.md): API for implementing speech components
 - `pkgs/voicevox`, `coeiroink`, `style-bert-vits2`, `voisona`: Speech engine integrations
-- [pkgs/portrait](../../pkgs/portrait/README.md): Animated portraits
-- [pkgs/narrator](../../pkgs/narrator/README.md): Subtitle components and display text for custom narrators
+- [pkgs/narrator](../../pkgs/narrator/README.md): Portraits, lip sync, subtitles, and PSD preparation for custom narrators
 - `pkgs/youtube`, `niconico`: Upload commands
 - [example](../../example/README.md): Tutorial and explainer video (Japanese)
 - [scripts/release.ts](../../scripts/release.ts): Release versioning, packaging, and dependency setup
@@ -96,4 +95,10 @@ The timing tree, layout, and draw order are resolved at compile time. Times are 
 
 TSX `fps()` is available only while expanding `<mekuru>`. Audio speed changes use `atempo` for export and `playbackRate` for preview.
 
-Viewer state lives in Jotai atoms; `logic/` does not depend on `view/`. Components read and write atoms without custom hooks. Shared DTOs come from `@mekuru/cli/protocol`; React refs handle DOM attachment and cleanup.
+Viewer state lives in Jotai atoms; `logic/` does not depend on `view/`. Components read and write atoms without custom hooks. Shared DTOs come from `@mekuru/protocol`; React refs handle DOM attachment and cleanup.
+
+## Package boundaries
+
+`core` owns JSX and XML build context. `audio` owns audio resources and WAV processing; `speech` owns synthesis preparation and caches. Engine packages own their HTTP APIs. `narrator` composes portraits and subtitles. `protocol` contains transport types without runtime dependencies. `platform` owns OS integration. The viewer depends on protocol, not CLI.
+
+Moved APIs: import `AudioSource`, `Audio`, and `readAudio` from `@mekuru/audio`; import `joinWavs` from `@mekuru/audio/wav`; import preview DTOs from `@mekuru/protocol`. No compatibility re-exports remain at the old paths.

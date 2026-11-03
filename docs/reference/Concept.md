@@ -27,3 +27,11 @@ Time uses integer frames, rounding up fractions introduced by playback speed cha
 Static drawing and audio processing are cached. Audio speed changes use ffmpeg's `atempo` to preserve pitch.
 
 Preview uses the same timing, layout, and text paths. The compiler returns display data as JSON for the browser to render, without generating PCM audio or encoding video.
+
+## Composition
+
+Prepare a line once to obtain display text and an audio source. Playback and lip sync consume the same source; subtitles add styling to display text. Components do not inspect other components' JSX structure. A source has one duration; existing `dur` and `stack` elements determine the presentation interval.
+
+A `repeat` repeats one local clock. Timing references resolve inside that clock; slots compete after each occurrence is placed on the global timeline. Slots affect rendering only, never duration or audio.
+
+The project root and speech processing state belong to one build. Import order has no semantic effect.

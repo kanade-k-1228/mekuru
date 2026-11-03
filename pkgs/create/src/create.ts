@@ -1,3 +1,4 @@
+import { packageName, keepLines } from "./template.ts";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { ENGINE_NAMES, ENGINES, isEngine, type Engine } from "./engine.ts";
@@ -14,30 +15,7 @@ export interface CreateOptions {
   upload?: readonly Site[];
 }
 
-const packageName = (dir: string): string => {
-  const name = basename(resolve(dir))
-    .toLowerCase()
-    .replace(/[^a-z0-9._~-]+/g, "-")
-    .replace(/^[._-]+|-+$/g, "");
-  return name || "my-video";
-};
-
 export const isEmptyDir = (dir: string): boolean => !existsSync(dir) || readdirSync(dir).length === 0;
-
-const MARKER = /\s*(?:\/\/|<!--)\s*#if\s+(.+?)\s*(?:-->)?\s*$/;
-
-const keepLines = (text: string, chosen: readonly string[]): string =>
-  text
-    .split("\n")
-    .flatMap((line) => {
-      const m = MARKER.exec(line);
-      if (!m) return [line];
-      const names = m[1].split(/\s+/);
-      const unknown = names.find((n) => !isEngine(n) && !isSite(n));
-      if (unknown !== undefined) throw new Error(`the template has #if ${unknown}: not an engine or an upload site`);
-      return names.some((n) => chosen.includes(n)) ? [line.slice(0, m.index)] : [];
-    })
-    .join("\n");
 
 const copy = async (from: string, to: string, chosen: readonly string[]): Promise<void> => {
   for (const file of readdirSync(from, { recursive: true, encoding: "utf8" })) {

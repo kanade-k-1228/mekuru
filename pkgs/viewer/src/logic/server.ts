@@ -1,32 +1,11 @@
 import { atom } from "jotai";
-import type { StateDto } from "@mekuru/cli/protocol";
+import type { StateDto } from "@mekuru/protocol";
 
-export type ConnState = "connecting" | "open" | "reconnecting";
+import { connectEvents, type ConnState } from "./events";
+export type { ConnState } from "./events";
 
 const eventsAtom = atom<{ conn: ConnState; server: StateDto | null }>({ conn: "connecting", server: null });
-eventsAtom.onMount = (set) => {
-  let es: EventSource;
-  let retry: ReturnType<typeof setTimeout> | undefined;
-  const connect = () => {
-    es = new EventSource("/api/events");
-    es.onopen = () => set((s) => ({ ...s, conn: "open" }));
-    es.onerror = () => {
-      set((s) => ({ ...s, conn: "reconnecting" }));
-      if (es.readyState === EventSource.CLOSED) retry = setTimeout(connect, 1000);
-    };
-    es.addEventListener("state", (ev) => {
-      const server = JSON.parse((ev as MessageEvent<string>).data) as StateDto;
-      const name = server.path.split(/[\\/]/).pop() ?? server.path;
-      document.title = name ? `${name} — Mekuru Movie Maker` : "Mekuru Movie Maker";
-      set({ conn: "open", server });
-    });
-  };
-  connect();
-  return () => {
-    clearTimeout(retry);
-    es.close();
-  };
-};
+eventsAtom.onMount = connectEvents;
 
 export const connAtom = atom((get) => get(eventsAtom).conn);
 export const serverAtom = atom((get) => get(eventsAtom).server);

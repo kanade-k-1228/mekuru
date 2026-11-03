@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
+import { openBrowser } from "@mekuru/platform";
 
 import { Command, InvalidArgumentError } from "commander";
-import { openBrowser, startServer } from "./server.ts";
+import { startServer } from "./server.ts";
 
 const VERSION: string = (await Bun.file(new URL("../package.json", import.meta.url)).json()).version;
 

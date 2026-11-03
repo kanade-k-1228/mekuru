@@ -24,6 +24,6 @@ bunx mekuru-compiler .mekuru/main.xml -o video.mp4
 
 両コマンドの `--root <dir>` で素材の基準フォルダを指定できます。既定は XML のあるフォルダ（`.mekuru/` ならその親）です。
 
-コンパイラは `MEKURU_COMPILER` → OS 別 npm パッケージ → 更新日時が新しい `target/debug`・`target/release` の順で探します（同時刻なら debug）。`@mekuru/cli/protocol` はサーバーとビューアの共有型です。
+コンパイラは `MEKURU_COMPILER` → OS 別 npm パッケージ → 更新日時が新しい `target/debug`・`target/release` の順で探します（同時刻なら debug）。`@mekuru/protocol` はサーバーとビューアの共有型です。
 
 [TSX の作業手順](../../docs/reference/Component.jp.md)・[開発](../../docs/dev/Developer.jp.md)

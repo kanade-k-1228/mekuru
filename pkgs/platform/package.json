@@ -1,0 +1,16 @@
+{
+  "name": "@mekuru/platform",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "sideEffects": false,
+  "dependencies": {},
+  "engines": {
+    "bun": ">=1.4"
+  }
+}

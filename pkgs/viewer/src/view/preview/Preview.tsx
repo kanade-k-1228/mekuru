@@ -1,5 +1,5 @@
 import { useAtomValue, useSetAtom } from "jotai";
-import type { PreviewDto } from "@mekuru/cli/protocol";
+import type { PreviewDto } from "@mekuru/protocol";
 import { attachStageBoxAtom, stageScaleAtom } from "../../logic/stage";
 import { Stage } from "./Stage";
 

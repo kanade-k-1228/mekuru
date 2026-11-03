@@ -1,5 +1,5 @@
 import { findCompiler } from "./compiler.ts";
-import type { Compilation } from "./protocol.ts";
+import type { Compilation } from "@mekuru/protocol";
 
 export const previewCompiler = (root: string, publish: (version: number, result: Compilation | Error) => void) => {
   let child: Bun.Subprocess | undefined;

@@ -1,6 +1,6 @@
 import { useAtomValue } from "jotai";
 import { memo, useEffect, useRef, type CSSProperties, type Ref } from "react";
-import type { DrawOp, SceneElement } from "@mekuru/cli/protocol";
+import type { DrawOp, SceneElement } from "@mekuru/protocol";
 import { stageAtom, type Shown } from "../../logic/stage";
 
 const fileUrl = (src: string) => `/files/${src.split("/").map(encodeURIComponent).join("/")}`;

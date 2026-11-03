@@ -1,6 +1,6 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import type { TimelineDto } from "@mekuru/cli/protocol";
+import type { TimelineDto } from "@mekuru/protocol";
 import { durationAtom, scheduleAtom } from "../server";
 import { clamp } from "../math";
 import { buildLayout, RULER_H, SCROLLBAR_SIZE, viewport, type ViewState } from "./model";

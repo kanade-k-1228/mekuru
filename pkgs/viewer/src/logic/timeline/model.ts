@@ -1,4 +1,4 @@
-import type { ClipLane, TimelineClip, TimelineDto, TimelineNode } from "@mekuru/cli/protocol";
+import type { ClipLane, TimelineClip, TimelineDto, TimelineNode } from "@mekuru/protocol";
 import { clamp } from "../math.ts";
 
 export const LEFT_PAD = 12;
