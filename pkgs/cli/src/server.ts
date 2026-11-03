@@ -1,7 +1,11 @@
-import { existsSync, mkdirSync, unwatchFile, watch, watchFile } from "node:fs";
-import { basename, dirname, join, resolve, sep } from "node:path";
+import { runScript } from "./script.ts";
+import { watchXml } from "./watch.ts";
+import { compiledState } from "./state.ts";
+import { sendFile, inside } from "./files.ts";
+import { mkdirSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { previewCompiler } from "./preview.ts";
-import type { Diagnostic, StateDto } from "./protocol.ts";
+import type { Diagnostic, StateDto } from "@mekuru/protocol";
 
 export interface ServerOptions {
   xml: string;
@@ -23,52 +27,6 @@ const NOT_BUILT = `<!doctype html><meta charset=utf-8><title>Mekuru Movie Maker<
 const log = (line: string) => process.stderr.write(`${new Date().toTimeString().slice(0, 8)} ${line}\n`);
 const seconds = (since: number) => `${((Date.now() - since) / 1000).toFixed(1)}s`;
 const formatDiagnostic = (d: Diagnostic) => `L${d.line} ${d.code}: ${d.message}`;
-
-const sendFile = async (req: Request, path: string): Promise<Response> => {
-  const file = Bun.file(path);
-  if (!(await file.exists())) return new Response(null, { status: 404 });
-  const size = file.size;
-  const headers = { "content-type": file.type, "accept-ranges": "bytes", "cache-control": "no-cache" };
-  const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.get("range") ?? "");
-  if (range && (range[1] || range[2])) {
-    const start = Math.max(0, range[1] ? Number(range[1]) : size - Number(range[2]));
-    const end = Math.min(size - 1, range[1] && range[2] ? Number(range[2]) : size - 1);
-    if (start > end) return new Response(null, { status: 416, headers: { "content-range": `bytes */${size}` } });
-    return new Response(req.method === "HEAD" ? null : file.slice(start, end + 1), {
-      status: 206,
-      headers: { ...headers, "content-range": `bytes ${start}-${end}/${size}`, "content-length": String(end - start + 1) },
-    });
-  }
-  return new Response(req.method === "HEAD" ? null : file, { headers: { ...headers, "content-length": String(size) } });
-};
-
-const inside = (dir: string, rel: string): string | undefined => {
-  let decoded: string;
-  try {
-    decoded = decodeURIComponent(rel);
-  } catch {
-    return undefined;
-  }
-  const path = resolve(dir, `.${sep}${decoded}`);
-  return path === dir || path.startsWith(dir + sep) ? path : undefined;
-};
-
-export const openBrowser = (url: string): void => {
-  const wsl = process.platform === "linux" && (!!process.env.WSL_INTEROP || existsSync("/proc/sys/fs/binfmt_misc/WSLInterop"));
-  const tries: string[][] = wsl
-    ? [["wslview"], ["cmd.exe", "/c", "start", ""]]
-    : process.platform === "darwin"
-      ? [["open"]]
-      : process.platform === "win32"
-        ? [["cmd", "/c", "start", ""]]
-        : [["xdg-open"]];
-  for (const [cmd, ...args] of tries) {
-    try {
-      Bun.spawn([cmd, ...args, url], { stdin: "ignore", stdout: "ignore", stderr: "ignore", cwd: wsl ? "/mnt/c" : undefined }).unref();
-      break;
-    } catch {}
-  }
-};
 
 export interface Server {
   url: string;
@@ -114,13 +72,7 @@ export const startServer = async (opts: ServerOptions): Promise<Server> => {
       log(`error: the preview failed\n${result.message}`);
     } else {
       compileError = result.preview ? null : result.diagnostics.map(formatDiagnostic).join("\n");
-      current = {
-        ...current,
-        status: result.preview ? "ready" : "error",
-        diagnostics: result.diagnostics,
-        preview: result.preview ?? current.preview,
-        previewVersion: result.preview ? version : current.previewVersion,
-      };
+      current = compiledState(current, version, result);
       const warnings = result.diagnostics.filter((d) => d.severity === "warning").length;
       const head = result.preview
         ? `preview updated in ${seconds(started)}${warnings ? ` (${warnings} warning${warnings > 1 ? "s" : ""})` : ""}`
@@ -212,69 +164,24 @@ export const startServer = async (opts: ServerOptions): Promise<Server> => {
     }, 100);
   };
   try {
-    if (xmlPath.startsWith("/mnt/")) {
-      watchFile(xmlPath, { interval: 500 }, changed);
-      cleanup.push(() => unwatchFile(xmlPath, changed));
-    } else {
-      const watcher = watch(dirname(xmlPath), (_event, name) => {
-        if (name === null || name.toString() === basename(xmlPath)) changed();
-      });
-      cleanup.push(() => watcher.close());
-    }
+    cleanup.push(watchXml(xmlPath, changed));
   } catch (e) {
     close();
     throw e;
   }
 
-  let child: Bun.Subprocess | undefined;
-  let pause: ReturnType<typeof setTimeout> | undefined;
-  cleanup.push(() => {
-    clearTimeout(pause);
-    child?.kill("SIGTERM");
-  });
-  if (opts.run) {
-    const [shell, args] = process.platform === "win32" ? ["cmd", ["/C", opts.run]] : ["sh", ["-c", opts.run]];
-    const env = { ...process.env, BUN_CONFIG_NO_CLEAR_TERMINAL_ON_RELOAD: process.env.BUN_CONFIG_NO_CLEAR_TERMINAL_ON_RELOAD ?? "1" };
-    try {
-      const proc = Bun.spawn([shell, ...args], {
-        cwd: root,
-        env,
-        stdin: "ignore",
-        stdout: "inherit",
-        stderr: "pipe",
-        onExit(_proc, code, signal) {
-          if (!closed) console.error(`\`${opts.run}\` exited (${signal ?? code})`);
+  if (opts.run)
+    cleanup.push(
+      runScript(
+        opts.run,
+        root,
+        () => writes,
+        (error) => {
+          scriptError = error;
+          emit();
         },
-      });
-      child = proc;
-      void (async () => {
-        let text = "";
-        let since = writes;
-        const decoder = new TextDecoder();
-        for await (const chunk of proc.stderr) {
-          process.stderr.write(chunk);
-          if (writes !== since) {
-            text = "";
-            since = writes;
-          }
-          text += Bun.stripANSI(decoder.decode(chunk, { stream: true }));
-          clearTimeout(pause);
-          pause = setTimeout(() => {
-            if (!closed && writes === since && text.trim()) {
-              scriptError = text;
-              emit();
-            }
-          }, 150);
-        }
-      })().catch((e: unknown) => {
-        scriptError = String(e);
-        emit();
-      });
-    } catch (e) {
-      scriptError = (e as Error).message;
-      emit();
-    }
-  }
+      ),
+    );
 
   compiler.update(xml, current.version);
   return { url, close };

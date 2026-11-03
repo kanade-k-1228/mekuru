@@ -1,4 +1,4 @@
-import { homedir } from "node:os";
+import { configDir } from "@mekuru/platform";
 import { join } from "node:path";
 import type { Engine } from "./engine.ts";
 import type { Site } from "./site.ts";
@@ -118,11 +118,7 @@ const CHECKS: Record<Engine, () => Promise<Check>> = {
 };
 
 const youtube = async (): Promise<Check> => {
-  const dir =
-    process.env.MEKURU_CONFIG_DIR ||
-    (process.platform === "win32"
-      ? join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "mekuru")
-      : join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "mekuru"));
+  const dir = configDir();
   const file = join(dir, "youtube-client.json");
   if (await Bun.file(file).exists()) return { name: "YouTube", ok: true, detail: `the OAuth client is ${file}` };
   return {

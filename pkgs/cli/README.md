@@ -24,6 +24,6 @@ bunx mekuru-compiler .mekuru/main.xml -o video.mp4
 
 Both commands accept `--root <dir>` for the media base directory. Default: the XML directory, or its parent when named `.mekuru/`.
 
-Compiler lookup: `MEKURU_COMPILER` → platform npm package → newest local `target/debug` or `target/release` binary (debug wins ties). `@mekuru/cli/protocol` exports the server/viewer types.
+Compiler lookup: `MEKURU_COMPILER` → platform npm package → newest local `target/debug` or `target/release` binary (debug wins ties). `@mekuru/protocol` exports the server/viewer types.
 
 [TSX workflow](../../docs/reference/Component.md) · [Development](../../docs/dev/Developer.md).

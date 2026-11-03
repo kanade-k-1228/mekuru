@@ -1,4 +1,4 @@
-import type { Fade, MediaMap, SceneElement } from "@mekuru/cli/protocol";
+import type { Fade, MediaMap, SceneElement } from "@mekuru/protocol";
 
 interface Interval {
   start: number;

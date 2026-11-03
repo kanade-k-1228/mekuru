@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
+import { configDir } from "@mekuru/platform";
+export { configDir } from "@mekuru/platform";
 import { join } from "node:path";
 
 const SCOPE = "https://www.googleapis.com/auth/youtube.upload";
@@ -11,12 +12,6 @@ interface Client {
   auth_uri: string;
   token_uri: string;
 }
-
-export const configDir = (): string => {
-  if (process.env.MEKURU_CONFIG_DIR) return process.env.MEKURU_CONFIG_DIR;
-  if (process.platform === "win32") return join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "mekuru");
-  return join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "mekuru");
-};
 
 const readClient = async (file: string): Promise<Client> => {
   if (!(await Bun.file(file).exists())) {

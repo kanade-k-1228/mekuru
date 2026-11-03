@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import type { SceneElement } from "@mekuru/cli/protocol";
+import type { SceneElement } from "@mekuru/protocol";
 import { observeSize } from "./observe";
 import { playingAtom, timeAtom } from "./playback/atoms";
 import { envelope, frames, intervalIndex, mediaAt, shownAt, span } from "./playback/time";

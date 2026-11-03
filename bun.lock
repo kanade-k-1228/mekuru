@@ -40,6 +40,8 @@
         "mekuru-compiler": "./src/mekuru-compiler.ts",
       },
       "dependencies": {
+        "@mekuru/platform": "workspace:^",
+        "@mekuru/protocol": "workspace:^",
         "commander": "^14.0.3",
       },
     },
@@ -73,6 +75,7 @@
       "dependencies": {
         "@clack/core": "^1.5.1",
         "@clack/prompts": "^1.8.1",
+        "@mekuru/platform": "workspace:^",
         "commander": "^14.0.3",
       },
     },
@@ -102,9 +105,18 @@
         "mekuru-niconico": "./src/cli.ts",
       },
       "dependencies": {
+        "@mekuru/platform": "workspace:^",
         "commander": "^14.0.3",
         "playwright-core": "1.64.0",
       },
+    },
+    "pkgs/platform": {
+      "name": "@mekuru/platform",
+      "version": "0.0.0",
+    },
+    "pkgs/protocol": {
+      "name": "@mekuru/protocol",
+      "version": "0.0.0",
     },
     "pkgs/speech": {
       "name": "@mekuru/speech",
@@ -144,7 +156,7 @@
         "react-dom": "19.3.0",
       },
       "devDependencies": {
-        "@mekuru/cli": "workspace:*",
+        "@mekuru/protocol": "workspace:^",
         "@tailwindcss/vite": "4.3.3",
         "@types/node": "24.13.6",
         "@types/react": "19.3.0",
@@ -190,6 +202,7 @@
         "mekuru-youtube": "./src/cli.ts",
       },
       "dependencies": {
+        "@mekuru/platform": "workspace:^",
         "commander": "^14.0.3",
       },
     },
@@ -296,6 +309,10 @@
     "@mekuru/narrator": ["@mekuru/narrator@workspace:pkgs/narrator"],
 
     "@mekuru/niconico": ["@mekuru/niconico@workspace:pkgs/niconico"],
+
+    "@mekuru/platform": ["@mekuru/platform@workspace:pkgs/platform"],
+
+    "@mekuru/protocol": ["@mekuru/protocol@workspace:pkgs/protocol"],
 
     "@mekuru/speech": ["@mekuru/speech@workspace:pkgs/speech"],
 

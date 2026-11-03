@@ -3,7 +3,7 @@ import { chmod, mkdtemp, rename, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { previewCompiler } from "../src/preview.ts";
-import type { Compilation, StateDto } from "../src/protocol.ts";
+import type { Compilation, StateDto } from "@mekuru/protocol";
 import { startServer, type Server } from "../src/server.ts";
 
 // The fixture is an executable script; Windows tests need a native .exe fixture.

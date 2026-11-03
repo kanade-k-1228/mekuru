@@ -1,5 +1,5 @@
 import { mkdirSync } from "node:fs";
-import { homedir } from "node:os";
+import { configDir } from "@mekuru/platform";
 import { dirname, join } from "node:path";
 import { chromium, type BrowserContext, type Locator, type Page } from "playwright-core";
 import { descriptionOf, type Settings } from "./settings.ts";
@@ -10,12 +10,6 @@ const SIGN_IN_TIMEOUT = 10 * 60_000;
 const FIELD_TIMEOUT = 60_000;
 const UPLOAD_TIMEOUT = 30 * 60_000;
 const POSTED_TIMEOUT = 2 * 60_000;
-
-export const configDir = (): string => {
-  if (process.env.MEKURU_CONFIG_DIR) return process.env.MEKURU_CONFIG_DIR;
-  if (process.platform === "win32") return join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "mekuru");
-  return join(process.env.XDG_CONFIG_HOME || join(homedir(), ".config"), "mekuru");
-};
 
 const launch = async (headless: boolean): Promise<BrowserContext> => {
   const dir = join(configDir(), "niconico-browser");

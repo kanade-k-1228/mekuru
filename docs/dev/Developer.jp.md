@@ -11,8 +11,7 @@
 - [pkgs/create](../../pkgs/create/README.jp.md): プロジェクト生成
 - [pkgs/speech](../../pkgs/speech/README.jp.md): 読み上げ部品の実装用 API
 - `pkgs/voicevox`・`coeiroink`・`style-bert-vits2`・`voisona`: 音声エンジンとの連携
-- [pkgs/portrait](../../pkgs/portrait/README.jp.md): 動く立ち絵
-- [pkgs/narrator](../../pkgs/narrator/README.jp.md): 自作ナレータの字幕部品・表示テキスト変換
+- [pkgs/narrator](../../pkgs/narrator/README.jp.md): 自作ナレータの立ち絵・口パク・字幕・PSD 素材準備
 - `pkgs/youtube`・`niconico`: 投稿コマンド
 - [example](../../example/README.md): チュートリアルと解説動画
 - [scripts/release.ts](../../scripts/release.ts): リリースの版設定・梱包・依存関係の設定
@@ -96,4 +95,10 @@ git push origin 0.3.0
 
 TSX の `fps()` は `<mekuru>` の展開中だけ使えます。音声の速度変更は書き出しで `atempo`、プレビューで `playbackRate` を使います。
 
-ビューアの状態は Jotai の atom に置き、`logic/` は `view/` に依存しません。コンポーネントは atom を読み書きし、カスタムフックは使いません。共通の DTO は `@mekuru/cli/protocol`、DOM の接続と解除は React の ref で扱います。
+ビューアの状態は Jotai の atom に置き、`logic/` は `view/` に依存しません。コンポーネントは atom を読み書きし、カスタムフックは使いません。共通の DTO は `@mekuru/protocol`、DOM の接続と解除は React の ref で扱います。
+
+## パッケージの責務
+
+`core` はJSX・XMLと構築コンテキスト、`audio` は音声素材とWAV処理、`speech` は合成の準備とキャッシュを担当します。各エンジンは固有のHTTP API、`narrator` は立ち絵・字幕、`protocol` は実行時依存のない通信型、`platform` はOS共通処理を担当します。viewerはcliではなくprotocolに依存します。
+
+API移行: `AudioSource`・`Audio`・`readAudio` は `@mekuru/audio`、`joinWavs` は `@mekuru/audio/wav`、通信型は `@mekuru/protocol` からimportします。旧入口の再exportはありません。
