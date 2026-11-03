@@ -1,3 +1,4 @@
+use crate::util::lru::{FileStamp, Lru, file_stamp};
 use cosmic_text::skrifa::{
     FontRef, GlyphId, MetadataProvider,
     instance::Size,
@@ -6,6 +7,7 @@ use cosmic_text::skrifa::{
 use cosmic_text::{FontSystem, LayoutGlyph, fontdb};
 use std::collections::HashMap;
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use tiny_skia::{Path as SkPath, PathBuilder};
 
@@ -31,7 +33,10 @@ type GlyphPath = Option<Arc<SkPath>>;
 
 pub struct FontBook {
     pub(super) system: Mutex<FontSystem>,
-    glyphs: Mutex<HashMap<GlyphKey, GlyphPath>>,
+    glyphs: Mutex<Lru<GlyphKey, GlyphPath>>,
+    pub(crate) measurements: Mutex<Lru<String, Option<(f32, f32)>>>,
+    files: Mutex<HashMap<std::path::PathBuf, FileStamp>>,
+    pub(crate) generation: u64,
     defaults: Vec<String>,
 }
 
@@ -46,29 +51,40 @@ impl FontBook {
                 let _ = db.load_font_file(path);
             }
         }
+        static GENERATION: AtomicU64 = AtomicU64::new(0);
         Self {
+            generation: GENERATION.fetch_add(1, Ordering::Relaxed),
+            measurements: Mutex::new(Lru::new(4 * 1024 * 1024)),
+            files: Mutex::new(extra.iter().map(|p| (p.to_path_buf(), file_stamp(p))).collect()),
             system: Mutex::new(FontSystem::new_with_locale_and_db("ja-JP".into(), db)),
-            glyphs: Mutex::new(HashMap::new()),
+            glyphs: Mutex::new(Lru::new(16 * 1024 * 1024)),
             defaults: defaults.to_vec(),
         }
     }
 
     pub fn shared(defaults: &[String], extra: &[std::path::PathBuf]) -> Arc<Self> {
         type Key = (Vec<String>, Vec<std::path::PathBuf>);
-        static CACHE: std::sync::LazyLock<Mutex<HashMap<Key, Arc<FontBook>>>> = std::sync::LazyLock::new(Default::default);
+        static CACHE: std::sync::LazyLock<Mutex<Lru<Key, Arc<FontBook>>>> = std::sync::LazyLock::new(|| Mutex::new(Lru::new(4)));
         let key = (defaults.to_vec(), extra.to_vec());
-        CACHE
-            .lock()
-            .unwrap()
-            .entry(key)
-            .or_insert_with(|| {
-                let refs: Vec<&Path> = extra.iter().map(std::path::PathBuf::as_path).collect();
-                Arc::new(Self::new(defaults, &refs))
-            })
-            .clone()
+        let mut cache = CACHE.lock().unwrap();
+        if let Some(book) = cache.get(&key)
+            && book.files.lock().unwrap().iter().all(|(p, stamp)| file_stamp(p) == *stamp)
+        {
+            return book.clone();
+        }
+        let refs: Vec<&Path> = extra.iter().map(std::path::PathBuf::as_path).collect();
+        let book = Arc::new(Self::new(defaults, &refs));
+        cache.insert(key, book.clone(), 1);
+        book
     }
 
     pub(super) fn family(&self, system: &mut FontSystem, requested: Option<&str>) -> Option<String> {
+        if let Some(name) = requested {
+            let path = Path::new(name);
+            if path.is_absolute() {
+                self.files.lock().unwrap().entry(path.to_path_buf()).or_insert_with(|| file_stamp(path));
+            }
+        }
         for name in requested
             .into_iter()
             .chain(self.defaults.iter().map(String::as_str))
@@ -98,7 +114,8 @@ impl FontBook {
             outline.draw(DrawSettings::unhinted(Size::new(1.0), &location), &mut pen).ok()?;
             pen.0.finish().map(Arc::new)
         })();
-        self.glyphs.lock().unwrap().insert(key, path.clone());
+        let bytes = path.as_ref().map_or(64, |p| 64 + p.points().len() * 16);
+        self.glyphs.lock().unwrap().insert(key, path.clone(), bytes);
         path
     }
 }

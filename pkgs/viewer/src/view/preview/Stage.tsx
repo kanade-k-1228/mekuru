@@ -3,7 +3,8 @@ import { memo, useEffect, useRef, type CSSProperties, type Ref } from "react";
 import type { DrawOp, SceneElement } from "@mekuru/protocol";
 import { stageAtom, type Shown } from "../../logic/stage";
 
-const fileUrl = (src: string) => `/files/${src.split("/").map(encodeURIComponent).join("/")}`;
+const fileUrl = (src: string, revision?: string) =>
+  `/files/${src.split("/").map(encodeURIComponent).join("/")}${revision ? `?v=${encodeURIComponent(revision)}` : ""}`;
 
 const Drawing = memo(({ ops }: { ops: DrawOp[] }) => (
   <>
@@ -13,7 +14,7 @@ const Drawing = memo(({ ops }: { ops: DrawOp[] }) => (
         return (
           <image
             key={i}
-            href={fileUrl(op.src)}
+            href={fileUrl(op.src, op.revision)}
             x={x}
             y={y}
             width={width}
@@ -40,9 +41,18 @@ const Drawing = memo(({ ops }: { ops: DrawOp[] }) => (
   </>
 ));
 
+const Chunks = memo(({ chunks }: { chunks: NonNullable<SceneElement["chunks"]> }) => {
+  const counts = new Map<string, number>();
+  return chunks.map((chunk) => {
+    const occurrence = counts.get(chunk.id) ?? 0;
+    counts.set(chunk.id, occurrence + 1);
+    return <Drawing key={`${chunk.id}:${occurrence}`} ops={chunk.ops} />;
+  });
+});
+
 const Layer = memo(({ element, opacity, width, height }: { element: SceneElement; opacity: number; width: number; height: number }) => (
   <svg width={width} height={height} style={{ position: "absolute", inset: 0, opacity, overflow: "visible" }}>
-    <Drawing ops={element.ops} />
+    {element.chunks ? <Chunks chunks={element.chunks} /> : <Drawing ops={element.ops} />}
   </svg>
 ));
 
@@ -70,9 +80,9 @@ const Media = ({ element, state, opacity }: { element: SceneElement; state: NonN
   const [left, top, width, height] = element.bounds ?? [0, 0, 0, 0];
   const style: CSSProperties = { position: "absolute", left, top, width, height, opacity, objectFit: "contain" };
   return element.kind === "video" ? (
-    <video ref={ref as Ref<HTMLVideoElement>} src={fileUrl(media.src)} style={style} onLoadedMetadata={sync} playsInline preload="auto" />
+    <video ref={ref as Ref<HTMLVideoElement>} src={fileUrl(media.src, media.revision)} style={style} onLoadedMetadata={sync} playsInline preload="auto" />
   ) : (
-    <audio ref={ref as Ref<HTMLAudioElement>} src={fileUrl(media.src)} onLoadedMetadata={sync} preload="auto" />
+    <audio ref={ref as Ref<HTMLAudioElement>} src={fileUrl(media.src, media.revision)} onLoadedMetadata={sync} preload="auto" />
   );
 };
 
@@ -82,9 +92,9 @@ export const Stage = ({ width, height }: { width: number; height: number }) => {
     <div style={{ position: "relative", width, height, background: "black", overflow: "hidden" }}>
       {shown.map(({ element, opacity, media }) =>
         media ? (
-          <Media key={element.id} element={element} state={media} opacity={opacity} />
+          <Media key={element.key ?? element.id} element={element} state={media} opacity={opacity} />
         ) : (
-          <Layer key={element.id} element={element} opacity={opacity} width={width} height={height} />
+          <Layer key={element.key ?? element.id} element={element} opacity={opacity} width={width} height={height} />
         ),
       )}
     </div>

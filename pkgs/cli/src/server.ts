@@ -5,6 +5,7 @@ import { sendFile, inside } from "./files.ts";
 import { mkdirSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { previewCompiler } from "./preview.ts";
+import { previewEvent, serializeEvent, sharePreview, sameScene, snapshot, type SharedPreview } from "./share.ts";
 import type { Diagnostic, StateDto } from "@mekuru/protocol";
 
 export interface ServerOptions {
@@ -54,32 +55,43 @@ export const startServer = async (opts: ServerOptions): Promise<Server> => {
   let writes = 0;
   let scriptError: string | null = null;
   let compileError: string | null = null;
-  let current: StateDto = { path: title, version: 1, previewVersion: 0, status: "building", error: null, diagnostics: [], preview: null };
+  let current: StateDto = { path: title, version: 1, previewVersion: 0, status: "building", error: null, diagnostics: [] };
+  let shared: SharedPreview | null = null;
   const clients = new Set<ReadableStreamDefaultController<Uint8Array>>();
   const encoder = new TextEncoder();
-  const send = (client: ReadableStreamDefaultController<Uint8Array>) => client.enqueue(encoder.encode(`event: state\ndata: ${JSON.stringify(current)}\n\n`));
-  const emit = () => {
+  const emit = (event?: string) => {
     if (closed) return;
     current = { ...current, error: scriptError ?? compileError };
-    clients.forEach(send);
+    const bytes = encoder.encode(event ?? serializeEvent({ type: "status", state: current }));
+    for (const client of clients) client.enqueue(bytes);
   };
   let started = Date.now();
   const compiler = previewCompiler(root, (version, result) => {
     if (closed || version !== current.version) return;
+    let event: string | undefined;
     if (result instanceof Error) {
       compileError = result.message;
       current = { ...current, status: "error", diagnostics: [] };
       log(`error: the preview failed\n${result.message}`);
     } else {
       compileError = result.preview ? null : result.diagnostics.map(formatDiagnostic).join("\n");
-      current = compiledState(current, version, result);
+      current = { ...compiledState(current, version, result), error: scriptError ?? compileError };
+      if (result.preview) {
+        const next = sharePreview(result, shared);
+        if (shared && sameScene(shared, next)) {
+          current = { ...current, previewVersion: shared.preview.version };
+        } else {
+          event = previewEvent(current, shared, next);
+          shared = next;
+        }
+      }
       const warnings = result.diagnostics.filter((d) => d.severity === "warning").length;
       const head = result.preview
         ? `preview updated in ${seconds(started)}${warnings ? ` (${warnings} warning${warnings > 1 ? "s" : ""})` : ""}`
         : "error: the preview failed";
       log([head, ...result.diagnostics.map((d) => `  ${formatDiagnostic(d)}`)].join("\n"));
     }
-    emit();
+    emit(event);
   });
 
   cleanup.push(() => compiler.close());
@@ -93,13 +105,17 @@ export const startServer = async (opts: ServerOptions): Promise<Server> => {
       async fetch(req) {
         const path = new URL(req.url).pathname;
         if (path === "/api/state") return Response.json(current, { headers: { "cache-control": "no-store" } });
+        if (path === "/api/preview") {
+          if (!shared) return new Response(null, { status: 404 });
+          return Response.json(snapshot(current, shared), { headers: { "cache-control": "no-store" } });
+        }
         if (path === "/api/events") {
           let client: ReadableStreamDefaultController<Uint8Array>;
           const stream = new ReadableStream<Uint8Array>({
             start(controller) {
               client = controller;
               clients.add(client);
-              send(client);
+              client.enqueue(encoder.encode(serializeEvent(snapshot(current, shared))));
             },
             cancel() {
               clients.delete(client);

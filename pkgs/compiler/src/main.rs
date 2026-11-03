@@ -7,7 +7,7 @@ use mekuru_compiler::prepare::{Prepared, prepare};
 use mekuru_compiler::progress::{Progress, Stage};
 use mekuru_compiler::schedule::Schedule;
 use std::cell::Cell;
-use std::io::{IsTerminal, Write};
+use std::io::{BufRead, IsTerminal, Write};
 use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
@@ -36,6 +36,9 @@ struct Cli {
     preview: bool,
     #[arg(long)]
     emit_preview: bool,
+    /// Serve versioned preview requests as JSON Lines over stdin/stdout.
+    #[arg(long, conflicts_with = "emit_preview")]
+    preview_worker: bool,
 }
 
 fn main() {
@@ -60,7 +63,20 @@ fn run(cli: Cli) -> Result<()> {
         no_audio,
         preview,
         emit_preview,
+        preview_worker,
     } = cli;
+    if preview_worker {
+        let mut worker = mekuru_compiler::preview::Worker::default();
+        let mut out = std::io::BufWriter::new(std::io::stdout().lock());
+        for line in std::io::stdin().lock().lines() {
+            let request = serde_json::from_str(&line?)?;
+            let result = worker.compile(&script, root.as_deref(), request);
+            serde_json::to_writer(&mut out, &result)?;
+            out.write_all(b"\n")?;
+            out.flush()?;
+        }
+        return Ok(());
+    }
     if emit_preview {
         let source = if script == Path::new("-") {
             std::io::read_to_string(std::io::stdin())?

@@ -4,7 +4,16 @@ use std::path::Path;
 use tiny_skia::Pixmap;
 
 pub fn dims(path: &Path) -> Result<(u32, u32)> {
-    image::image_dimensions(path).with_context(|| format!("cannot read image {}", path.display()))
+    use crate::util::lru::{FileStamp, Lru, file_stamp};
+    use std::sync::{LazyLock, Mutex};
+    static CACHE: LazyLock<Mutex<Lru<FileStamp, (u32, u32)>>> = LazyLock::new(|| Mutex::new(Lru::new(1024 * 1024)));
+    let key = file_stamp(path);
+    if let Some(size) = CACHE.lock().unwrap().get(&key) {
+        return Ok(*size);
+    }
+    let size = image::image_dimensions(path).with_context(|| format!("cannot read image {}", path.display()))?;
+    CACHE.lock().unwrap().insert(key, size, path.as_os_str().len() + 128);
+    Ok(size)
 }
 
 pub fn load(path: &Path, w: u32, h: u32) -> Result<Pixmap> {

@@ -59,7 +59,7 @@ export const TimelineContent = memo(({ layout, metrics, uid, onSelect }: Props) 
           const labelX = Math.max(x1, LEFT_PAD) + 4;
           const clipId = `${uid}-node-${node.id}`;
           return (
-            <g key={`n${node.id}`} className={HIT} onPointerDown={(e) => select(e, node.start)}>
+            <g key={node.key ?? `n${node.id}`} className={HIT} onPointerDown={(e) => select(e, node.start)}>
               <rect className={clsx("stroke-black/35", DEPTH_FILL[depth % DEPTH_FILL.length], HOVER)} x={x1} y={y} width={x2 - x1} height={h} rx={3} />
               <clipPath id={clipId}>
                 <rect x={labelX} y={y} width={Math.max(0, x2 - labelX - 4)} height={h} />
@@ -85,7 +85,7 @@ export const TimelineContent = memo(({ layout, metrics, uid, onSelect }: Props) 
           const labelX = Math.max(x1, LEFT_PAD) + 4;
           const clipId = `${uid}-clip-${i}`;
           return (
-            <g key={`c${i}`} className={HIT} onPointerDown={(e) => select(e, clip.start)}>
+            <g key={clip.key ?? `c${i}`} className={HIT} onPointerDown={(e) => select(e, clip.start)}>
               <rect
                 className={clsx("stroke-1", LANE_CLASS[clip.lane], HOVER, clip.estimated && "opacity-55 [stroke-dasharray:4_3]")}
                 x={x1 + 0.5}

@@ -1,5 +1,8 @@
 use crate::typography::font::FontBook;
+mod identity;
 mod source;
+mod worker;
+pub use worker::{Request, Response, Worker};
 
 use crate::{
     Project,
@@ -17,6 +20,10 @@ mod dto;
 pub use dto::*;
 
 pub fn compile(path: &Path, root: Option<&Path>, xml: String) -> Compilation {
+    compile_internal(path, root, xml, None)
+}
+
+fn compile_internal(path: &Path, root: Option<&Path>, xml: String, worker: Option<&mut Worker>) -> Compilation {
     let source = source::format(&xml).unwrap_or(xml);
     let p = Project::from_source_mode(path, root, source, true);
     let mut diags = p.diags.clone();
@@ -33,7 +40,7 @@ pub fn compile(path: &Path, root: Option<&Path>, xml: String) -> Compilation {
             if diags.iter().any(Diag::is_error) {
                 None
             } else {
-                Some(scene(&p, &prepared, &sched, &mut diags))
+                Some(scene(&p, &prepared, &sched, &mut diags, worker))
             }
         }
     };
@@ -117,6 +124,7 @@ fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &m
         ViewOp::Image(img) => {
             let transform = (!t.is_identity()).then_some([t.sx, t.ky, t.kx, t.sy, t.tx, t.ty]);
             ops.push(Op::Image {
+                revision: None,
                 src: file_src(&img.path, base_dir),
                 bounds: [img.x, img.y, img.w, img.h],
                 transform,
@@ -128,13 +136,27 @@ fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &m
     Ok(())
 }
 
-fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, diags: &mut Vec<Diag>) -> Preview {
+fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, diags: &mut Vec<Diag>, mut worker: Option<&mut Worker>) -> Preview {
     let script = &p.script;
     let st = &script.settings;
     let fps = st.rate();
     let s = |f: f64| fps.secs(f);
     let i = |f: i64| fps.secs(f as f64);
     let fonts = p.fonts();
+    let keys = worker.as_mut().map(|w| w.identities.update(&p.source));
+    let mut counts = std::collections::HashMap::<String, usize>::new();
+    let elem_keys: Vec<_> = script
+        .elems
+        .iter()
+        .map(|e| {
+            keys.as_ref().map(|keys| {
+                let base = format!("{}:{}", keys[&(e.site.lo as usize)], e.kind.name());
+                let count = counts.entry(base.clone()).or_default();
+                *count += 1;
+                format!("{base}:{count}")
+            })
+        })
+        .collect();
     let mut elements = vec![];
     let mut order: Vec<_> = script.elems.iter().collect();
     order.sort_by_key(|e| (e.z, e.order));
@@ -144,11 +166,19 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, diags: &mu
             continue;
         }
         let mut ops = vec![];
+        let mut drawings = vec![];
         let mut bounds = None;
         match &e.kind {
             ElemKind::View(view) => {
                 for op in &view.ops {
-                    if let Err(()) = draw_op(op, Transform::identity(), &fonts, &script.base_dir, &mut ops) {
+                    let failed = if let Some(w) = worker.as_mut() {
+                        let drawing = w.draw(op, &fonts, &script.base_dir);
+                        drawings.push(drawing.id.clone());
+                        drawing.failed
+                    } else {
+                        draw_op(op, Transform::identity(), &fonts, &script.base_dir, &mut ops).is_err()
+                    };
+                    if failed {
                         diags.push(Diag::new("W560", e.site, "text could not be drawn; install a font or set `font`"));
                     }
                 }
@@ -161,6 +191,7 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, diags: &mu
             _ => {}
         }
         let media = e.kind.media().zip(et.src.as_ref()).map(|(m, src)| Media {
+            revision: worker.is_some().then(|| worker::revision(&m.path)),
             src: file_src(&m.path, &script.base_dir),
             gain: if prepared.media.get(&e.id).is_some_and(|m| m.probe.has_audio) {
                 m.volume
@@ -181,7 +212,9 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, diags: &mu
                 .filter(|f| f.fade_in > 0.0 || f.fade_out > 0.0)
                 .map(|f| [s(f.start), s(f.end), s(f.fade_in), s(f.fade_out), f.level as f64])
                 .collect(),
-            ops,
+            ops: worker.is_none().then_some(ops),
+            drawings: worker.is_some().then_some(drawings),
+            key: elem_keys[e.id].clone(),
             media,
             bounds,
             repeat: et.repeat.iter().map(|r| [i(r.from), i(r.period), i(r.until)]).collect(),
@@ -194,11 +227,11 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, diags: &mu
         fps: st.fps,
         duration: i(sched.total),
         elements,
-        timeline: timeline(p, sched),
+        timeline: timeline(p, sched, keys.as_ref(), &elem_keys),
     }
 }
 
-fn timeline(p: &Project, sched: &Schedule) -> Timeline {
+fn timeline(p: &Project, sched: &Schedule, keys: Option<&std::collections::HashMap<usize, String>>, elem_keys: &[Option<String>]) -> Timeline {
     let fps = p.script.settings.rate();
     let i = |f: i64| fps.secs(f as f64);
     let s = &p.script;
@@ -252,6 +285,7 @@ fn timeline(p: &Project, sched: &Schedule) -> Timeline {
             continue;
         }
         out.clips.push(Clip {
+            key: elem_keys[e.id].as_ref().map(|k| format!("{k}:clip")),
             tag: name.into(),
             lane,
             line,
@@ -282,6 +316,7 @@ fn timeline(p: &Project, sched: &Schedule) -> Timeline {
         let t = sched.nodes[n.id];
         let line = p.index.line(n.head.lo);
         out.nodes.push(TimelineNode {
+            key: keys.map(|keys| format!("{}:node", keys[&(n.head.lo as usize)])),
             id: n.id,
             parent: n.parent.filter(|&id| !top(id)),
             depth: depths[n.id] - 1,

@@ -13,7 +13,8 @@ cargo build -p mekuru-compiler --release --locked
 ./target/release/mekuru-compiler path/to/main.xml -o video.mp4
 ```
 
-- `--emit-preview` outputs JSON for the browser viewer.
+- `--emit-preview` outputs a standalone JSON preview.
+- `--preview-worker` serves resident JSON Lines requests with cached drawing resources for the CLI/viewer.
 - `--scale`, `--fps`, `--from`, and `--to` control output size, frame rate, and time range.
 - Published projects normally launch this compiler through [@mekuru/cli](../cli/README.md).
 

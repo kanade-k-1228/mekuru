@@ -73,13 +73,21 @@ A failed workflow can be rerun. `--tolerate-republish` handles versions already 
 
 ## How preview works
 
-`mekuru-server` watches XML and sends it to `mekuru-compiler - --emit-preview` through stdin. The compiler returns diagnostics, time intervals, and drawing data as JSON. Diagnostics and the timeline use line numbers from formatted XML.
+`mekuru-server` watches XML and keeps `mekuru-compiler - --preview-worker` running. Each stdin/stdout line is one JSON request/response. Requests contain `version`, `xml`, and `knownResources` (the drawing hashes retained by the CLI). Responses contain the complete lightweight scene, diagnostics, missing resources, and drawing-cache statistics. `--emit-preview` keeps its standalone, expanded JSON format. Update the compiler, CLI and viewer together.
 
-- Compile sequentially, keeping only the latest pending input.
-- Send successful results as SSE `state` events; keep the previous successful result after a failure.
-- Show an update indicator in the viewer while `status: "building"`.
-- Wrap draft speech in a `<dur>` with an estimated duration. Video export requires completed audio.
-- Pass `BUN_CONFIG_NO_CLEAR_TERMINAL_ON_RELOAD=1` to `--run` to preserve reload logs.
+- Parsing, layout and timing run over the entire input. Font books, glyph outlines, text measurements, media metadata and `ViewOp` drawing conversions are reused. A resource is one original `ViewOp`, even when the compiler merges many operations into one display element.
+- The drawing LRU has a 64 MiB estimated-size budget; each of up to four font books has 4 MiB of measurements and 16 MiB of glyph outlines. Probe and image-dimension LRUs each have a 1 MiB budget. Active response data and the font system's own storage are additional. File keys include path, size and modification time; font-file dependencies are preloaded and validated before layout. Diagnostics always use the current formatted XML's line numbers.
+- Sequential IR IDs are preserved. Separate preview keys match scoped XML IDs, then unchanged sibling subtrees, then equal-length same-tag gaps. Ambiguous insertions/deletions get new keys; a worker restart gets a fresh key namespace. Rendering order is independent of identity.
+- Compilation is sequential and only the newest pending input survives. Stale responses never advance the CLI's resource inventory. A broken worker is retried once with the latest input; another failure retains the last successful preview and shows an error.
+- `/api/events` sends `snapshot` on connection/reconnection, `status` for building/errors/diagnostics alone, and versioned `patch` events for successful changes. Patches contain keyed element/node/clip changes, order changes and resource additions/removals. The CLI serializes the selected event once for all clients and uses a snapshot when it is smaller. `/api/preview` returns the current snapshot for inspection; the old drawing/path POST endpoints are gone.
+- The viewer applies each patch atomically, preserving unchanged element and resource objects. A version mismatch or missing resource reconnects for a snapshot. CLI and viewer retain only resources referenced by the current preview. Status changes leave interval indexes and timeline layout intact; playback and zoom persist, with stored playback time clamped when duration shrinks.
+- Wrap draft speech in a `<dur>` with an estimated duration. Video export requires completed audio. Pass `BUN_CONFIG_NO_CLEAR_TERMINAL_ON_RELOAD=1` to `--run` to preserve reload logs.
+
+Asset-only watching, incremental XML/layout/timing, and playback optimization are outside this path. Asset changes are validated on the next compile; restart the server after installing system fonts.
+
+Run `bun scripts/preview-benchmark.ts 500 10` after building to compare fresh single-shot compilation with a resident worker for 500 captions and ten local text edits. It reports generation/round-trip time, drawing hits, response and SSE sizes, and JSON decoding plus viewer-reducer time in Bun. `MEKURU_BENCH_OUT=/tmp/benchmark` also saves events for browser profiling. These are uncompressed measurements, not paint timings.
+
+A local debug-build run (500 English captions at 640×360, one caption changed per edit) measured a 271 ms median for a fresh single-shot compile, a 253 ms first worker round trip, and an 11 ms median repeated round trip (9.4 ms inside the compiler). Repeated edits hit 499/500 drawings and sent one resource: about 32.4 kB over SSE versus 16.8 MB for the full standalone output. Across two Chromium runs, the median JSON decoding plus reducer application time was 15–77 ms initially and 0.7–1.3 ms per edit. These fixture-specific figures are reproducible with the script and are not a comparison against the earlier 11.3 MB fixture. Browser checks also verified that video/audio DOM nodes survive text edits, insertion, compile failure and snapshot resynchronization; status events carry zero drawing data. Killing the real worker also recovered on the next edit.
 
 ## Internals
 

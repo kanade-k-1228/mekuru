@@ -8,7 +8,21 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 pub(crate) fn lower(doc: &Document, base_dir: &Path, diags: &mut Vec<Diag>, preview: bool) -> Script {
-    let fonts = font_book(&doc.settings, base_dir);
+    fn text_fonts(tag: &Tag, out: &mut Vec<String>) {
+        if tag.name == "text" {
+            out.extend(tag.attrs.iter().filter(|a| a.key == "font").map(|a| a.value.clone()));
+        }
+        for child in &tag.children {
+            if let Child::Tag(tag) = child {
+                text_fonts(tag, out);
+            }
+        }
+    }
+    let mut requested = vec![];
+    text_fonts(&doc.root, &mut requested);
+    requested.sort();
+    requested.dedup();
+    let fonts = font_book(&doc.settings, base_dir, &requested);
     let ctx = layout::Ctx {
         settings: &doc.settings,
         base_dir,
@@ -71,6 +85,7 @@ pub(crate) fn lower(doc: &Document, base_dir: &Path, diags: &mut Vec<Diag>, prev
     }
     Script {
         settings: doc.settings.clone(),
+        fonts: requested,
         nodes,
         elems,
         ids,

@@ -8,6 +8,17 @@ use font::FontBook;
 use layout::layout;
 use std::{path::Path, sync::Arc};
 pub fn measure_text(fonts: &FontBook, spec: &TextSpec) -> Option<(f32, f32)> {
+    // Coordinates do not affect measurement; style, wrapping width and text do.
+    let key = format!("{:?}|{:?}|{:?}", spec.text, spec.width, spec.style);
+    if let Some(size) = fonts.measurements.lock().unwrap().get(&key) {
+        return *size;
+    }
+    let size = measure_uncached(fonts, spec);
+    let bytes = key.len() + 64;
+    fonts.measurements.lock().unwrap().insert(key, size, bytes);
+    size
+}
+fn measure_uncached(fonts: &FontBook, spec: &TextSpec) -> Option<(f32, f32)> {
     let buffer = layout(fonts, spec)?;
     Some(
         buffer
@@ -16,8 +27,18 @@ pub fn measure_text(fonts: &FontBook, spec: &TextSpec) -> Option<(f32, f32)> {
     )
 }
 
-pub(crate) fn font_book(st: &Settings, base: &Path) -> Arc<FontBook> {
+pub(crate) fn font_book(st: &Settings, base: &Path, requested: &[String]) -> Arc<FontBook> {
     let fonts: Vec<String> = st.fonts.iter().map(|f| resolve_font(f, base)).collect();
-    let extra: Vec<std::path::PathBuf> = fonts.iter().map(std::path::PathBuf::from).filter(|p| p.is_file()).collect();
+    // Preload the entire input's file fonts. Lazy loading a new font halfway
+    // through layout could change fallback selection behind cached measurements.
+    let mut extra: Vec<_> = fonts
+        .iter()
+        .cloned()
+        .chain(requested.iter().map(|f| resolve_font(f, base)))
+        .map(std::path::PathBuf::from)
+        .filter(|p| p.is_absolute())
+        .collect();
+    extra.sort();
+    extra.dedup();
     FontBook::shared(&fonts, &extra)
 }

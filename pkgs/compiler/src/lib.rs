@@ -84,7 +84,7 @@ impl Project {
     }
 
     pub fn fonts(&self) -> std::sync::Arc<typography::font::FontBook> {
-        typography::font_book(&self.script.settings, &self.script.base_dir)
+        typography::font_book(&self.script.settings, &self.script.base_dir, &self.script.fonts)
     }
 
     pub fn default_output(&self) -> PathBuf {

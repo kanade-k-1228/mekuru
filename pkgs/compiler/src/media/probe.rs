@@ -1,8 +1,8 @@
 use super::args;
+use crate::util::lru::Lru;
 use crate::util::proc::run_checked;
 use anyhow::{Context, Result};
 use serde_json::Value;
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 use std::time::SystemTime;
@@ -21,16 +21,16 @@ pub struct MediaProbe {
 }
 
 pub fn probe_cached(src: &Path) -> Result<MediaProbe> {
-    type Memo = Mutex<HashMap<(PathBuf, u64, Option<SystemTime>), MediaProbe>>;
+    type Memo = Mutex<Lru<(PathBuf, u64, Option<SystemTime>), MediaProbe>>;
     static MEMO: OnceLock<Memo> = OnceLock::new();
     let meta = std::fs::metadata(src).with_context(|| format!("file not found: {}", src.display()))?;
     let key = (src.to_path_buf(), meta.len(), meta.modified().ok());
-    let memo = MEMO.get_or_init(Default::default);
+    let memo = MEMO.get_or_init(|| Mutex::new(Lru::new(1024 * 1024)));
     if let Some(p) = memo.lock().unwrap_or_else(|e| e.into_inner()).get(&key) {
         return Ok(*p);
     }
     let p = probe(src)?;
-    memo.lock().unwrap_or_else(|e| e.into_inner()).insert(key, p);
+    memo.lock().unwrap_or_else(|e| e.into_inner()).insert(key, p, src.as_os_str().len() + 128);
     Ok(p)
 }
 

@@ -161,7 +161,7 @@ impl<'a> FrameRenderer<'a> {
         let canvas = Pixmap::new(target.width, target.height).ok_or_else(|| anyhow::anyhow!("invalid output size"))?;
         Ok(FrameRenderer {
             ctx,
-            fonts: crate::typography::font_book(&ctx.script.settings, &ctx.script.base_dir),
+            fonts: crate::typography::font_book(&ctx.script.settings, &ctx.script.base_dir, &ctx.script.fonts),
             target,
             order,
             sprites: HashMap::new(),
