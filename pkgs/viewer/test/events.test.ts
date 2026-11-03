@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { createStore } from "jotai";
 import type { PreviewEvent } from "@mekuru/protocol";
 import { compilation, state } from "../../cli/test/fixtures/preview.ts";
-import { patch, sharePreview, snapshot } from "../../cli/src/share.ts";
+import { patch, sharePreview, snapshot } from "../../cli/test/fixtures/sharing.ts";
 import { connectEvents, initialConnection } from "../src/logic/events";
 import { elementsAtom, serverAtom, timelineAtom } from "../src/logic/server";
 import { timeAtom, playingAtom } from "../src/logic/playback/atoms";

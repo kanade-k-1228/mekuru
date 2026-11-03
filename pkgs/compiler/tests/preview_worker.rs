@@ -11,10 +11,40 @@ fn wire(value: impl serde::Serialize) -> serde_json::Result<Value> {
     serde_json::from_slice(&serde_json::to_vec(&value)?)
 }
 
+fn apply_collection(before: &Value, delta: &Value) -> Value {
+    let mut entries: HashMap<_, _> = before
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| (e["key"].as_str().unwrap().to_owned(), e.clone()))
+        .collect();
+    for key in delta["remove"].as_array().unwrap() {
+        entries.remove(key.as_str().unwrap());
+    }
+    for entry in delta["upsert"].as_array().unwrap() {
+        entries.insert(entry["key"].as_str().unwrap().to_owned(), entry.clone());
+    }
+    let order: Vec<String> = delta["order"]
+        .as_array()
+        .map(|order| order.iter().map(|k| k.as_str().unwrap().to_owned()).collect())
+        .unwrap_or_else(|| {
+            before
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|e| e["key"].as_str().unwrap().to_owned())
+                .filter(|k| entries.contains_key(k))
+                .collect()
+        });
+    assert_eq!(order.len(), entries.len());
+    json!(order.into_iter().map(|k| entries.remove(&k).unwrap()).collect::<Vec<_>>())
+}
+
 struct Session {
     worker: Worker,
     resources: HashMap<String, Value>,
     version: u64,
+    scene: Value,
 }
 impl Session {
     fn new() -> Self {
@@ -22,23 +52,56 @@ impl Session {
             worker: Worker::default(),
             resources: HashMap::new(),
             version: 0,
+            scene: Value::Null,
         }
     }
     fn compile(&mut self, root: &Path, xml: &str) -> Value {
         self.version += 1;
-        let result = wire(self.worker.compile(
+        let mut result = wire(self.worker.compile(
             Path::new("-"),
             Some(root),
             Request {
                 version: self.version,
                 xml: xml.into(),
-                known_resources: self.resources.keys().cloned().collect(),
+                base_version: self.scene["version"].as_u64(),
             },
         ))
         .unwrap();
-        for (key, ops) in result["resources"].as_object().unwrap() {
-            self.resources.insert(key.clone(), ops.clone());
+        let update = &result["update"];
+        match update["type"].as_str() {
+            Some("snapshot") => {
+                self.scene = update["preview"].clone();
+                self.resources = serde_json::from_value(update["resources"].clone()).unwrap();
+            }
+            Some("patch") => {
+                assert_eq!(self.scene["version"], update["baseVersion"]);
+                for (key, value) in update["scene"].as_object().unwrap() {
+                    self.scene[key] = value.clone();
+                }
+                self.scene["version"] = update["version"].clone();
+                self.scene["elements"] = apply_collection(&self.scene["elements"], &update["elements"]);
+                for name in ["nodes", "clips"] {
+                    self.scene["timeline"][name] = apply_collection(&self.scene["timeline"][name], &update[name]);
+                }
+                for key in update["removedResources"].as_array().unwrap() {
+                    self.resources.remove(key.as_str().unwrap());
+                }
+                for (key, ops) in update["resources"].as_object().unwrap() {
+                    self.resources.insert(key.clone(), ops.clone());
+                }
+            }
+            None => {}
+            _ => panic!("unexpected worker update"),
         }
+        // Keep the original full-scene assertions as an independent transport oracle.
+        result["resources"] = update["resources"].as_object().map_or(json!({}), |r| json!(r));
+        result["preview"] = if result["previewVersion"].is_null() {
+            Value::Null
+        } else {
+            let mut scene = self.scene.clone();
+            scene.as_object_mut().unwrap().remove("version");
+            scene
+        };
         let mut expanded = result["preview"].clone();
         if !expanded.is_null() {
             for entries in [&expanded["elements"], &expanded["timeline"]["nodes"], &expanded["timeline"]["clips"]] {
@@ -150,24 +213,24 @@ fn insertion_deletion_reordering_duplicate_elements_repeats_references_and_draft
 fn discarded_responses_and_evicted_cache_entries_never_lose_resources() {
     let mut worker = Worker::new(1); // Every drawing exceeds this cache budget.
     let xml = document(r#"<dur len="30"><text>Cache</text></dur>"#);
-    let run = |w: &mut Worker, known| {
+    let run = |w: &mut Worker, version, base_version| {
         wire(w.compile(
             Path::new("-"),
             None,
             Request {
-                version: 1,
+                version,
                 xml: xml.clone(),
-                known_resources: known,
+                base_version,
             },
         ))
         .unwrap()
     };
-    let a = run(&mut worker, vec![]);
-    let b = run(&mut worker, vec![]); // CLI discarded a, so advertises no resources.
-    assert_eq!(a["resources"], b["resources"]);
-    let known = a["resources"].as_object().unwrap().keys().cloned().collect();
-    let c = run(&mut worker, known);
-    assert_eq!(c["resources"], json!({}));
+    let a = run(&mut worker, 1, None);
+    let b = run(&mut worker, 2, None); // CLI discarded a, so acknowledges no scene.
+    assert_eq!(a["update"]["resources"], b["update"]["resources"]);
+    let c = run(&mut worker, 3, Some(2));
+    assert!(c["update"].is_null());
+    assert_eq!(c["previewVersion"], 2);
     assert_eq!(c["stats"]["drawMisses"], 1);
 }
 
@@ -289,4 +352,54 @@ fn cached_drawings_keep_analysis_warnings_on_current_source_lines() {
     assert_eq!(next["resources"], json!({}));
     assert_eq!(first["diagnostics"][0]["code"], "W357");
     assert_ne!(first["diagnostics"][0]["line"], next["diagnostics"][0]["line"]);
+}
+
+#[test]
+fn deltas_use_only_acknowledged_scenes_and_reset_unknown_bases() {
+    let mut worker = Worker::default();
+    let xml = document(&(0..100).map(|i| format!(r#"<dur len="30"><text>Caption {i}</text></dur>"#)).collect::<String>());
+    let run = |w: &mut Worker, version, base_version, xml: &str| {
+        wire(w.compile(
+            Path::new("-"),
+            None,
+            Request {
+                version,
+                base_version,
+                xml: xml.into(),
+            },
+        ))
+        .unwrap()
+    };
+    let first = run(&mut worker, 1, None, &xml);
+    assert_eq!(first["update"]["type"], "snapshot");
+    let dropped = run(&mut worker, 2, Some(1), &xml.replace("Caption 50<", "Discarded<"));
+    assert_eq!(dropped["update"]["type"], "patch");
+    let latest_xml = xml.replace("Caption 50<", "Published<");
+    let latest = run(&mut worker, 3, Some(1), &latest_xml);
+    assert_eq!(latest["update"]["baseVersion"], 1);
+    assert_eq!(latest["update"]["version"], 3);
+    assert_eq!(latest["update"]["resources"].as_object().unwrap().len(), 1);
+    assert_eq!(latest["update"]["elements"]["upsert"].as_array().unwrap().len(), 1);
+    assert!(latest["update"]["elements"]["order"].is_null());
+    let unchanged = run(&mut worker, 4, Some(3), &latest_xml);
+    assert!(unchanged["update"].is_null());
+    assert_eq!(unchanged["previewVersion"], 3);
+    let failed = run(&mut worker, 5, Some(3), "<mekuru>");
+    assert!(failed["previewVersion"].is_null());
+    assert!(failed["update"].is_null());
+    let recovered = run(&mut worker, 6, Some(3), &latest_xml);
+    assert_eq!(recovered["previewVersion"], 3);
+    assert!(recovered["update"].is_null());
+    let unknown = run(&mut worker, 7, Some(999), &latest_xml);
+    assert_eq!(unknown["update"]["type"], "snapshot");
+    assert_eq!(unknown["update"]["resources"].as_object().unwrap().len(), 100);
+    let restarted = run(&mut Worker::default(), 8, Some(7), &latest_xml);
+    assert_eq!(restarted["update"]["type"], "snapshot");
+    assert_ne!(
+        restarted["update"]["preview"]["elements"][0]["key"],
+        unknown["update"]["preview"]["elements"][0]["key"]
+    );
+    // A replacement of the entire scene is smaller as a snapshot.
+    let replaced = run(&mut worker, 9, Some(7), &document(r#"<dur len="30"><text>Only one</text></dur>"#));
+    assert_eq!(replaced["update"]["type"], "snapshot");
 }

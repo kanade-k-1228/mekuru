@@ -1,14 +1,15 @@
 import { lineReader } from "./lines.ts";
+import { acceptPreview, type SharedPreview } from "./share.ts";
 import { findCompiler } from "./compiler.ts";
 import type { WorkerCompilation, WorkerRequest } from "@mekuru/protocol";
 
 /** One resident worker, one request in flight, and only the newest pending input. */
-export const previewCompiler = (root: string, publish: (version: number, result: WorkerCompilation | Error) => void) => {
+export const previewCompiler = (root: string, publish: (version: number, result: WorkerCompilation | Error, preview: SharedPreview | null) => void) => {
   let child: ReturnType<typeof spawn> | undefined;
   let closed = false;
   let running = false;
   let pending: { xml: string; version: number } | undefined;
-  let knownResources: string[] = [];
+  let shared: SharedPreview | null = null;
   const spawn = () => {
     const proc = Bun.spawn([findCompiler(), "-", "--preview-worker", "--root", root], { stdin: "pipe", stdout: "pipe", stderr: "pipe" });
     let stderr = "";
@@ -29,13 +30,8 @@ export const previewCompiler = (root: string, publish: (version: number, result:
           throw new Error(stderr.trim() || `mekuru-compiler exited (${code})`);
         }
         const result = JSON.parse(line) as WorkerCompilation;
-        if (result.version !== request.version || !Array.isArray(result.diagnostics) || !("preview" in result) || !result.resources)
+        if (result.version !== request.version || !Array.isArray(result.diagnostics) || !("previewVersion" in result) || !("update" in result))
           throw new Error("unexpected compiler response; rebuild or update mekuru-compiler");
-        if (result.preview) {
-          const available = new Set([...request.knownResources, ...Object.keys(result.resources)]);
-          if (result.preview.elements.some((e) => !e.key || !Array.isArray(e.drawings) || e.drawings.some((k) => !available.has(k))))
-            throw new Error("compiler response references a missing drawing resource");
-        }
         return result;
       },
     };
@@ -46,11 +42,13 @@ export const previewCompiler = (root: string, publish: (version: number, result:
     let input = pending;
     pending = undefined;
     let result: WorkerCompilation | Error;
+    let candidate = shared;
     // Retry a broken process once, using the latest input if it changed meanwhile.
     for (let attempt = 0; ; attempt++) {
       try {
         child ??= spawn();
-        result = await child.request({ ...input, knownResources });
+        result = await child.request({ ...input, baseVersion: shared?.preview.version ?? null });
+        candidate = acceptPreview(shared, result);
         break;
       } catch (error) {
         child?.proc.kill();
@@ -66,8 +64,8 @@ export const previewCompiler = (root: string, publish: (version: number, result:
     running = false;
     if (closed) return;
     if (!pending) {
-      if (!(result instanceof Error) && result.preview) knownResources = [...new Set(result.preview.elements.flatMap((e) => e.drawings))];
-      publish(input.version, result);
+      if (!(result instanceof Error)) shared = candidate;
+      publish(input.version, result, shared);
     }
     void next();
   };

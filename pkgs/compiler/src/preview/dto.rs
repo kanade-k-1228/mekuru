@@ -1,11 +1,11 @@
 use serde::Serialize;
-#[derive(Clone, Serialize)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct Compilation {
     pub preview: Option<Preview>,
     pub diagnostics: Vec<Diagnostic>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct Diagnostic {
     pub code: String,
     pub severity: &'static str,
@@ -13,7 +13,7 @@ pub struct Diagnostic {
     pub message: String,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct Preview {
     pub width: u32,
     pub height: u32,
@@ -23,7 +23,7 @@ pub struct Preview {
     pub timeline: Timeline,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct Element {
     pub(super) id: usize,
     pub(super) kind: &'static str,
@@ -43,7 +43,7 @@ pub struct Element {
     pub(super) hidden: Vec<[f64; 2]>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Op {
     Text {
@@ -81,7 +81,7 @@ pub enum Op {
     },
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Stroke {
     pub(super) width: f32,
@@ -90,7 +90,7 @@ pub struct Stroke {
     pub(super) dash: Vec<f32>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct Media {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) revision: Option<String>,
@@ -98,19 +98,19 @@ pub struct Media {
     pub(super) gain: f32,
     pub(super) map: MediaMap,
 }
-#[derive(Clone, Serialize)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct MediaMap {
     pub(super) from: f64,
     pub(super) end: f64,
     pub(super) segments: Vec<[f64; 4]>,
 }
 
-#[derive(Clone, Serialize, Default)]
+#[derive(Clone, PartialEq, Serialize, Default)]
 pub struct Timeline {
     pub(super) nodes: Vec<TimelineNode>,
     pub(super) clips: Vec<Clip>,
 }
-#[derive(Clone, Serialize)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct TimelineNode {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) key: Option<String>,
@@ -125,7 +125,7 @@ pub struct TimelineNode {
     pub(super) end: f64,
     pub(super) pin: Option<f64>,
 }
-#[derive(Clone, Serialize)]
+#[derive(Clone, PartialEq, Serialize)]
 pub struct Clip {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(super) key: Option<String>,

@@ -5,7 +5,6 @@ import { join } from "node:path";
 import { previewCompiler } from "../src/preview.ts";
 import type { PreviewEvent, SnapshotEvent, StateDto, WorkerCompilation } from "@mekuru/protocol";
 import { startServer, type Server } from "../src/server.ts";
-import { compilation } from "./fixtures/preview.ts";
 
 // The fixture is an executable script; Windows tests need a native .exe fixture.
 describe.skipIf(process.platform === "win32")("Bun preview server", () => {
@@ -22,23 +21,32 @@ describe.skipIf(process.platform === "win32")("Bun preview server", () => {
       `#!/usr/bin/env bun
 import { appendFileSync, existsSync, writeFileSync } from "node:fs";
 import { createInterface } from "node:readline";
+import { compilation } from ${JSON.stringify(join(import.meta.dir, "fixtures/preview.ts"))};
+import { sharePreview, workerResponse } from ${JSON.stringify(join(import.meta.dir, "fixtures/sharing.ts"))};
+let published = null, candidate = null;
 for await (const line of createInterface({ input: process.stdin })) {
   const request = JSON.parse(line);
-  const { xml, version, knownResources } = request;
-  appendFileSync(${JSON.stringify(join(root, "requests"))}, JSON.stringify({ xml, version, knownResources, pid: process.pid }) + "\\n");
+  const { xml, version, baseVersion } = request;
+  if (candidate?.preview.version === baseVersion) published = candidate;
+  candidate = null;
+  if (published?.preview.version !== baseVersion) published = null;
+  appendFileSync(${JSON.stringify(join(root, "requests"))}, JSON.stringify({ xml, version, baseVersion, pid: process.pid }) + "\\n");
   if (xml.includes("slow")) await Bun.sleep(150);
   if (xml.includes("once") && !existsSync(${JSON.stringify(join(root, "restarted"))})) {
     writeFileSync(${JSON.stringify(join(root, "restarted"))}, "yes"); process.exit(7);
   }
   if (xml.includes("crash")) { console.error("compiler failed"); process.exit(7); }
-  const result = ${JSON.stringify(compilation())};
+  const result = compilation();
   result.version = version;
   if (xml.includes("warning")) result.diagnostics = [{ severity: "warning", code: "W001", line: 1, message: "warning only" }];
   if (xml.includes("changed")) result.preview.elements[0].drawings = ["A", "C"];
   if (xml.includes("invalid")) { result.preview = null; result.diagnostics = [{ severity: "error", code: "E001", line: 1, message: "invalid XML" }]; }
-  const used = new Set(result.preview?.elements.flatMap(e => e.drawings) ?? []);
-  result.resources = Object.fromEntries(Object.entries(result.resources).filter(([k]) => used.has(k) && !knownResources.includes(k)));
-  console.log(JSON.stringify(result));
+  const response = workerResponse(result, published);
+  if (response.update) candidate = sharePreview(result, published);
+  if (xml.includes("missing")) {
+    if (response.update) response.update.resources = {};
+  }
+  console.log(JSON.stringify(response));
 }
 `,
     );
@@ -181,7 +189,7 @@ for await (const line of createInterface({ input: process.stdin })) {
       compiler.update("ok", 3);
       await until(() => results.length === 1);
       expect(results[0][0]).toBe(3);
-      expect(results[0][1]).toHaveProperty("preview.width", 100);
+      expect(results[0][1]).toHaveProperty("update.preview.width", 100);
       compiler.update("crash", 4);
       await until(() => results.length === 2);
       expect(results[1][1]).toBeInstanceOf(Error);
@@ -193,8 +201,8 @@ for await (const line of createInterface({ input: process.stdin })) {
       expect(requests.filter((r) => r.xml === "crash")).toHaveLength(2);
       expect(requests.some((r) => r.xml === "invalid")).toBe(false);
       expect(requests[0].pid).toBe(requests[1].pid);
-      // Discarded version 1 must not teach the worker that the CLI has its resources.
-      expect(requests[1].knownResources).toEqual([]);
+      // Discarded version 1 must never become the next patch base.
+      expect(requests[1].baseVersion).toBeNull();
       compiler.update("slow", 5);
       compiler.close();
       await Bun.sleep(200);
@@ -203,7 +211,7 @@ for await (const line of createInterface({ input: process.stdin })) {
       compiler.close();
     }
   });
-  test("restarts a failed worker once, preserving known resources and using the newest input", async () => {
+  test("restarts a failed worker once, restoring a snapshot for the newest input", async () => {
     const results: [number, WorkerCompilation | Error][] = [];
     const compiler = previewCompiler(root, (version, result) => results.push([version, result]));
     try {
@@ -215,14 +223,36 @@ for await (const line of createInterface({ input: process.stdin })) {
       await until(() => results.length === 2);
       expect(results[1][0]).toBe(3);
       const result = results[1][1] as WorkerCompilation;
-      expect(Object.keys(result.resources)).toEqual(["C"]);
+      expect(result.update?.type).toBe("snapshot");
+      expect(Object.keys(result.update?.resources ?? {}).sort()).toEqual(["A", "C"]);
       const requests = (await Bun.file(join(root, "requests")).text())
         .trim()
         .split("\n")
         .map((line) => JSON.parse(line));
       expect(requests.map((r) => r.version)).toEqual([1, 2, 3]);
       expect(requests[0].pid).not.toBe(requests[2].pid);
-      expect(requests[2].knownResources.sort()).toEqual(["A", "B"]);
+      expect(requests[2].baseVersion).toBe(1);
+    } finally {
+      compiler.close();
+    }
+  });
+  test("malformed worker updates retry once without corrupting the last published scene", async () => {
+    const results: (WorkerCompilation | Error)[] = [];
+    const compiler = previewCompiler(root, (_version, result) => results.push(result));
+    try {
+      compiler.update("ok", 1);
+      await until(() => results.length === 1);
+      compiler.update("changed missing", 2);
+      await until(() => results.length === 2);
+      expect(results[1]).toBeInstanceOf(Error);
+      compiler.update("changed", 3);
+      await until(() => results.length === 3);
+      expect((results[2] as WorkerCompilation).update?.type).toBe("snapshot");
+      const requests = (await Bun.file(join(root, "requests")).text())
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      expect(requests.map((r) => r.baseVersion)).toEqual([null, 1, 1, 1]);
     } finally {
       compiler.close();
     }

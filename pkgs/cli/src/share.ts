@@ -1,92 +1,68 @@
-import type {
-  CollectionPatch,
-  Keyed,
-  PatchEvent,
-  PreviewEvent,
-  Resources,
-  SharedPreviewDto,
-  SnapshotEvent,
-  StateDto,
-  WorkerCompilation,
-} from "@mekuru/protocol";
+import type { CollectionPatch, Keyed, PreviewEvent, Resources, SharedPreviewDto, SnapshotEvent, StateDto, WorkerCompilation } from "@mekuru/protocol";
 
 export interface SharedPreview {
   preview: SharedPreviewDto;
   resources: Resources;
 }
 
-/** Accept only a published success and retain exactly its referenced resources. */
-export const sharePreview = (result: WorkerCompilation, previous: SharedPreview | null): SharedPreview => {
-  if (!result.preview) throw new Error("missing preview");
-  const resources: Resources = {};
-  for (const key of new Set(result.preview.elements.flatMap((e) => e.drawings))) {
-    const ops = Object.hasOwn(result.resources, key) ? result.resources[key] : previous?.resources[key];
-    if (!ops) throw new Error(`missing drawing resource: ${key}`);
-    resources[key] = ops;
-  }
-  return { preview: { ...result.preview, version: result.version }, resources };
+const applyCollection = <T extends Keyed<unknown>>(before: T[], delta: CollectionPatch<T>): T[] => {
+  if (!delta.upsert.length && !delta.remove.length && !delta.order) return before;
+  const entries = new Map(before.map((e) => [e.key, e]));
+  for (const key of delta.remove) entries.delete(key);
+  for (const entry of delta.upsert) entries.set(entry.key, entry);
+  const order = delta.order ?? before.map((e) => e.key).filter((key) => entries.has(key));
+  if (order.length !== entries.size || new Set(order).size !== order.length || order.some((key) => !entries.has(key)))
+    throw new Error("invalid compiler preview order");
+  return order.map((key) => entries.get(key) as T);
 };
 
-const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-export const sameScene = (before: SharedPreview, after: SharedPreview): boolean => {
-  return same({ ...before.preview, version: 0 }, { ...after.preview, version: 0 });
+/** Retain a reconnect snapshot by applying Rust's patch; never diff or encode the full scene on an edit. */
+export const acceptPreview = (before: SharedPreview | null, result: WorkerCompilation): SharedPreview | null => {
+  const { update, previewVersion } = result;
+  if (!update) {
+    if (previewVersion !== null && previewVersion !== before?.preview.version) throw new Error("missing compiler preview update");
+    return before;
+  }
+  if (previewVersion === null) throw new Error("failed compilation included a preview update");
+  let preview: SharedPreviewDto;
+  let resources: Resources;
+  if (update.type === "snapshot") {
+    if (!update.preview) throw new Error("missing compiler preview");
+    preview = update.preview;
+    resources = update.resources;
+  } else if (update.type === "patch") {
+    if (!before || before.preview.version !== update.baseVersion || update.version <= update.baseVersion) throw new Error("compiler preview version mismatch");
+    preview = {
+      ...update.scene,
+      version: update.version,
+      elements: applyCollection(before.preview.elements, update.elements),
+      timeline: {
+        nodes: applyCollection(before.preview.timeline.nodes, update.nodes),
+        clips: applyCollection(before.preview.timeline.clips, update.clips),
+      },
+    };
+    resources = { ...before.resources, ...update.resources };
+    for (const key of update.removedResources) delete resources[key];
+  } else throw new Error("unknown compiler preview update");
+  if (preview.version !== previewVersion || previewVersion !== result.version) throw new Error("compiler preview version mismatch");
+  for (const entries of [preview.elements, preview.timeline.nodes, preview.timeline.clips]) {
+    if (entries.some((e) => !e.key) || new Set(entries.map((e) => e.key)).size !== entries.length) throw new Error("invalid compiler preview keys");
+  }
+  const kept: Resources = {};
+  for (const element of preview.elements) {
+    if (!Array.isArray(element.drawings)) throw new Error("missing compiler drawings");
+    for (const key of element.drawings) {
+      if (!Object.hasOwn(resources, key) || !Array.isArray(resources[key])) throw new Error(`missing drawing resource: ${key}`);
+      kept[key] = resources[key];
+    }
+  }
+  return { preview, resources: kept };
 };
-export const collectionPatch = <T extends Keyed<unknown>>(before: T[], after: T[]): CollectionPatch<T> => {
-  const old = new Map(before.map((e) => [e.key, e]));
-  const next = new Set(after.map((e) => e.key));
-  const order = after.map((e) => e.key);
-  return {
-    upsert: after.filter((e) => !same(old.get(e.key), e)),
-    remove: before.filter((e) => !next.has(e.key)).map((e) => e.key),
-    ...(same(
-      before.map((e) => e.key),
-      order,
-    )
-      ? {}
-      : { order }),
-  };
-};
+
 export const snapshot = (state: StateDto, shared: SharedPreview | null): SnapshotEvent => ({
   type: "snapshot",
   state,
   preview: shared?.preview ?? null,
   resources: shared?.resources ?? {},
 });
-export const patch = (state: StateDto, before: SharedPreview, after: SharedPreview): PatchEvent => {
-  const a = before.preview;
-  const b = after.preview;
-  return {
-    type: "patch",
-    state,
-    baseVersion: a.version,
-    version: b.version,
-    scene: { width: b.width, height: b.height, fps: b.fps, duration: b.duration },
-    elements: collectionPatch(a.elements, b.elements),
-    nodes: collectionPatch(a.timeline.nodes, b.timeline.nodes),
-    clips: collectionPatch(a.timeline.clips, b.timeline.clips),
-    resources: Object.fromEntries(Object.entries(after.resources).filter(([key]) => !Object.hasOwn(before.resources, key))),
-    removedResources: Object.keys(before.resources).filter((key) => !Object.hasOwn(after.resources, key)),
-  };
-};
 export const serializeEvent = (event: PreviewEvent) => `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
-// Account for the full event without serializing unchanged path data on each edit.
-const resourceLengths = new WeakMap<object, number>();
-const resourceLength = (ops: Resources[string]) => {
-  let length = resourceLengths.get(ops);
-  if (length === undefined) {
-    length = Buffer.byteLength(JSON.stringify(ops));
-    resourceLengths.set(ops, length);
-  }
-  return length;
-};
-/** The selected event is serialized once, then broadcast verbatim to all viewers. */
-export const previewEvent = (state: StateDto, before: SharedPreview | null, after: SharedPreview): string => {
-  if (!before) return serializeEvent(snapshot(state, after));
-  const delta = serializeEvent(patch(state, before, after));
-  const entries = Object.entries(after.resources);
-  const fullSize =
-    Buffer.byteLength(serializeEvent({ ...snapshot(state, after), resources: {} })) +
-    entries.reduce((size, [key, ops]) => size + Buffer.byteLength(JSON.stringify(key)) + 1 + resourceLength(ops), 0) +
-    Math.max(0, entries.length - 1);
-  return Buffer.byteLength(delta) < fullSize ? delta : serializeEvent(snapshot(state, after));
-};

@@ -1,8 +1,8 @@
 import type { WorkerCompilation, StateDto } from "@mekuru/protocol";
 
-export const compiledState = (state: StateDto, version: number, result: WorkerCompilation): StateDto => ({
+export const compiledState = (state: StateDto, result: WorkerCompilation): StateDto => ({
   ...state,
-  status: result.preview ? "ready" : "error",
+  status: result.previewVersion !== null ? "ready" : "error",
   diagnostics: result.diagnostics,
-  previewVersion: result.preview ? version : state.previewVersion,
+  previewVersion: result.previewVersion ?? state.previewVersion,
 });

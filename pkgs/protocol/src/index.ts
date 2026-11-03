@@ -32,15 +32,18 @@ export type Resources = Record<string, DrawOp[]>;
 export interface WorkerRequest {
   version: number;
   xml: string;
-  knownResources: string[];
+  /** Last scene accepted by the CLI, never an intermediate discarded result. */
+  baseVersion: number | null;
 }
 export interface WorkerCompilation {
   version: number;
-  preview: Omit<SharedPreviewDto, "version"> | null;
+  /** null on compilation failure; unchanged scenes retain the acknowledged version. */
+  previewVersion: number | null;
   diagnostics: Diagnostic[];
-  resources: Resources;
-  stats: { drawHits: number; drawMisses: number; compileMs: number };
+  update: PreviewUpdate | null;
+  stats: { drawHits: number; drawMisses: number; compileMs: number; diffMs: number };
 }
+export type PreviewUpdate = Omit<SnapshotEvent, "state"> | Omit<PatchEvent, "state">;
 export interface CollectionPatch<T> {
   upsert: T[];
   remove: string[];

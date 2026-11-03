@@ -5,7 +5,7 @@ import { sendFile, inside } from "./files.ts";
 import { mkdirSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { previewCompiler } from "./preview.ts";
-import { previewEvent, serializeEvent, sharePreview, sameScene, snapshot, type SharedPreview } from "./share.ts";
+import { serializeEvent, snapshot, type SharedPreview } from "./share.ts";
 import type { Diagnostic, StateDto } from "@mekuru/protocol";
 
 export interface ServerOptions {
@@ -66,7 +66,7 @@ export const startServer = async (opts: ServerOptions): Promise<Server> => {
     for (const client of clients) client.enqueue(bytes);
   };
   let started = Date.now();
-  const compiler = previewCompiler(root, (version, result) => {
+  const compiler = previewCompiler(root, (version, result, nextShared) => {
     if (closed || version !== current.version) return;
     let event: string | undefined;
     if (result instanceof Error) {
@@ -74,21 +74,15 @@ export const startServer = async (opts: ServerOptions): Promise<Server> => {
       current = { ...current, status: "error", diagnostics: [] };
       log(`error: the preview failed\n${result.message}`);
     } else {
-      compileError = result.preview ? null : result.diagnostics.map(formatDiagnostic).join("\n");
-      current = { ...compiledState(current, version, result), error: scriptError ?? compileError };
-      if (result.preview) {
-        const next = sharePreview(result, shared);
-        if (shared && sameScene(shared, next)) {
-          current = { ...current, previewVersion: shared.preview.version };
-        } else {
-          event = previewEvent(current, shared, next);
-          shared = next;
-        }
-      }
+      compileError = result.previewVersion !== null ? null : result.diagnostics.map(formatDiagnostic).join("\n");
+      current = { ...compiledState(current, result), error: scriptError ?? compileError };
+      shared = nextShared;
+      if (result.update) event = serializeEvent({ ...result.update, state: current });
       const warnings = result.diagnostics.filter((d) => d.severity === "warning").length;
-      const head = result.preview
-        ? `preview updated in ${seconds(started)}${warnings ? ` (${warnings} warning${warnings > 1 ? "s" : ""})` : ""}`
-        : "error: the preview failed";
+      const head =
+        result.previewVersion !== null
+          ? `preview updated in ${seconds(started)}${warnings ? ` (${warnings} warning${warnings > 1 ? "s" : ""})` : ""}`
+          : "error: the preview failed";
       log([head, ...result.diagnostics.map((d) => `  ${formatDiagnostic(d)}`)].join("\n"));
     }
     emit(event);
@@ -150,34 +144,21 @@ export const startServer = async (opts: ServerOptions): Promise<Server> => {
   }, 15_000);
   cleanup.push(() => clearInterval(keepAlive));
 
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  cleanup.push(() => clearTimeout(timer));
-  let readVersion = 0;
-  const changed = () => {
-    const version = ++readVersion;
-    clearTimeout(timer);
-    timer = setTimeout(async () => {
-      let text: string;
-      try {
-        text = await Bun.file(xmlPath).text();
-        if (closed || version !== readVersion) return;
-      } catch {
-        return;
-      }
-      writes++;
-      scriptError = null;
-      if (text === xml) {
-        log("the XML has not changed");
-        emit();
-        return;
-      }
-      xml = text;
-      compileError = null;
-      started = Date.now();
-      current = { ...current, version: current.version + 1, status: "building", diagnostics: [] };
+  const changed = (text: string) => {
+    if (closed) return;
+    writes++;
+    scriptError = null;
+    if (text === xml) {
+      log("the XML has not changed");
       emit();
-      compiler.update(xml, current.version);
-    }, 100);
+      return;
+    }
+    xml = text;
+    compileError = null;
+    started = Date.now();
+    current = { ...current, version: current.version + 1, status: "building", diagnostics: [] };
+    emit();
+    compiler.update(xml, current.version);
   };
   try {
     cleanup.push(watchXml(xmlPath, changed));

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { patch, sharePreview, snapshot } from "../../cli/src/share.ts";
+import { patch, sharePreview, snapshot } from "../../cli/test/fixtures/sharing.ts";
 import { compilation, element, resources, state } from "../../cli/test/fixtures/preview.ts";
 import type { PreviewDto } from "@mekuru/protocol";
 import { previewStore } from "../src/logic/preview";
