@@ -1,7 +1,7 @@
-import type { DrawOp, Resources, SharedElement, StateDto, SharedPreviewDto } from "@mekuru/protocol";
+import type { DrawOp, Resources, SceneElement, StateDto, PreviewDto } from "@mekuru/protocol";
 export const path = (d: string): DrawOp => ({ kind: "path", d, color: "#000000ff", stroke: null });
 export const resources: Resources = { A: [path("M0 0L1 1".repeat(100))], B: [path("M0 0L2 2".repeat(100))], C: [path("M0 0L3 3".repeat(100))] };
-export const element = (key: string, drawings: string[], start = 0): SharedElement => ({
+export const element = (key: string, drawings: string[], start = 0): SceneElement => ({
   key,
   id: Number(key.replace(/\D/g, "")),
   kind: "view",
@@ -27,7 +27,7 @@ export const state = (version = 1): StateDto => ({ path: "video.xml", version, p
 export interface FixtureCompilation {
   version: number;
   diagnostics: StateDto["diagnostics"];
-  preview: Omit<SharedPreviewDto, "version"> | null;
+  preview: Omit<PreviewDto, "version"> | null;
   resources: Resources;
   stats: { drawHits: number; drawMisses: number; compileMs: number };
 }

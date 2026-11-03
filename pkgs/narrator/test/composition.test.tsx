@@ -66,9 +66,8 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
       sources.push(line.audio);
       expect(Object.isFrozen(line)).toBe(true);
       expect(Object.isFrozen(line.audio)).toBe(true);
-      expect(line.len).toBe(line.audio.len);
       return (
-        <dur len={line.len}>
+        <dur len={line.audio.len}>
           <stack>
             {/* biome-ignore lint/complexity/noUselessFragments: verify transparent wrappers */}
             <>

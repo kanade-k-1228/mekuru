@@ -1,7 +1,7 @@
 /** @jsxImportSource @mekuru/types */
 import { cacheFile, synthesized } from "./cache.ts";
-import { Audio, readAudio, type AudioSource } from "@mekuru/audio";
-import { fps, isDraft, waitFor, type At, type JSX, type Node, type Time } from "@mekuru/types";
+import { readAudio, type AudioSource } from "@mekuru/audio";
+import { fps, isDraft, waitFor, type At, type Node, type Time } from "@mekuru/types";
 import { speechText } from "./text.tsx";
 
 export { subtitleText } from "./text.tsx";
@@ -62,23 +62,9 @@ export const prepare = async (
 
 export interface PreparedLine {
   readonly audio: AudioSource;
-  readonly len: number;
   readonly display: Node;
 }
 
-const prepared = (audio: AudioSource, display: Node): PreparedLine =>
-  Object.freeze({
-    audio,
-    get len() {
-      return audio.len;
-    },
-    display,
-  });
-
-/** The JSX convenience API uses exactly the same resource as custom narrators. */
-export const line = async (...args: Parameters<typeof prepare>): Promise<JSX.Element> => {
-  const result = await prepare(...args);
-  return <Audio source={result.audio} id={args[1].id} at={args[1].at} />;
-};
+const prepared = (audio: AudioSource, display: Node): PreparedLine => Object.freeze({ audio, display });
 
 export { defineSpeech } from "./component.tsx";

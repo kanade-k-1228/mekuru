@@ -3,9 +3,8 @@ use clap::Parser;
 use mekuru_compiler::Project;
 use mekuru_compiler::lang::diag::Diag;
 use mekuru_compiler::pipeline::{self, RenderCtx, RenderOptions};
-use mekuru_compiler::prepare::{Prepared, prepare};
+use mekuru_compiler::prepare::prepare;
 use mekuru_compiler::progress::{Progress, Stage};
-use mekuru_compiler::schedule::Schedule;
 use std::cell::Cell;
 use std::io::{BufRead, IsTerminal, Write};
 use std::path::{Path, PathBuf};
@@ -113,7 +112,7 @@ fn run(cli: Cli) -> Result<()> {
         ..
     } = cli;
     if preview_worker {
-        let mut worker = mekuru_compiler::preview::Worker::default();
+        let mut worker = mekuru_compiler::preview::Session::default();
         let mut out = std::io::BufWriter::new(std::io::stdout().lock());
         for line in std::io::stdin().lock().lines() {
             let request = serde_json::from_str(&line?)?;
@@ -139,7 +138,16 @@ fn run(cli: Cli) -> Result<()> {
         serde_json::to_writer(std::io::stdout().lock(), &result)?;
         return Ok(());
     }
-    let p = load(&script, root.as_deref())?;
+    let project = Project::load(&script, root.as_deref())?;
+    let cache = project.cache();
+    let printer = Printer::new();
+    let compilation = mekuru_compiler::analysis::Compilation::new(project, |script| prepare(script, &cache, &|e| printer.emit(e)));
+    printer.done();
+    let p = &compilation.project;
+    print_diags(p, &compilation.diagnostics);
+    let Some(resolved) = &compilation.resolved else {
+        bail!("cannot continue because of the errors above");
+    };
     let mut opts = if preview { RenderOptions::preview() } else { RenderOptions::default() };
     opts.scale = scale.unwrap_or(opts.scale);
     opts.fps = fps.or(opts.fps);
@@ -152,11 +160,10 @@ fn run(cli: Cli) -> Result<()> {
         bail!("--scale must be between 0.05 and 4");
     }
     let out = output.unwrap_or_else(|| p.default_output());
-    let (prepared, sched) = prepare_and_schedule(&p)?;
     let ctx = RenderCtx {
-        project: &p,
-        prepared: &prepared,
-        sched: &sched,
+        project: p,
+        prepared: &resolved.prepared,
+        sched: &resolved.schedule,
     };
     let printer = Printer::new();
     let stats = pipeline::render_video(&ctx, &out, &opts, &|e| printer.emit(e))?;
@@ -174,31 +181,6 @@ fn run(cli: Cli) -> Result<()> {
         stats.elapsed
     );
     Ok(())
-}
-
-fn load(script: &Path, root: Option<&Path>) -> Result<Project> {
-    let p = Project::load(script, root)?;
-    print_diags(&p, &p.diags);
-    if p.has_errors() {
-        bail!("the script has errors");
-    }
-    Ok(p)
-}
-
-fn prepare_and_schedule(p: &Project) -> Result<(Prepared, Schedule)> {
-    let printer = Printer::new();
-    let prepared = prepare(&p.script, &p.cache(), &|e| printer.emit(e));
-    printer.done();
-    print_diags(p, &prepared.diags);
-    if prepared.diags.iter().any(Diag::is_error) {
-        bail!("cannot continue because of the errors above");
-    }
-    let sched = p.schedule(&prepared);
-    print_diags(p, &sched.diags);
-    if sched.diags.iter().any(Diag::is_error) {
-        bail!("cannot continue because of the errors above");
-    }
-    Ok((prepared, sched))
 }
 
 fn print_diags(p: &Project, diags: &[Diag]) {

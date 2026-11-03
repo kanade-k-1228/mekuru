@@ -19,8 +19,7 @@ bun add -d @mekuru/types @mekuru/speech
 次の再利用できるアダプターを `src/speech.tsx` に保存します。
 
 ```tsx
-import type { FC } from "@mekuru/types";
-import { line, voiceOf, type SpeechProps } from "@mekuru/speech";
+import { defineSpeech, prepare, voiceOf, type SpeechProps } from "@mekuru/speech";
 
 interface CustomSpeechProps extends SpeechProps {
   speaker: string;
@@ -28,20 +27,20 @@ interface CustomSpeechProps extends SpeechProps {
 
 type Synthesize = (text: string, output: string, voice: { speaker: string }) => Promise<void>;
 
-export const createSpeech = (synthesize: Synthesize): FC<CustomSpeechProps> =>
-  async (props) => {
+export const createSpeech = (synthesize: Synthesize) =>
+  defineSpeech<CustomSpeechProps>(async (props) => {
     const voice = voiceOf(props);
-    return line("my-engine", props, props.speaker, voice, (text, output) =>
+    return prepare("my-engine", props, props.speaker, voice, (text, output) =>
       synthesize(text, output, voice),
     );
-  };
+  });
 ```
 
-`createSpeech()` に WAV を書き出すコールバックを渡し、返された部品を `<mekuru>` 内に置きます。`"my-engine"` は自分のエンジンの識別名に置き換えます。`line()` は JSX（`<dur><audio /></dur>`）を返し、`writeXml()`・`toXml()` の展開中にフレームレートを参照します。
+`createSpeech()` に WAV を書き出すコールバックを渡し、返された部品を `<mekuru>` 内に置きます。`"my-engine"` は自分のエンジンの識別名に置き換えます。`defineSpeech()` は準備済みの音声を JSX（`<dur><audio /></dur>`）として返し、`writeXml()`・`toXml()` の展開中にフレームレートを参照します。
 
 ## 詳しい使い方
 
-### line(kind, props, who, voice, synthesize)
+### prepare(kind, props, who, voice, synthesize)
 
 - `kind`: キャッシュのキーに使うエンジンの識別名。
 - `props`: セリフと時間の設定を含む `SpeechProps`。
@@ -70,12 +69,11 @@ export const createSpeech = (synthesize: Synthesize): FC<CustomSpeechProps> =>
 エンジンの `Voisona.prepare(props)`・`Voicevox.prepare(props)`・`Coeiroink.prepare(props)`・`StyleBertVits2.prepare(props)` は `PreparedLine` を返します。`children` と声・読み・長さの設定を渡し、`id`・`at` は返された素材を配置する側に付けます。`<mekuru>` 内の非同期部品で呼びます。
 
 - `line.audio`: 読み取り専用の `AudioSource`（型は `@mekuru/audio`）。`status` は `draft` または `ready`。`len` は句末の間を含むフレーム数、`label` と `volume` は再生時の設定。完成版の `src` は絶対パスです。
-- `line.len`: `line.audio.len` から取得する長さ。
 - `line.display`: ルビの表記部分・空白・改行を保持した表示用 Node。文字コンポーネントは準備時に一度だけ展開します。
 - `<Audio source={line.audio} id="line" />`: 素材を既存の `<dur><audio /></dur>` に展開します。
 - `readAudio(src, { gap?, len?, label?, volume? })`: 既存の WAV から同じ素材を作ります。`gap` の既定値は 0。相対パスは構築開始時のプロジェクトが基準です。
 
-独自のエンジンでは `prepare(kind, props, who, voice, synthesize)` を使います。引数は `line` と共通で、JSX の代わりに `PreparedLine` を返します。`line` と各エンジンの JSX 部品は、この素材を `Audio` に渡す簡便な API です。
+独自エンジンは `prepare()` で `{ audio, display }` を作り、`defineSpeech()` で JSX と `.prepare()` を提供します。旧 `line()` はこの構成に、旧 `line.len` は `line.audio.len` に移行してください。
 
 下書きでは見積もりの素材を返して合成を予約し、完成版では実際の WAV と長さを返します。どちらも同じ部品で表示できます。キャッシュ基準・進捗・実行中の合成は一回の構築に属し、import 時点の作業フォルダには依存しません。
 

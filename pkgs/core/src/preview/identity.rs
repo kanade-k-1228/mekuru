@@ -12,31 +12,25 @@ struct Node {
     children: Vec<Node>,
 }
 impl Node {
-    fn parse(n: roxmltree::Node) -> Self {
-        let children: Vec<_> = n.children().filter(|c| c.is_element()).map(Self::parse).collect();
-        let mut attrs: Vec<_> = n.attributes().map(|a| (a.name(), a.value())).collect();
+    fn parse(n: &crate::lang::ast::Tag) -> Self {
+        let children: Vec<_> = n.tags().map(Self::parse).collect();
+        let mut attrs: Vec<_> = n.attrs.iter().map(|a| (&a.key, &a.value)).collect();
         attrs.sort();
-        // Ignore indentation and attribute order, but keep text, including preformatted text.
-        let text: Vec<_> = n
-            .children()
-            .filter(|c| c.is_text())
-            .filter_map(|c| c.text())
-            .filter(|s| !s.trim().is_empty())
-            .collect();
+        let text = n.text().display();
         let fingerprint = sha256_hex(
             format!(
                 "{:?}|{attrs:?}|{text:?}|{:?}",
-                n.tag_name().name(),
+                n.name.as_str(),
                 children.iter().map(|c| &c.fingerprint).collect::<Vec<_>>()
             )
             .as_bytes(),
         );
         Self {
             key: String::new(),
-            tag: n.tag_name().name().into(),
+            tag: n.name.as_str().into(),
             id: n.attribute("id").map(str::to_owned),
             fingerprint,
-            offset: n.range().start,
+            offset: n.head.lo as usize,
             children,
         }
     }
@@ -59,9 +53,8 @@ impl Default for Identity {
     }
 }
 impl Identity {
-    pub fn update(&mut self, xml: &str) -> HashMap<usize, String> {
-        let doc = roxmltree::Document::parse(xml).expect("validated XML");
-        let mut root = Node::parse(doc.root_element());
+    pub fn update(&mut self, syntax: &crate::lang::ast::Tag) -> HashMap<usize, String> {
+        let mut root = Node::parse(syntax);
         let mut named = HashMap::new();
         if let Some(old) = &self.previous {
             collect_named(old, "root", &mut named);
@@ -153,11 +146,14 @@ fn assign(n: &mut Node, old: Option<&Node>, scope: &str, named: &HashMap<(String
 mod tests {
     use super::*;
     fn keys(i: &mut Identity, xml: &str) -> Vec<String> {
-        let map = i.update(xml);
-        let doc = roxmltree::Document::parse(xml).unwrap();
-        doc.descendants()
-            .filter(|n| n.has_tag_name("text"))
-            .map(|n| map[&n.range().start].clone())
+        let (document, _) = crate::lang::xml::parse(&format!("<mekuru>{xml}</mekuru>"));
+        let map = i.update(&document.root);
+        document
+            .root
+            .descendants()
+            .into_iter()
+            .filter(|n| n.name == "text")
+            .map(|n| map[&(n.head.lo as usize)].clone())
             .collect()
     }
     #[test]

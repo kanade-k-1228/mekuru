@@ -272,6 +272,74 @@ impl Ctx<'_> {
             "dur" => Some(Flow::Dur),
             _ => None,
         };
+        let (mut style, anchor, deco) = self.appearance(name, flow, &at, diags);
+        let times = at.times(diags);
+        let hold = (flow == Some(Flow::Hold)).then(|| {
+            at.require("at", diags);
+            at.frames("at", diags).unwrap_or(0)
+        });
+        let len = (flow == Some(Flow::Dur))
+            .then(|| at.require("len", diags).and(at.frames("len", diags)))
+            .flatten();
+        let rotate = at.num("rotate", diags).filter(|d| *d % 360.0 != 0.0);
+        let kind = match flow {
+            Some(f) => Kind::Group(f),
+            None => Kind::Leaf(self.leaf(tag, &at, &mut style, diags)?),
+        };
+        let mut children = vec![];
+        let mut holds = vec![];
+        for c in &tag.children {
+            let crate::lang::ast::Child::Tag(t) = c else { continue };
+            if is_speed(t) {
+                continue;
+            }
+            let Some(n) = self.node(t, diags) else { continue };
+            for mut n in n.unfold() {
+                if flow.is_some_and(Flow::overlays) && n.hold.is_none() {
+                    in_cell(&mut n);
+                }
+                let after = std::mem::take(&mut n.holds);
+                match flow {
+                    Some(_) => children.push(n),
+                    None => holds.push(n),
+                }
+                children.extend(after);
+            }
+        }
+        if let Some(n) = len {
+            children.iter_mut().filter(|c| c.hold.is_none()).for_each(|c| c.dur = Dur::Len(n));
+        }
+        let timed = children.iter().any(|c: &VNode| c.hold.is_none() && c.timed());
+        let dur = self.length(tag, &kind, len, timed, diags);
+        let split = hold.is_some() || children.iter().any(|c: &VNode| c.own);
+        let own = split || times.any() || matches!(kind, Kind::Leaf(Leaf::Video(..) | Leaf::Audio(_)) | Kind::Group(Flow::Repeat | Flow::Dur));
+        let n = VNode {
+            span: tag.span,
+            head: tag.head,
+            style,
+            anchor,
+            rotate,
+            deco,
+            times,
+            dur,
+            kind,
+            children,
+            own,
+            split,
+            hold,
+            holds,
+        };
+        if n.rotate.is_some() && n.has_video() {
+            diags.push(Diag::new(
+                "E322",
+                at.span("rotate"),
+                "`rotate` cannot turn a `<video>` (or a group that has one)",
+            ));
+        }
+        Some(n)
+    }
+
+    fn appearance(&self, name: &str, flow: Option<Flow>, at: &Attrs, diags: &mut Vec<Diag>) -> (Style, Option<Anchor>, Deco) {
         // taffy 0.15 defaults to `Position::Static`; keep every box a containing block so `x`/`y` stay relative to the parent.
         let mut style = Style {
             position: Position::Relative,
@@ -379,70 +447,7 @@ impl Ctx<'_> {
             stroke_width: if text { None } else { at.num("stroke-width", diags) },
             radius: at.num("radius", diags).unwrap_or(0.0),
         };
-        let times = at.times(diags);
-        let hold = (flow == Some(Flow::Hold)).then(|| {
-            at.require("at", diags);
-            at.frames("at", diags).unwrap_or(0)
-        });
-        let len = (flow == Some(Flow::Dur))
-            .then(|| at.require("len", diags).and(at.frames("len", diags)))
-            .flatten();
-        let rotate = at.num("rotate", diags).filter(|d| *d % 360.0 != 0.0);
-        let kind = match flow {
-            Some(f) => Kind::Group(f),
-            None => Kind::Leaf(self.leaf(tag, &at, &mut style, diags)?),
-        };
-        let mut children = vec![];
-        let mut holds = vec![];
-        for c in &tag.children {
-            let crate::lang::ast::Child::Tag(t) = c else { continue };
-            if is_speed(t) {
-                continue;
-            }
-            let Some(n) = self.node(t, diags) else { continue };
-            for mut n in n.unfold() {
-                if flow.is_some_and(Flow::overlays) && n.hold.is_none() {
-                    in_cell(&mut n);
-                }
-                let after = std::mem::take(&mut n.holds);
-                match flow {
-                    Some(_) => children.push(n),
-                    None => holds.push(n),
-                }
-                children.extend(after);
-            }
-        }
-        if let Some(n) = len {
-            children.iter_mut().filter(|c| c.hold.is_none()).for_each(|c| c.dur = Dur::Len(n));
-        }
-        let timed = children.iter().any(|c: &VNode| c.hold.is_none() && c.timed());
-        let dur = self.length(tag, &kind, len, timed, diags);
-        let split = hold.is_some() || children.iter().any(|c: &VNode| c.own);
-        let own = split || times.any() || matches!(kind, Kind::Leaf(Leaf::Video(..) | Leaf::Audio(_)) | Kind::Group(Flow::Repeat | Flow::Dur));
-        let n = VNode {
-            span: tag.span,
-            head: tag.head,
-            style,
-            anchor,
-            rotate,
-            deco,
-            times,
-            dur,
-            kind,
-            children,
-            own,
-            split,
-            hold,
-            holds,
-        };
-        if n.rotate.is_some() && n.has_video() {
-            diags.push(Diag::new(
-                "E322",
-                at.span("rotate"),
-                "`rotate` cannot turn a `<video>` (or a group that has one)",
-            ));
-        }
-        Some(n)
+        (style, anchor, deco)
     }
 
     pub(super) fn length(&self, tag: &Tag, kind: &Kind, len: Option<i64>, timed: bool, diags: &mut Vec<Diag>) -> Dur {

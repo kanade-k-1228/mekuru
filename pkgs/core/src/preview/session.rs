@@ -42,7 +42,7 @@ pub(super) struct Drawing {
     bytes: usize,
 }
 
-pub struct Worker {
+pub struct Session {
     pub(super) identities: Identity,
     drawings: Lru<String, Drawing>,
     used: HashMap<String, Drawing>,
@@ -50,12 +50,12 @@ pub struct Worker {
     candidate: Option<Published>,
     stats: Stats,
 }
-impl Default for Worker {
+impl Default for Session {
     fn default() -> Self {
         Self::new(64 * 1024 * 1024)
     }
 }
-impl Worker {
+impl Session {
     pub fn new(drawing_budget: usize) -> Self {
         Self {
             identities: Identity::default(),
@@ -78,7 +78,7 @@ impl Worker {
         }
         self.stats = Stats::default();
         let started = Instant::now();
-        let compilation = compile_internal(path, root, request.xml, Some(self));
+        let compilation = compile_internal(path, root, request.xml, self);
         self.stats.compile_ms = started.elapsed().as_secs_f64() * 1000.0;
         let diff_started = Instant::now();
         let used = std::mem::take(&mut self.used);

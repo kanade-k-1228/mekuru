@@ -19,8 +19,7 @@ Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` in `tsconfig.json`
 Save this reusable adapter as `src/speech.tsx`:
 
 ```tsx
-import type { FC } from "@mekuru/types";
-import { line, voiceOf, type SpeechProps } from "@mekuru/speech";
+import { defineSpeech, prepare, voiceOf, type SpeechProps } from "@mekuru/speech";
 
 interface CustomSpeechProps extends SpeechProps {
   speaker: string;
@@ -28,20 +27,20 @@ interface CustomSpeechProps extends SpeechProps {
 
 type Synthesize = (text: string, output: string, voice: { speaker: string }) => Promise<void>;
 
-export const createSpeech = (synthesize: Synthesize): FC<CustomSpeechProps> =>
-  async (props) => {
+export const createSpeech = (synthesize: Synthesize) =>
+  defineSpeech<CustomSpeechProps>(async (props) => {
     const voice = voiceOf(props);
-    return line("my-engine", props, props.speaker, voice, (text, output) =>
+    return prepare("my-engine", props, props.speaker, voice, (text, output) =>
       synthesize(text, output, voice),
     );
-  };
+  });
 ```
 
-Pass your WAV-writing callback to `createSpeech()` and use the returned component inside `<mekuru>`. Change `"my-engine"` to your engine's identifier. `line()` returns JSX (`<dur><audio /></dur>`) and needs the frame-rate context provided by `writeXml()` or `toXml()`.
+Pass your WAV-writing callback to `createSpeech()` and use the returned component inside `<mekuru>`. Change `"my-engine"` to your engine's identifier. `defineSpeech()` wraps the prepared audio in JSX (`<dur><audio /></dur>`) and needs the frame-rate context provided by `writeXml()` or `toXml()`.
 
 ## Detailed usage
 
-### line(kind, props, who, voice, synthesize)
+### prepare(kind, props, who, voice, synthesize)
 
 - `kind`: Engine identifier used in the cache key.
 - `props`: `SpeechProps`, including dialogue text and timing options.
@@ -70,12 +69,11 @@ On a cache miss, `writeXml()` writes a silent draft, then replaces it after synt
 `Voisona.prepare(props)`, `Voicevox.prepare(props)`, `Coeiroink.prepare(props)`, and `StyleBertVits2.prepare(props)` return a `PreparedLine`. Pass children, voice, pronunciation, and duration settings; put `id` and `at` on the components that place the result. Call preparation in an async component under `<mekuru>`.
 
 - `line.audio`: A readonly `AudioSource` (type exported by `@mekuru/audio`). `status` is `draft` or `ready`; `len` includes trailing silence in frames. `label` and `volume` describe playback. Ready sources have an absolute `src` path.
-- `line.len`: Reads `line.audio.len`.
 - `line.display`: Display nodes preserving ruby base text, whitespace, and breaks. Text components expand once during preparation.
 - `<Audio source={line.audio} id="line" />`: Emits existing `<dur><audio /></dur>` elements.
 - `readAudio(src, { gap?, len?, label?, volume? })`: Creates the same source from an existing WAV. The default gap is zero; relative paths use the project root captured at build start.
 
-Custom engines can call `prepare(kind, props, who, voice, synthesize)` with the same arguments as `line`, receiving a `PreparedLine` instead of JSX. `line` and the engine JSX components are conveniences that render the resource using `Audio`.
+Custom engines use `prepare()` to create `{ audio, display }` and `defineSpeech()` to expose a JSX component with a `.prepare()` method. Migrate `line()` callers to this composition and read duration from `line.audio.len` instead of the removed `line.len` getter.
 
 Draft preparation returns an estimated source and queues synthesis; the final pass returns the WAV and its actual duration. Both use the same presentation components. Cache roots, progress, and in-flight synthesis belong to the build, independent of the working directory at import time.
 
@@ -93,6 +91,6 @@ From `@mekuru/speech/engine`:
 
 ### Custom draft handling
 
-Without `line()`, use `isDraft()` and `waitFor()` from `@mekuru/types`: register the synthesis promise and return `<dur len={estimatedFrames}><audio draft label="..." /></dur>` for the draft, then audio with a completed `src` on the final pass. `label` selects the timeline's speech track. `waitFor()` schedules the final pass only within `writeXml()`.
+For custom preparation, use `isDraft()` and `waitFor()` from `@mekuru/types`: register the synthesis promise and return `<dur len={estimatedFrames}><audio draft label="..." /></dur>` for the draft, then audio with a completed `src` on the final pass. `label` selects the timeline's speech track. `waitFor()` schedules the final pass only within `writeXml()`.
 
 `Audio` and `readAudio` are provided by `@mekuru/audio`; `joinWavs` is provided by `@mekuru/audio/wav`.

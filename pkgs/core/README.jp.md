@@ -67,3 +67,7 @@ bun run build:release
 ビューアを `pkgs/core/viewer/` にビルドし、`build.rs` で実行ファイルへ埋め込みます。UI 変更後は実行ファイルも再ビルドしてください。release ビルドは UI 未生成なら失敗し、Rust だけの debug ビルドでは作成手順を表示します。CI はすべての OS 別バイナリへ UI を埋め込んでから梱包します。
 
 [XML構文](../../docs/reference/Syntax.jp.md)・[開発手順](../../docs/dev/Developer.jp.md)も参照してください。
+
+## プレビュープロトコルの移行
+
+`--emit-preview` は `{ preview, resources, diagnostics }` を返します。要素の `key` と `drawings` は必須で、描画IDから `resources` を参照します。旧 `ops`、ビューア専用 `chunks`、差分の `removedResources` は廃止しました。採用済みシーンが参照しないリソースは破棄してください。単発出力のバージョンは1、診断行番号は元のXMLに対応します。Rustの常駐コンパイラは旧 `Worker` から `preview::Session` に改名しました。

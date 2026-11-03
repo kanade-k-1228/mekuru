@@ -57,16 +57,16 @@ test("version mismatch requests a snapshot over WebSocket; reconnect and cleanup
     Events.all[0].receive(patch(state(2), a, b)); // Ignore queued patches until the fresh snapshot.
     expect(connection.preview).toBe(preview);
     Events.all[0].receive(snapshot(state(2), b));
-    expect(connection.previewVersion).toBe(2);
+    expect(connection.preview?.version).toBe(2);
     expect(connection.previewError).toBeNull();
     Events.all[0].onclose?.();
     expect(connection.conn).toBe("reconnecting");
     Events.all[0].receive(snapshot(state(), a)); // Closed sockets cannot roll state back.
-    expect(connection.previewVersion).toBe(2);
+    expect(connection.preview?.version).toBe(2);
     await Bun.sleep(1100);
     expect(Events.all).toHaveLength(2);
     Events.all[1].receive(snapshot(state(2), b));
-    expect(connection.previewVersion).toBe(2);
+    expect(connection.preview?.version).toBe(2);
     expect(connection.previewError).toBeNull();
     Events.all[1].onerror?.();
     close();

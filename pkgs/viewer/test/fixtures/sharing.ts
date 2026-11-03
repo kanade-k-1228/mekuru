@@ -1,9 +1,9 @@
 import { isDeepStrictEqual } from "node:util";
 import type { FixtureCompilation } from "./preview.ts";
-import type { CollectionPatch, Keyed, PatchEvent, PreviewEvent, Resources, SharedPreviewDto, SnapshotEvent, StateDto } from "@mekuru/protocol";
+import type { CollectionPatch, Keyed, PatchEvent, PreviewEvent, Resources, PreviewDto, SnapshotEvent, StateDto } from "@mekuru/protocol";
 
 export interface SharedPreview {
-  preview: SharedPreviewDto;
+  preview: PreviewDto;
   resources: Resources;
 }
 
@@ -57,7 +57,6 @@ export const patch = (state: StateDto, before: SharedPreview, after: SharedPrevi
     nodes: collectionPatch(a.timeline.nodes, b.timeline.nodes),
     clips: collectionPatch(a.timeline.clips, b.timeline.clips),
     resources: Object.fromEntries(Object.entries(after.resources).filter(([key]) => !Object.hasOwn(before.resources, key))),
-    removedResources: Object.keys(before.resources).filter((key) => !Object.hasOwn(after.resources, key)),
   };
 };
 export const serializeEvent = (event: PreviewEvent) => JSON.stringify(event);

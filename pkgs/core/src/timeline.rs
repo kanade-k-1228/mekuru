@@ -1,7 +1,7 @@
 use crate::{
     Project, analysis,
+    analysis::Diagnostic,
     ir::{ElemKind, NodeKind},
-    preview::Diagnostic,
     schedule::{Repeat, Schedule},
 };
 use serde::Serialize;
@@ -90,9 +90,9 @@ pub fn resolved(p: &Project, s: &Schedule) -> Timeline {
     }
 }
 pub fn compile(path: &Path, root: Option<&Path>, source: String) -> Compilation {
-    let (p, result, diags) = analysis::analyze(path, root, source);
+    let compilation = analysis::Compilation::inspect(path, root, source);
     Compilation {
-        timeline: result.map(|(_, s)| resolved(&p, &s)),
-        diagnostics: analysis::diagnostics(&p, &diags),
+        timeline: compilation.resolved.as_ref().map(|r| resolved(&compilation.project, &r.schedule)),
+        diagnostics: compilation.diagnostics(),
     }
 }

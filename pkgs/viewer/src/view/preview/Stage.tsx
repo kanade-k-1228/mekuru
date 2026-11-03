@@ -1,7 +1,8 @@
 /** @jsxImportSource react */
-import { useAtomValue } from "jotai";
+import { atom, useAtomValue } from "jotai";
 import { memo, useCallback, useEffect, useMemo, useRef, type CSSProperties, type Ref } from "react";
 import type { DrawOp, SceneElement, TextOp } from "@mekuru/protocol";
+import { resourcesAtom } from "../../logic/server";
 import { stageAtom, type Shown } from "../../logic/stage";
 
 import { attachTextFont, fileUrl, fallbackFont } from "../../logic/fonts";
@@ -102,20 +103,24 @@ export const Drawing = memo(({ ops, width, height }: { ops: DrawOp[]; width: num
   );
 });
 
-const Chunks = memo(({ chunks, width, height }: { chunks: NonNullable<SceneElement["chunks"]>; width: number; height: number }) => {
-  const counts = new Map<string, number>();
-  return chunks.map((chunk) => {
-    const occurrence = counts.get(chunk.id) ?? 0;
-    counts.set(chunk.id, occurrence + 1);
-    return <Drawing key={`${chunk.id}:${occurrence}`} ops={chunk.ops} width={width} height={height} />;
-  });
-});
+const Resource = ({ id, width, height }: { id: string; width: number; height: number }) => {
+  const resource = useMemo(() => atom((get) => get(resourcesAtom)[id]), [id]);
+  const ops = useAtomValue(resource);
+  return <Drawing ops={ops} width={width} height={height} />;
+};
 
-const Layer = memo(({ element, opacity, width, height }: { element: SceneElement; opacity: number; width: number; height: number }) => (
-  <div style={{ position: "absolute", inset: 0, opacity }}>
-    {element.chunks ? <Chunks chunks={element.chunks} width={width} height={height} /> : <Drawing ops={element.ops} width={width} height={height} />}
-  </div>
-));
+const Layer = memo(({ element, opacity, width, height }: { element: SceneElement; opacity: number; width: number; height: number }) => {
+  const counts = new Map<string, number>();
+  return (
+    <div style={{ position: "absolute", inset: 0, opacity }}>
+      {element.drawings.map((id) => {
+        const occurrence = counts.get(id) ?? 0;
+        counts.set(id, occurrence + 1);
+        return <Resource key={`${id}:${occurrence}`} id={id} width={width} height={height} />;
+      })}
+    </div>
+  );
+});
 
 const Media = ({ element, state, opacity }: { element: SceneElement; state: NonNullable<Shown["media"]>; opacity: number }) => {
   const ref = useRef<HTMLVideoElement | HTMLAudioElement>(null);
@@ -153,9 +158,9 @@ export const Stage = ({ width, height }: { width: number; height: number }) => {
     <div style={{ position: "relative", width, height, background: "black", overflow: "hidden" }}>
       {shown.map(({ element, opacity, media }) =>
         media ? (
-          <Media key={element.key ?? element.id} element={element} state={media} opacity={opacity} />
+          <Media key={element.key} element={element} state={media} opacity={opacity} />
         ) : (
-          <Layer key={element.key ?? element.id} element={element} opacity={opacity} width={width} height={height} />
+          <Layer key={element.key} element={element} opacity={opacity} width={width} height={height} />
         ),
       )}
     </div>

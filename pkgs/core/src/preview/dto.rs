@@ -1,17 +1,12 @@
 use serde::Serialize;
 #[derive(Clone, PartialEq, Serialize)]
 pub struct Compilation {
-    pub preview: Option<Preview>,
+    pub preview: Option<super::delta::SharedPreview>,
+    pub resources: super::delta::Resources,
     pub diagnostics: Vec<Diagnostic>,
 }
 
-#[derive(Clone, PartialEq, Serialize)]
-pub struct Diagnostic {
-    pub code: String,
-    pub severity: &'static str,
-    pub line: u32,
-    pub message: String,
-}
+pub use crate::analysis::Diagnostic;
 
 #[derive(Clone, PartialEq, Serialize)]
 pub struct Preview {
@@ -31,12 +26,8 @@ pub struct Element {
     pub(super) end: f64,
     pub(super) opacity: f32,
     pub(super) fades: Vec<[f64; 5]>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) ops: Option<Vec<Op>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) drawings: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) key: Option<String>,
+    pub(super) drawings: Vec<String>,
+    pub(super) key: String,
     pub(super) media: Option<Media>,
     pub(super) bounds: Option<[f32; 4]>,
     pub(super) repeat: Vec<[f64; 3]>,
@@ -112,8 +103,7 @@ pub struct Timeline {
 }
 #[derive(Clone, PartialEq, Serialize)]
 pub struct TimelineNode {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) key: Option<String>,
+    pub(super) key: String,
     pub(super) id: usize,
     pub(super) parent: Option<usize>,
     pub(super) depth: usize,
@@ -127,8 +117,7 @@ pub struct TimelineNode {
 }
 #[derive(Clone, PartialEq, Serialize)]
 pub struct Clip {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) key: Option<String>,
+    pub(super) key: String,
     pub(super) tag: String,
     pub(super) lane: &'static str,
     pub(super) line: u32,

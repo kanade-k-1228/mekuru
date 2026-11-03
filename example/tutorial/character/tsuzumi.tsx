@@ -6,7 +6,7 @@ import { Portrait, READING, Subtitle, type Line, type PortraitProps } from "../p
 export const Tsuzumi: FC<Line> = async ({ children, ...time }) => {
   const line = await Voisona.prepare({ name: "tsuzumi", voice: "suzuki-tsudumi_ja_JP", gap: 6, reading: READING, children });
   return (
-    <dur len={line.len} {...time}>
+    <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
         <Subtitle stroke="#2E5E8C">{line.display}</Subtitle>
