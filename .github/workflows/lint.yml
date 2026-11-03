@@ -21,9 +21,12 @@ jobs:
         with:
           persist-credentials: false
       - name: Check workflow syntax and shell scripts
-        uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # 1.7.12
-        with:
-          args: -color
+        # actionlint 1.7.12; mount workflow sources read-only.
+        run: >-
+          docker run --rm
+          -v "$GITHUB_WORKSPACE:/repo:ro" -w /repo
+          rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+          -color
 
   zizmor:
     timeout-minutes: 5
