@@ -21,8 +21,8 @@ const until = async (check: () => boolean | Promise<boolean>) => {
 };
 // --run intentionally passes a user-provided shell command; quote paths as shell literals.
 const quote = (s: string) => `'${s.replaceAll("'", "'\\''")}'`;
-const state = async (): Promise<StateDto> => (await fetch(`${server?.url}/api/state`)).json() as Promise<StateDto>;
 const snapshot = async (): Promise<SnapshotEvent> => (await fetch(`${server?.url}/api/preview`)).json() as Promise<SnapshotEvent>;
+const state = async (): Promise<StateDto> => (await snapshot()).state;
 const save = async (text: string) => {
   await Bun.write(join(root, "next.xml"), text);
   await rename(join(root, "next.xml"), xml);

@@ -1,12 +1,5 @@
-use serde::Serialize;
-#[derive(Clone, PartialEq, Serialize)]
-pub struct Compilation {
-    pub preview: Option<super::delta::SharedPreview>,
-    pub resources: super::delta::Resources,
-    pub diagnostics: Vec<Diagnostic>,
-}
-
 pub use crate::analysis::Diagnostic;
+use serde::Serialize;
 
 #[derive(Clone, PartialEq, Serialize)]
 pub struct Preview {

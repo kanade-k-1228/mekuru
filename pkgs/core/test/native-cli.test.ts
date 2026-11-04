@@ -39,7 +39,7 @@ test("--run creates a missing XML file using the explicit project root", async (
     for (;;) {
       const preview = await fetch(`${server.url}/api/preview`);
       if (preview.ok && JSON.stringify(await preview.json()).includes("Created by script")) break;
-      if (Date.now() > deadline) throw new Error(`script XML was not compiled: ${await (await fetch(`${server.url}/api/state`)).text()}`);
+      if (Date.now() > deadline) throw new Error(`script XML was not compiled: ${await (await fetch(`${server.url}/api/preview`)).text()}`);
       await Bun.sleep(10);
     }
     expect(await Bun.file(join(project, "cwd.txt")).text()).toBe(await realpath(project));

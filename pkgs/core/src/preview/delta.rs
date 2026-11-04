@@ -1,4 +1,4 @@
-//! Diff typed scenes before crossing the Rust/CLI boundary.
+//! A compiled scene and the patch from the previous one.
 use super::dto::*;
 use serde::Serialize;
 use std::{
@@ -8,22 +8,16 @@ use std::{
 
 pub type Resources = HashMap<String, Arc<Vec<Op>>>;
 
-#[derive(Clone, PartialEq, Serialize)]
-pub struct SharedPreview {
+#[derive(PartialEq, Serialize)]
+pub struct Versioned {
     pub version: u64,
     #[serde(flatten)]
-    pub scene: Arc<Preview>,
+    pub scene: Preview,
 }
-#[derive(Clone)]
-pub(crate) struct Published {
-    pub preview: SharedPreview,
-    pub resources: Arc<Resources>,
-}
-#[derive(Serialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
-pub enum Update {
-    Snapshot { preview: SharedPreview, resources: Arc<Resources> },
-    Patch(Box<Patch>),
+/// A scene and the drawings it uses.
+pub struct Published {
+    pub preview: Versioned,
+    pub resources: Resources,
 }
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -62,18 +56,11 @@ fn collection<T: Clone + PartialEq>(before: &[T], after: &[T], key: impl Fn(&T) 
     }
 }
 impl Published {
-    pub fn snapshot(&self) -> Update {
-        Update::Snapshot {
-            preview: self.preview.clone(),
-            resources: self.resources.clone(),
-        }
-    }
-    /// A patch on `before`, the scene the client has acknowledged, or else a snapshot.
-    pub fn update(&self, before: Option<&Self>) -> Update {
-        let Some(before) = before else { return self.snapshot() };
+    /// The patch that turns `before`, the scene the viewer has, into this one.
+    pub fn patch(&self, before: &Self) -> Patch {
         let a = &before.preview.scene;
         let b = &self.preview.scene;
-        Update::Patch(Box::new(Patch {
+        Patch {
             base_version: before.preview.version,
             version: self.preview.version,
             scene: Dimensions {
@@ -91,6 +78,6 @@ impl Published {
                 .filter(|(k, _)| !before.resources.contains_key(*k))
                 .map(|(k, ops)| (k.clone(), ops.clone()))
                 .collect(),
-        }))
+        }
     }
 }
