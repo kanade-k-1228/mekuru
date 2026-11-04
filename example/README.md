@@ -52,12 +52,12 @@ bun x mekuru-psd assets/source/zundamon.psd --out assets/character/zundamon
 ```text
 zundamon.psd
 └─ face [select]
-   ├─ smug       ドヤ顔
-   ├─ worry      困り顔
-   ├─ surprise   驚き
-   ├─ wink       ウインク
-   ├─ smile      笑顔
-   └─ normal     通常（初期表示）
+   ├─ smug
+   ├─ worry
+   ├─ surprise
+   ├─ wink
+   ├─ smile
+   └─ normal     (initial)
 ```
 
 `portrait()` の `face` で6種類の表情を指定します。`face [select]` グループの各選択肢は全身イラストで、目や口を個別に描き直さずに切り替えるシンプルな構成です。example では台詞ごとに表情を切り替えます。自動まばたき・音量に合わせた口パクはありません。

@@ -45,7 +45,7 @@ export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time })
     <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
-        <zundamon.Talk source={line.audio} {...(face ? FACES[face] : { face: "normal" })} />
+        <zundamon.Talk source={line.audio} face={face} />
         <Subtitle text={say === undefined ? line.display : await subtitleText(text)} />
         {children}
       </stack>
@@ -55,7 +55,7 @@ export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time })
 ```
 
 ```tsx
-<Zundamon face="指差し" text="長さは、セリフに合わせて決まります。">
+<Zundamon face="smile" text="長さは、セリフに合わせて決まります。">
   <Label x={708} y={650} text="長さは自動！" />
 </Zundamon>
 <Zundamon text="今日の天気" say="きょうのてんき" />

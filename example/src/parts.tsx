@@ -92,19 +92,6 @@ const Subtitle: FC<{ text: string }> = ({ text }) => (
 );
 
 const SRC = "tutorial/assets/character/zundamon";
-const FACES = {
-  笑顔: { face: "smile" },
-  ウインク: { face: "wink" },
-  指差し: { face: "normal" },
-  決め: { face: "wink" },
-  驚き: { face: "surprise" },
-  困り: { face: "worry" },
-  はてな: { face: "worry" },
-  ドヤ: { face: "smug" },
-  照れ: { face: "smile" },
-} satisfies Record<string, LayerProps>;
-export type FaceName = keyof typeof FACES;
-
 const zundamon = portrait<LayerProps>({ src: SRC, x: 1560, y: 1000, h: 960, z: 10 });
 const big = portrait<LayerProps>({ src: SRC, x: 1510, y: 1140, h: 1150, z: 30, slot: "portrait:big" });
 export const ZundamonStand = zundamon.Stand;
@@ -112,7 +99,7 @@ export const ZundamonStand = zundamon.Stand;
 const voice = { ...zunda, gap: 6, reading: READING };
 
 // text: subtitle. say: what is spoken (defaults to text). children: shown only during this line.
-type Line = Children & { id?: string; at?: At; face?: FaceName; text: Node; say?: Node };
+type Line = Children & { id?: string; at?: At; face?: LayerProps["face"]; text: Node; say?: Node };
 
 export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time }) => {
   const line = await Voicevox.prepare({ ...voice, text: say ?? text });
@@ -120,7 +107,7 @@ export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time })
     <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
-        <zundamon.Talk source={line.audio} {...(face ? FACES[face] : { face: "normal" })} />
+        <zundamon.Talk source={line.audio} face={face} />
         <Subtitle text={say === undefined ? line.display : await subtitleText(text)} />
         {children}
       </stack>
@@ -135,12 +122,12 @@ export const Jingle: FC<{ text: string }> = async ({ text }) => {
       <rect w="100%" h="100%" fill={COLOR.pink} z={20} />
       <text x="30%" y="47%" anchor="c" size={180} weight="bold" color="#FFFFFF" stroke={COLOR.magenta} stroke-width={18} rotate={-9} z={21} text={text} />
       <audio src="assets/chime.wav" volume={0.5} />
-      <big.Stand {...FACES.決め} />
+      <big.Stand face="wink" />
       <seq>
         <dur len={9} />
         <stack>
           <Audio source={line.audio} />
-          <big.Talk source={line.audio} {...FACES.決め} />
+          <big.Talk source={line.audio} face="wink" />
         </stack>
         <dur len={21} />
       </seq>
@@ -170,7 +157,7 @@ export const EndCard: FC<{ top: string; bottom: string; credit: string; len: num
       <text x={60} y={70} size={210} weight="bold" color={COLOR.red} stroke="#FFFFFF" stroke-width={16} rotate={-5} z={40} text={top} />
       <text x={60} y={700} size={150} weight="bold" color={COLOR.red} stroke="#FFFFFF" stroke-width={14} rotate={-5} z={40} text={bottom} />
       <text x={70} y="97%" anchor="bl" size={34} weight="bold" color={COLOR.sub} stroke="#FFFFFF" stroke-width={6} z={40} text={credit} />
-      <big.Stand {...FACES.決め} />
+      <big.Stand face="wink" />
     </dur>
   );
 };
