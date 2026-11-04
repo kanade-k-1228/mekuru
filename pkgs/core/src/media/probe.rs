@@ -1,8 +1,8 @@
-use super::args;
 use crate::util::{FileMemo, proc::run_checked};
 use anyhow::{Context, Result, bail};
 use serde_json::Value;
 use std::path::Path;
+use std::process::Command;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct VideoStream {
@@ -26,7 +26,9 @@ pub fn probe_cached(src: &Path) -> Result<MediaProbe> {
 }
 
 pub fn probe(src: &Path) -> Result<MediaProbe> {
-    let out = run_checked(args::probe(src))?;
+    let mut c = Command::new(std::env::var("MEKURU_FFPROBE").unwrap_or_else(|_| "ffprobe".into()));
+    c.args(["-v", "error", "-print_format", "json", "-show_format", "-show_streams"]).arg(src);
+    let out = run_checked(c)?;
     let v: Value = serde_json::from_slice(&out.stdout).context("ffprobe returned invalid JSON")?;
     parse(&v).with_context(|| format!("cannot read media info of {}", src.display()))
 }

@@ -1,6 +1,5 @@
 pub mod analysis;
 pub mod audio;
-pub mod encode;
 pub mod ir;
 pub mod lang;
 pub mod layout;

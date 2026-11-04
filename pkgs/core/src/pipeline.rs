@@ -1,6 +1,5 @@
 use crate::audio::{Track, mix_wav};
-use crate::encode::Encoder;
-use crate::media::args::EncodeArgs;
+use crate::media::encode::{EncodeArgs, Encoder};
 use crate::media::pcm::{self, Pcm, RATE};
 use crate::progress::Progress;
 use crate::render::{FrameRenderer, RenderCtx, RenderTarget};
@@ -157,9 +156,8 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
         preset: &preset,
         crf: opts.crf.unwrap_or(st.encode.crf),
         audio_bitrate: &st.encode.audio_bitrate,
-        out,
     };
-    let mut enc = Encoder::spawn(&args)?;
+    let mut enc = Encoder::spawn(&args, out)?;
     let mut renderer = FrameRenderer::new(*ctx, target)?;
     let mut last_report = Instant::now();
     for k in 0..frames {

@@ -1,4 +1,4 @@
-use super::{Fps, args};
+use super::{Fps, ffmpeg};
 use crate::util::proc::ChildGuard;
 use anyhow::{Context, Result};
 use std::io::{BufReader, Read};
@@ -41,7 +41,13 @@ impl VideoReader {
 
     fn spawn(&mut self, c: f64) -> Result<()> {
         self.child = None;
-        let mut child = args::video_frames(&self.src, c, self.fps, self.w, self.h)
+        let Fps { num, den } = self.fps;
+        let mut cmd = ffmpeg();
+        cmd.args(["-ss", &format!("{c:.6}"), "-i"]).arg(&self.src);
+        cmd.args(["-map", "0:v:0", "-an", "-sn", "-dn"]);
+        cmd.args(["-vf", &format!("fps={num}/{den},scale={}:{}:flags=bicubic,format=rgba", self.w, self.h)]);
+        cmd.args(["-f", "rawvideo", "-pix_fmt", "rgba", "pipe:1"]);
+        let mut child = cmd
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())

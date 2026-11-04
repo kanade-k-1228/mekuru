@@ -1,8 +1,16 @@
-pub mod args;
+pub mod encode;
 pub mod image;
 pub mod pcm;
 pub mod probe;
 pub mod video;
+
+use std::process::Command;
+
+fn ffmpeg() -> Command {
+    let mut c = Command::new(std::env::var("MEKURU_FFMPEG").unwrap_or_else(|_| "ffmpeg".into()));
+    c.args(["-hide_banner", "-nostdin", "-loglevel", "error"]);
+    c
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Fps {
