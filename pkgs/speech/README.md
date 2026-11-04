@@ -83,9 +83,6 @@ Custom engines use `prepare()` to create `{ audio, display }` and `defineSpeech(
 
 Draft preparation returns an estimated source and queues synthesis; the final pass returns the WAV and its actual duration. Both use the same presentation components. Cache roots, progress, and in-flight synthesis belong to the build, independent of the working directory at import time.
 
-### Other exports
-
-
 ### defineEngine(engine)
 
 Makes the component for an engine with an HTTP API, like the bundled ones (see [VOICEVOX](../voicevox/src/index.tsx)):
