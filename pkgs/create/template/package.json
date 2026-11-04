@@ -5,7 +5,7 @@
   "scripts": {
     "preview": "mekuru-compiler --serve --run 'bun --hot src/main.tsx' .mekuru/main.xml",
     "build": "bun src/main.tsx && mekuru-compiler .mekuru/main.xml -o video.mp4",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc"
   },
   "devDependencies": {
     "@types/bun": "1.4.2",

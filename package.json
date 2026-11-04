@@ -9,7 +9,7 @@
   "scripts": {
     "build": "bun run --cwd pkgs/viewer build && cargo build --workspace --locked",
     "build:release": "bun run --cwd pkgs/viewer build && cargo build --workspace --release --locked",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p pkgs/viewer",
+    "typecheck": "tsc && tsc -p pkgs/viewer",
     "check": "biome check . && bun run typecheck && cargo fmt --check && cargo clippy --workspace --all-targets --locked -- -D warnings",
     "test": "bun run build && bun test && cargo test --workspace --locked",
     "fmt": "biome check --write . && cargo fmt"
