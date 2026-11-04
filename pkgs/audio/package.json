@@ -7,6 +7,7 @@
     "directory": "pkgs/audio"
   },
   "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/audio/README.md",
+  "description": "Audio resources and WAV processing for Mekuru Movie Maker",
   "type": "module",
   "exports": {
     ".": "./src/index.tsx",

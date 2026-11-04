@@ -30,7 +30,7 @@ Bun is still needed when your `--run` command authors XML using TSX. Video expor
 - `--run <command>`: run a shell command in the project directory. Stderr appears in the viewer until the next XML save. The server terminates the command and its child processes on shutdown.
 - `--no-open`: do not open a browser. `MEKURU_OPEN=0` does the same.
 
-A missing XML file is allowed with `--run`. Compilation errors preserve the last successful scene. Saving uses two matching reads 10 ms apart; `/mnt/` uses a 500 ms polling fallback. Slow WebSocket readers receive a fresh snapshot when they fall behind. Asset URLs support HEAD and byte ranges; paths must resolve inside the project root.
+A missing XML file is allowed with `--run`. Compilation errors preserve the last successful scene. A save is accepted once two consecutive reads match; `/mnt/` is polled. Slow WebSocket readers receive a fresh snapshot when they fall behind. Asset URLs support HEAD and byte ranges; paths must resolve inside the project root.
 
 ## Export options
 

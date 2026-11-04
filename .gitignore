@@ -22,5 +22,3 @@ Thumbs.db
 !.vscode/extensions.json
 
 .playwright-mcp/
-/tmp/
-/out/

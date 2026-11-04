@@ -1,6 +1,6 @@
 # TSX の書き方
 
-[English](Component.jp.md)
+[English](Component.md)
 
 台本は Bun で実行し、組み込み要素だけの XML に展開します。小文字のタグは[組み込み要素](Syntax.jp.md)、大文字のタグは関数コンポーネントです。
 

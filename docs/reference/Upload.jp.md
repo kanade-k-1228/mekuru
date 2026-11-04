@@ -1,6 +1,6 @@
 # 動画の投稿
 
-[English](Upload.jp.md)
+[English](Upload.md)
 
 投稿先のコマンドが YAML 設定を読み、動画をアップロードします。設定内のパスはプロジェクトのフォルダ（`package.json` の場所）を基準にします。
 

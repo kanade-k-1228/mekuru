@@ -1,6 +1,6 @@
 # 組み込みの要素
 
-[English](Syntax.jp.md)
+[English](Syntax.md)
 
 - 18 種類のタグで動画を表す。[TSX の台本](Component.jp.md) に小文字の要素として書く
 - `writeXml` が部品を展開し、組み込みの要素だけの XML（[中間形式](#xml中間形式)）にする
