@@ -377,7 +377,8 @@ fn deltas_use_only_acknowledged_scenes_and_reset_unknown_bases() {
         restarted["update"]["preview"]["elements"][0]["key"],
         unknown["update"]["preview"]["elements"][0]["key"]
     );
-    // A replacement of the entire scene is smaller as a snapshot.
+    // Even a replacement of the entire scene is a patch on the acknowledged scene.
     let replaced = run(&mut worker, None, 9, Some(7), &document(r#"<dur len="30"><text>Only one</text></dur>"#));
-    assert_eq!(replaced["update"]["type"], "snapshot");
+    assert_eq!(replaced["update"]["type"], "patch");
+    assert_eq!(replaced["update"]["baseVersion"], 7);
 }

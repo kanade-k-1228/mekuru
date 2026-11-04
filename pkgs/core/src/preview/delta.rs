@@ -18,7 +18,6 @@ pub struct SharedPreview {
 pub(crate) struct Published {
     pub preview: SharedPreview,
     pub resources: Arc<Resources>,
-    pub resource_bytes: usize,
 }
 #[derive(Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
@@ -62,21 +61,6 @@ fn collection<T: Clone + PartialEq>(before: &[T], after: &[T], key: impl Fn(&T) 
         order: (!before.iter().map(&key).eq(keys.iter().copied())).then(|| keys.into_iter().map(str::to_owned).collect()),
     }
 }
-fn encoded_len(value: &impl Serialize) -> usize {
-    struct Count(usize);
-    impl std::io::Write for Count {
-        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-            self.0 += bytes.len();
-            Ok(bytes.len())
-        }
-        fn flush(&mut self) -> std::io::Result<()> {
-            Ok(())
-        }
-    }
-    let mut count = Count(0);
-    serde_json::to_writer(&mut count, value).expect("preview JSON");
-    count.0
-}
 impl Published {
     pub fn snapshot(&self) -> Update {
         Update::Snapshot {
@@ -84,11 +68,12 @@ impl Published {
             resources: self.resources.clone(),
         }
     }
+    /// A patch on `before`, the scene the client has acknowledged, or else a snapshot.
     pub fn update(&self, before: Option<&Self>) -> Update {
         let Some(before) = before else { return self.snapshot() };
         let a = &before.preview.scene;
         let b = &self.preview.scene;
-        let patch = Update::Patch(Box::new(Patch {
+        Update::Patch(Box::new(Patch {
             base_version: before.preview.version,
             version: self.preview.version,
             scene: Dimensions {
@@ -106,13 +91,6 @@ impl Published {
                 .filter(|(k, _)| !before.resources.contains_key(*k))
                 .map(|(k, ops)| (k.clone(), ops.clone()))
                 .collect(),
-        }));
-        // Count scene metadata once; unchanged drawing JSON sizes were cached at generation.
-        let empty = Update::Snapshot {
-            preview: self.preview.clone(),
-            resources: Arc::new(HashMap::new()),
-        };
-        let snapshot_len = encoded_len(&empty) - 2 + self.resource_bytes;
-        if encoded_len(&patch) < snapshot_len { patch } else { self.snapshot() }
+        }))
     }
 }

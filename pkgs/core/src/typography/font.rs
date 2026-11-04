@@ -1,4 +1,4 @@
-use crate::util::lru::{FileStamp, Lru, file_stamp};
+use crate::util::{FileStamp, file_stamp, lru::Lru};
 use cosmic_text::skrifa::{
     FontRef, GlyphId, MetadataProvider,
     instance::Size,

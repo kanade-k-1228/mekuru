@@ -1,62 +1,48 @@
-use super::Fps;
-use crate::util::proc::{ffmpeg, ffprobe};
+use super::{Fps, pcm};
 use std::path::Path;
+use std::process::Command;
 
-fn s(p: &Path) -> String {
-    p.to_string_lossy().into_owned()
+fn ffmpeg() -> Command {
+    let mut c = Command::new(std::env::var("MEKURU_FFMPEG").unwrap_or_else(|_| "ffmpeg".into()));
+    c.args(["-hide_banner", "-nostdin", "-loglevel", "error"]);
+    c
 }
 
-fn common() -> Vec<String> {
-    vec![ffmpeg(), "-hide_banner".into(), "-nostdin".into(), "-loglevel".into(), "error".into()]
+/// Raw PCM as the mixer reads it: 16-bit little-endian samples at `pcm::RATE` with `pcm::CHANNELS` channels.
+fn pcm_out(c: &mut Command, dst: &Path) {
+    c.args([
+        "-ac",
+        &pcm::CHANNELS.to_string(),
+        "-ar",
+        &pcm::RATE.to_string(),
+        "-c:a",
+        "pcm_s16le",
+        "-f",
+        "s16le",
+    ]);
+    c.arg(dst);
 }
 
-pub fn probe(src: &Path) -> Vec<String> {
-    vec![
-        ffprobe(),
-        "-v".into(),
-        "error".into(),
-        "-print_format".into(),
-        "json".into(),
-        "-show_format".into(),
-        "-show_streams".into(),
-        s(src),
-    ]
+pub fn probe(src: &Path) -> Command {
+    let mut c = Command::new(std::env::var("MEKURU_FFPROBE").unwrap_or_else(|_| "ffprobe".into()));
+    c.args(["-v", "error", "-print_format", "json", "-show_format", "-show_streams"]).arg(src);
+    c
 }
 
-pub fn to_pcm(src: &Path, dst: &Path) -> Vec<String> {
-    let mut a = common();
-    a.extend(
-        ["-y", "-i"].map(String::from).into_iter().chain([s(src)]).chain(
-            [
-                "-map",
-                "0:a:0",
-                "-vn",
-                "-sn",
-                "-dn",
-                "-ac",
-                "2",
-                "-ar",
-                "48000",
-                "-c:a",
-                "pcm_s16le",
-                "-f",
-                "s16le",
-            ]
-            .map(String::from),
-        ),
-    );
-    a.push(s(dst));
-    a
+pub fn to_pcm(src: &Path, dst: &Path) -> Command {
+    let mut c = ffmpeg();
+    c.args(["-y", "-i"]).arg(src).args(["-map", "0:a:0", "-vn", "-sn", "-dn"]);
+    pcm_out(&mut c, dst);
+    c
 }
 
-pub fn stretch_pcm(src: &Path, from: f64, len: f64, rate: f64, dst: &Path) -> Vec<String> {
-    let mut a = common();
-    a.extend(["-y", "-f", "s16le", "-ar", "48000", "-ac", "2"].map(String::from));
-    a.extend(["-ss".to_string(), format!("{from:.6}"), "-t".into(), format!("{len:.6}"), "-i".into(), s(src)]);
-    a.extend(["-af".to_string(), tempo(rate)]);
-    a.extend(["-ac", "2", "-ar", "48000", "-c:a", "pcm_s16le", "-f", "s16le"].map(String::from));
-    a.push(s(dst));
-    a
+pub fn stretch_pcm(src: &Path, from: f64, len: f64, rate: f64, dst: &Path) -> Command {
+    let mut c = ffmpeg();
+    c.args(["-y", "-f", "s16le", "-ar", &pcm::RATE.to_string(), "-ac", &pcm::CHANNELS.to_string()]);
+    c.args(["-ss", &format!("{from:.6}"), "-t", &format!("{len:.6}"), "-i"]).arg(src);
+    c.args(["-af", &tempo(rate)]);
+    pcm_out(&mut c, dst);
+    c
 }
 
 fn tempo(mut rate: f64) -> String {
@@ -73,14 +59,13 @@ fn tempo(mut rate: f64) -> String {
     out.join(",")
 }
 
-pub fn video_frames(src: &Path, start: f64, fps: Fps, w: u32, h: u32) -> Vec<String> {
-    let mut a = common();
-    a.extend(["-ss".to_string(), format!("{start:.6}"), "-i".into(), s(src)]);
-    a.extend(["-map", "0:v:0", "-an", "-sn", "-dn"].map(String::from));
-    a.push("-vf".into());
-    a.push(format!("fps={}/{},scale={w}:{h}:flags=bicubic,format=rgba", fps.num, fps.den));
-    a.extend(["-f", "rawvideo", "-pix_fmt", "rgba", "pipe:1"].map(String::from));
-    a
+pub fn video_frames(src: &Path, start: f64, fps: Fps, w: u32, h: u32) -> Command {
+    let mut c = ffmpeg();
+    c.args(["-ss", &format!("{start:.6}"), "-i"]).arg(src);
+    c.args(["-map", "0:v:0", "-an", "-sn", "-dn"]);
+    c.args(["-vf", &format!("fps={}/{},scale={w}:{h}:flags=bicubic,format=rgba", fps.num, fps.den)]);
+    c.args(["-f", "rawvideo", "-pix_fmt", "rgba", "pipe:1"]);
+    c
 }
 
 pub struct EncodeArgs<'a> {
@@ -94,32 +79,23 @@ pub struct EncodeArgs<'a> {
     pub out: &'a Path,
 }
 
-pub fn encode(e: &EncodeArgs) -> Vec<String> {
-    let mut a = common();
-    a.push("-y".into());
-    a.extend(["-f", "rawvideo", "-pix_fmt", "rgba"].map(String::from));
-    a.extend(["-video_size".to_string(), format!("{}x{}", e.w, e.h)]);
-    a.extend(["-framerate".to_string(), format!("{}/{}", e.fps.num, e.fps.den)]);
-    a.extend(["-i".to_string(), "pipe:0".into()]);
+pub fn encode(e: &EncodeArgs) -> Command {
+    let mut c = ffmpeg();
+    c.args(["-y", "-f", "rawvideo", "-pix_fmt", "rgba"]);
+    c.args(["-video_size", &format!("{}x{}", e.w, e.h)]);
+    c.args(["-framerate", &format!("{}/{}", e.fps.num, e.fps.den)]);
+    c.args(["-i", "pipe:0"]);
     if let Some(wav) = e.audio {
-        a.extend(["-i".to_string(), s(wav), "-map".into(), "0:v:0".into(), "-map".into(), "1:a:0".into()]);
+        c.arg("-i").arg(wav).args(["-map", "0:v:0", "-map", "1:a:0"]);
     }
-    a.extend(["-vf", "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p"].map(String::from));
-    a.extend([
-        "-c:v".to_string(),
-        "libx264".into(),
-        "-preset".into(),
-        e.preset.into(),
-        "-crf".into(),
-        e.crf.to_string(),
-    ]);
+    c.args(["-vf", "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p"]);
+    c.args(["-c:v", "libx264", "-preset", e.preset, "-crf", &e.crf.to_string()]);
     let gop = (e.fps.as_f64() * 2.0).round().max(1.0) as u32;
-    a.extend(["-g".to_string(), gop.to_string()]);
-    a.extend(["-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv"].map(String::from));
+    c.args(["-g", &gop.to_string()]);
+    c.args(["-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv"]);
     if e.audio.is_some() {
-        a.extend(["-c:a".to_string(), "aac".into(), "-b:a".into(), e.audio_bitrate.into()]);
+        c.args(["-c:a", "aac", "-b:a", e.audio_bitrate]);
     }
-    a.extend(["-movflags", "+faststart", "-f", "mp4"].map(String::from));
-    a.push(s(e.out));
-    a
+    c.args(["-movflags", "+faststart", "-f", "mp4"]).arg(e.out);
+    c
 }

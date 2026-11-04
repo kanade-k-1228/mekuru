@@ -1,6 +1,6 @@
 use super::args;
+use crate::util::TempFile;
 use crate::util::proc::run_checked;
-use crate::util::temp::TempFile;
 use anyhow::{Context, Result};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
@@ -30,13 +30,13 @@ impl Pcm {
 
 pub fn convert(src: &Path, dst: &Path) -> Result<Pcm> {
     write(dst, |tmp| {
-        run_checked(&args::to_pcm(src, tmp)).with_context(|| format!("cannot decode audio of {}", src.display()))
+        run_checked(args::to_pcm(src, tmp)).with_context(|| format!("cannot decode audio of {}", src.display()))
     })
 }
 
 pub fn stretch(base: &Pcm, from: f64, len: f64, rate: f64, dst: &Path) -> Result<Pcm> {
     write(dst, |tmp| {
-        run_checked(&args::stretch_pcm(&base.path, from, len, rate, tmp)).with_context(|| format!("cannot change the speed of {}", base.path.display()))
+        run_checked(args::stretch_pcm(&base.path, from, len, rate, tmp)).with_context(|| format!("cannot change the speed of {}", base.path.display()))
     })
 }
 

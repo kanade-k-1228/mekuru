@@ -3,10 +3,7 @@ use super::{
     identity::Identity,
     *,
 };
-use crate::util::{
-    hash::sha256_hex,
-    lru::{Lru, file_stamp},
-};
+use crate::util::{file_stamp, lru::Lru, sha256_hex};
 use serde::Serialize;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
@@ -36,7 +33,6 @@ pub struct Stats {
 pub(super) struct Drawing {
     pub id: String,
     ops: Arc<Vec<Op>>,
-    bytes: usize,
 }
 
 pub struct Session {
@@ -75,26 +71,24 @@ impl Session {
         }
         self.stats = Stats::default();
         let started = Instant::now();
-        let compilation = compile_internal(path, root, request.xml, self);
+        let compilation = crate::analysis::Compilation::inspect(path, root, request.xml);
+        let preview = (compilation.resolved.as_ref()).map(|r| scene(&compilation.project, &r.prepared, &r.schedule, self));
         self.stats.compile_ms = started.elapsed().as_secs_f64() * 1000.0;
         let diff_started = Instant::now();
         let used = std::mem::take(&mut self.used);
         let mut update = None;
-        let preview_version = compilation.preview.map(|scene| {
+        let preview_version = preview.map(|scene| {
             if let Some(base) = &self.published
                 && *base.preview.scene == scene
             {
                 return base.preview.version;
             }
-            // Each hash is 64 ASCII characters: quotes + colon add three bytes.
-            let resource_bytes = 2 + used.len().saturating_sub(1) + used.values().map(|d| 67 + d.bytes).sum::<usize>();
             let next = Published {
                 preview: SharedPreview {
                     version: request.version,
                     scene: Arc::new(scene),
                 },
                 resources: Arc::new(used.into_iter().map(|(k, d)| (k, d.ops)).collect()),
-                resource_bytes,
             };
             update = Some(next.update(self.published.as_ref()));
             self.candidate = Some(next);
@@ -104,7 +98,7 @@ impl Session {
         Response {
             version: request.version,
             preview_version,
-            diagnostics: compilation.diagnostics,
+            diagnostics: compilation.diagnostics(),
             update,
             stats: std::mem::take(&mut self.stats),
         }
@@ -133,15 +127,9 @@ impl Session {
             self.stats.draw_misses += 1;
             let mut ops = vec![];
             draw_op(op, Transform::identity(), fonts, root, &mut ops);
-            for op in &mut ops {
-                if let Op::Image { src, revision: stamp, .. } = op {
-                    *stamp = Some(revision(&root.join(src)));
-                }
-            }
             let bytes = serde_json::to_vec(&ops).expect("drawing JSON");
             let drawing = Drawing {
                 id: sha256_hex(&bytes),
-                bytes: bytes.len(),
                 ops: Arc::new(ops),
             };
             self.drawings

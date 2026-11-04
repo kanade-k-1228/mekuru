@@ -1,6 +1,5 @@
 use crate::lang::span::Span;
 use crate::settings::{Rgba, Settings, TextStyle};
-use std::collections::BTreeMap;
 use std::path::PathBuf;
 use tiny_skia::Transform;
 
@@ -10,11 +9,8 @@ pub type ElemId = usize;
 #[derive(Clone, Debug)]
 pub struct Script {
     pub settings: Settings,
-    /// Font names referenced by text, preloaded before measuring or drawing.
-    pub fonts: Vec<String>,
     pub nodes: Vec<Node>,
     pub elems: Vec<Elem>,
-    pub ids: BTreeMap<String, Target>,
     pub base_dir: PathBuf,
 }
 
@@ -213,10 +209,6 @@ impl ViewOp {
     }
 }
 
-pub fn scaled(t: Transform, scale: f32) -> Transform {
-    Transform::from_row(t.sx, t.ky, t.kx, t.sy, t.tx * scale, t.ty * scale)
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct ViewSpec {
     pub ops: Vec<ViewOp>,
@@ -251,10 +243,4 @@ pub struct VideoSpec {
 #[derive(Clone, Debug, PartialEq)]
 pub struct AudioSpec {
     pub media: MediaSrc,
-}
-
-impl Elem {
-    pub fn timed(&self) -> bool {
-        self.t.timed()
-    }
 }

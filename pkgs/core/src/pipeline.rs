@@ -1,26 +1,16 @@
-use crate::Project;
 use crate::audio::{Track, mix_wav};
 use crate::encode::Encoder;
 use crate::media::args::EncodeArgs;
 use crate::media::pcm::{self, Pcm, RATE};
-use crate::prepare::Prepared;
-use crate::progress::{Progress, Stage};
-use crate::render::{FrameRenderer, RenderTarget};
-use crate::schedule::{AudioClip, EPS, Fade, Schedule};
-use crate::util::hash::sha256_hex;
-use crate::util::temp::TempFile;
+use crate::progress::Progress;
+use crate::render::{FrameRenderer, RenderCtx, RenderTarget};
+use crate::schedule::{AudioClip, EPS, Fade};
+use crate::util::{TempFile, sha256_hex};
 use anyhow::Result;
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::Path;
 use std::time::Instant;
-
-#[derive(Clone, Copy)]
-pub struct RenderCtx<'a> {
-    pub project: &'a Project,
-    pub prepared: &'a Prepared,
-    pub sched: &'a Schedule,
-}
 
 #[derive(Clone, Debug)]
 pub struct RenderOptions {
@@ -62,7 +52,6 @@ impl RenderOptions {
 #[derive(Clone, Debug, Default)]
 pub struct RenderStats {
     pub frames: u64,
-    pub drawn: u64,
     pub seconds: f64,
     pub elapsed: f64,
     pub warnings: Vec<String>,
@@ -112,19 +101,15 @@ pub fn audio_tracks(ctx: &RenderCtx) -> Result<Vec<Track>> {
         })
         .collect::<Result<_>>()?;
     let mut out = vec![];
-    for c in &clips {
-        let Some(base) = pcm(c) else { continue };
-        let (pcm, src) = match made.get(&key(c, base)) {
+    for c in clips {
+        let Some(base) = pcm(&c) else { continue };
+        let (pcm, src) = match made.get(&key(&c, base)) {
             Some(p) if (c.rate - 1.0).abs() > EPS => (p.clone(), 0.0),
             _ => (base.clone(), c.src),
         };
         out.push(Track {
+            clip: AudioClip { src, ..c },
             pcm,
-            at: c.at,
-            len: c.len,
-            src,
-            gain: c.gain,
-            env: c.env.clone(),
         });
     }
     Ok(out)
@@ -139,7 +124,7 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
     let from = opts.from.clamp(0.0, total);
     let to = opts.to.unwrap_or(total).clamp(from, total);
     let frames = target.fps.frames(to - from).max(1);
-    let seconds = target.fps.time(frames);
+    let seconds = target.fps.secs(frames as f64);
     let step = (doc.num as f64 * target.fps.den as f64) / (doc.den as f64 * target.fps.num as f64);
     let first = doc.of(from);
 
@@ -153,7 +138,7 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
     let tmp = ctx.project.cache().tmp();
     std::fs::create_dir_all(&tmp)?;
     let wav: Option<TempFile> = if opts.audio {
-        progress(Progress::Stage { stage: Stage::Mix });
+        progress(Progress::Mix);
         let path = TempFile(tmp.join(format!("mix-{}.wav", std::process::id())));
         let samples = (seconds * RATE as f64).round() as u64;
         let mix = mix_wav(&audio_tracks(ctx)?, from, samples, path.as_ref())?;
@@ -167,7 +152,7 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
         None
     };
 
-    progress(Progress::Stage { stage: Stage::Render });
+    progress(Progress::Render);
     let preset = opts.preset.clone().unwrap_or_else(|| st.encode.preset.clone());
     let args = EncodeArgs {
         w: target.width,
@@ -180,19 +165,11 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
         out,
     };
     let mut enc = Encoder::spawn(&args)?;
-    let mut renderer = FrameRenderer::new(
-        &crate::render::RenderInput {
-            script: &ctx.project.script,
-            prepared: ctx.prepared,
-            sched: ctx.sched,
-        },
-        target,
-    )?;
+    let mut renderer = FrameRenderer::new(*ctx, target)?;
     let mut last_report = Instant::now();
     for k in 0..frames {
         let t = first + k as f64 * step;
         if renderer.render(t)? {
-            stats.drawn += 1;
             enc.push(renderer.canvas().data())?;
         } else {
             enc.repeat()?;
@@ -207,7 +184,7 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
         }
     }
     stats.warnings.append(&mut renderer.warnings);
-    progress(Progress::Stage { stage: Stage::Finalize });
+    progress(Progress::Finalize);
     enc.finish()?;
     stats.elapsed = started.elapsed().as_secs_f64();
     Ok(stats)

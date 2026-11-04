@@ -1,18 +1,15 @@
-use crate::media::pcm::{CHANNELS, Pcm, PcmReader, RATE};
-use crate::schedule::Fade;
+use crate::media::pcm::{BYTES_PER_FRAME, CHANNELS, Pcm, PcmReader, RATE};
+use crate::schedule::{AudioClip, Fade};
 use anyhow::Result;
 use std::collections::HashMap;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
+/// A clip in seconds, with `src` its start in `pcm`.
 #[derive(Clone, Debug)]
 pub struct Track {
+    pub clip: AudioClip,
     pub pcm: Pcm,
-    pub at: f64,
-    pub len: f64,
-    pub src: f64,
-    pub gain: f32,
-    pub env: Vec<Fade>,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -27,8 +24,8 @@ fn envelope(env: &[Fade], t: f64) -> f32 {
     env.iter().map(|f| f.at(t)).product::<f64>() as f32
 }
 
-pub fn write_wav_header(w: &mut impl Write, frames: u64) -> std::io::Result<()> {
-    let data = (frames * 4).min(u32::MAX as u64 - 36) as u32;
+fn write_wav_header(w: &mut impl Write, frames: u64) -> std::io::Result<()> {
+    let data = (frames * BYTES_PER_FRAME).min(u32::MAX as u64 - 36) as u32;
     w.write_all(b"RIFF")?;
     w.write_all(&(36 + data).to_le_bytes())?;
     w.write_all(b"WAVEfmt ")?;
@@ -36,8 +33,8 @@ pub fn write_wav_header(w: &mut impl Write, frames: u64) -> std::io::Result<()> 
     w.write_all(&1u16.to_le_bytes())?;
     w.write_all(&(CHANNELS as u16).to_le_bytes())?;
     w.write_all(&RATE.to_le_bytes())?;
-    w.write_all(&(RATE * 4).to_le_bytes())?;
-    w.write_all(&4u16.to_le_bytes())?;
+    w.write_all(&(RATE * BYTES_PER_FRAME as u32).to_le_bytes())?;
+    w.write_all(&(BYTES_PER_FRAME as u16).to_le_bytes())?;
     w.write_all(&16u16.to_le_bytes())?;
     w.write_all(b"data")?;
     w.write_all(&data.to_le_bytes())
@@ -56,7 +53,7 @@ pub fn mix_wav(tracks: &[Track], from: f64, frames: u64, out: &Path) -> Result<M
         let n = (BLOCK as u64).min(frames - b0) as usize;
         acc[..n * CHANNELS].fill(0.0);
         let (bt0, bt1) = (from + b0 as f64 / rate, from + (b0 + n as u64) as f64 / rate);
-        for tr in tracks {
+        for Track { clip: tr, pcm } in tracks {
             if tr.at >= bt1 || tr.at + tr.len <= bt0 || tr.gain <= 0.0 {
                 continue;
             }
@@ -65,9 +62,9 @@ pub fn mix_wav(tracks: &[Track], from: f64, frames: u64, out: &Path) -> Result<M
             if s_hi <= s_lo {
                 continue;
             }
-            let reader = match readers.get_mut(&tr.pcm.path) {
+            let reader = match readers.get_mut(&pcm.path) {
                 Some(r) => r,
-                None => readers.entry(tr.pcm.path.clone()).or_insert(PcmReader::open(&tr.pcm)?),
+                None => readers.entry(pcm.path.clone()).or_insert(PcmReader::open(pcm)?),
             };
             let pos = tr.src + (from + s_lo as f64 / rate - tr.at);
             let run = s_hi - s_lo;
@@ -80,7 +77,7 @@ pub fn mix_wav(tracks: &[Track], from: f64, frames: u64, out: &Path) -> Result<M
                 acc[oi * 2 + 1] += tmp[j * 2 + 1] * g;
             }
         }
-        let mut bytes = Vec::with_capacity(n * 4);
+        let mut bytes = Vec::with_capacity(n * BYTES_PER_FRAME as usize);
         for &v in &acc[..n * CHANNELS] {
             stats.peak = stats.peak.max(v.abs());
             if v.abs() > 1.0 {

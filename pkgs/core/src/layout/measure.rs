@@ -1,6 +1,6 @@
 use super::*;
 pub(super) enum Measure {
-    Text(TextSpec, bool, Vec<(Option<f32>, (f32, f32))>),
+    Text(TextSpec, bool),
     Natural((f32, f32)),
 }
 
@@ -27,7 +27,7 @@ pub(super) fn add(tree: &mut TaffyTree<Measure>, n: &VNode) -> Ids {
         return Ids { id: None, content: None, kids };
     }
     let ctx = match &n.kind {
-        Kind::Leaf(Leaf::Text(spec)) => Some(Measure::Text(spec.clone(), absolute(n) && n.style.max_size.width.is_auto(), vec![])),
+        Kind::Leaf(Leaf::Text(spec)) => Some(Measure::Text(spec.clone(), absolute(n) && n.style.max_size.width.is_auto())),
         Kind::Leaf(Leaf::Image { natural, .. } | Leaf::Video(_, natural)) => Some(Measure::Natural(*natural)),
         _ => None,
     };
@@ -80,25 +80,18 @@ pub(super) fn boxes(kids: &[Ids], children: &[VNode], out: &mut Vec<(taffy::Node
 
 pub(super) fn measure(fonts: &FontBook, m: &mut Measure, known: Size<Option<f32>>, avail: Size<AvailableSpace>) -> Size<f32> {
     match m {
-        Measure::Text(spec, free, seen) => {
+        Measure::Text(spec, free) => {
             let max_w = known.width.or(match avail.width {
                 _ if *free => None,
                 AvailableSpace::Definite(w) => Some(w),
                 AvailableSpace::MinContent => Some(0.0),
                 AvailableSpace::MaxContent => None,
             });
-            let (w, h) = match seen.iter().find(|(k, _)| *k == max_w) {
-                Some(&(_, size)) => size,
-                None => {
-                    let spec = TextSpec {
-                        width: max_w.map(|w| w + 0.5),
-                        ..spec.clone()
-                    };
-                    let size = measure_text(fonts, &spec).unwrap_or((0.0, 0.0));
-                    seen.push((max_w, size));
-                    size
-                }
+            let spec = TextSpec {
+                width: max_w.map(|w| w + 0.5),
+                ..spec.clone()
             };
+            let (w, h) = measure_text(fonts, &spec).unwrap_or((0.0, 0.0));
             Size {
                 width: known.width.unwrap_or(w),
                 height: known.height.unwrap_or(h),

@@ -19,7 +19,7 @@ const TEXT: &[&str] = &[
 ];
 const LINE: &[&str] = &["p", "closed", "fill", "stroke", "stroke-width", "head", "dashed", "dotted"];
 
-pub fn keys(tag: &str) -> Vec<&'static str> {
+fn keys(tag: &str) -> Vec<&'static str> {
     let mut k: Vec<&'static str> = match tag {
         "audio" => vec!["id", "at", "delay", "fadein", "fadeout", "label", "draft"],
         "hold" => vec!["id", "at", "fadein", "fadeout", "slot", "z", "opacity"],
@@ -42,29 +42,11 @@ pub fn keys(tag: &str) -> Vec<&'static str> {
     k
 }
 
-pub struct Ctx<'a> {
-    pub settings: &'a Settings,
-    pub base_dir: &'a Path,
-    pub fonts: &'a FontBook,
-    pub preview: bool,
-}
-
-pub struct Lowered {
-    pub nodes: Vec<Node>,
-    pub elems: Vec<Elem>,
-    pub names: Vec<(String, Target, Span)>,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum Flow {
-    Root,
-    Seq,
-    Stack,
-    Row,
-    Column,
-    Hold,
-    Repeat,
-    Dur,
+pub(super) struct Ctx<'a> {
+    pub(super) settings: &'a Settings,
+    pub(super) base_dir: &'a Path,
+    pub(super) fonts: &'a FontBook,
+    pub(super) preview: bool,
 }
 
 impl Flow {
@@ -73,19 +55,6 @@ impl Flow {
             Flow::Seq => NodeKind::Seq,
             Flow::Repeat => NodeKind::Repeat,
             _ => NodeKind::Par,
-        }
-    }
-
-    pub(super) fn name(self) -> &'static str {
-        match self {
-            Flow::Root => "mekuru",
-            Flow::Seq => "seq",
-            Flow::Stack => "stack",
-            Flow::Row => "row",
-            Flow::Column => "column",
-            Flow::Hold => "hold",
-            Flow::Repeat => "repeat",
-            Flow::Dur => "dur",
         }
     }
 
@@ -185,19 +154,12 @@ pub(super) fn in_cell(n: &mut VNode) {
     }
 }
 
-pub(super) fn dimension(d: Dim) -> Dimension {
+/// A `Dimension` or `LengthPercentageAuto`.
+pub(super) fn length_auto<T: TaffyAuto + FromLength + FromPercent>(d: Dim) -> T {
     match d {
-        Dim::Auto => Dimension::auto(),
-        Dim::Px(v) => Dimension::length(v),
-        Dim::Frac(f) => Dimension::percent(f),
-    }
-}
-
-pub(super) fn lpa(d: Dim) -> LengthPercentageAuto {
-    match d {
-        Dim::Auto => LengthPercentageAuto::auto(),
-        Dim::Px(v) => LengthPercentageAuto::length(v),
-        Dim::Frac(f) => LengthPercentageAuto::percent(f),
+        Dim::Auto => auto(),
+        Dim::Px(v) => length(v),
+        Dim::Frac(f) => percent(f),
     }
 }
 
@@ -210,42 +172,18 @@ pub(super) fn lp(d: Dim) -> LengthPercentage {
 }
 
 pub(super) fn padding(k: &ValKind) -> Result<taffy::Rect<LengthPercentage>, String> {
-    let one = |k: &ValKind| dim(k).map(lp);
-    match k {
-        ValKind::List(items) => {
-            let v: Vec<LengthPercentage> = items.iter().map(one).collect::<Result<_, _>>()?;
-            match v.as_slice() {
-                [a] => Ok(taffy::Rect {
-                    left: *a,
-                    right: *a,
-                    top: *a,
-                    bottom: *a,
-                }),
-                [y, x] => Ok(taffy::Rect {
-                    left: *x,
-                    right: *x,
-                    top: *y,
-                    bottom: *y,
-                }),
-                [t, r, b, l] => Ok(taffy::Rect {
-                    left: *l,
-                    right: *r,
-                    top: *t,
-                    bottom: *b,
-                }),
-                _ => Err("padding takes 1, 2 or 4 values".into()),
-            }
-        }
-        k => {
-            let a = one(k)?;
-            Ok(taffy::Rect {
-                left: a,
-                right: a,
-                top: a,
-                bottom: a,
-            })
-        }
-    }
+    let items = match k {
+        ValKind::List(items) => items.as_slice(),
+        k => std::slice::from_ref(k),
+    };
+    let v: Vec<LengthPercentage> = items.iter().map(|k| dim(k).map(lp)).collect::<Result<_, _>>()?;
+    let [top, right, bottom, left] = match *v.as_slice() {
+        [a] => [a; 4],
+        [y, x] => [y, x, y, x],
+        [t, r, b, l] => [t, r, b, l],
+        _ => return Err("padding takes 1, 2 or 4 values".into()),
+    };
+    Ok(taffy::Rect { left, right, top, bottom })
 }
 
 pub(super) fn alignment(a: &str) -> AlignItems {
@@ -261,17 +199,7 @@ impl Ctx<'_> {
     pub(super) fn node(&self, tag: &Tag, diags: &mut Vec<Diag>) -> Option<VNode> {
         let name = tag.name.as_str();
         let at = Attrs::new(name, &keys(name), &tag.attrs, tag.span, diags);
-        let flow = match name {
-            "mekuru" => Some(Flow::Root),
-            "seq" => Some(Flow::Seq),
-            "stack" => Some(Flow::Stack),
-            "row" => Some(Flow::Row),
-            "column" => Some(Flow::Column),
-            "hold" => Some(Flow::Hold),
-            "repeat" => Some(Flow::Repeat),
-            "dur" => Some(Flow::Dur),
-            _ => None,
-        };
+        let flow = Flow::of(name);
         let (mut style, anchor, deco) = self.appearance(name, flow, &at, diags);
         let times = at.times(diags);
         let hold = (flow == Some(Flow::Hold)).then(|| {
@@ -288,8 +216,7 @@ impl Ctx<'_> {
         };
         let mut children = vec![];
         let mut holds = vec![];
-        for c in &tag.children {
-            let crate::lang::ast::Child::Tag(t) = c else { continue };
+        for t in &tag.children {
             if is_speed(t) {
                 continue;
             }
@@ -376,22 +303,22 @@ impl Ctx<'_> {
             };
         }
         if let Some(w) = at.dim("w", diags) {
-            style.size.width = dimension(w);
+            style.size.width = length_auto(w);
         }
         if let Some(h) = at.dim("h", diags) {
-            style.size.height = dimension(h);
+            style.size.height = length_auto(h);
         }
         if let Some(v) = at.dim("min-w", diags) {
-            style.min_size.width = lpa(v);
+            style.min_size.width = length_auto(v);
         }
         if let Some(v) = at.dim("max-w", diags) {
-            style.max_size.width = lpa(v);
+            style.max_size.width = length_auto(v);
         }
         if let Some(v) = at.dim("min-h", diags) {
-            style.min_size.height = lpa(v);
+            style.min_size.height = length_auto(v);
         }
         if let Some(v) = at.dim("max-h", diags) {
-            style.max_size.height = lpa(v);
+            style.max_size.height = length_auto(v);
         }
         if let Some(g) = at.num("grow", diags) {
             style.flex_grow = g.max(0.0);
@@ -432,8 +359,8 @@ impl Ctx<'_> {
         if placed {
             style.position = Position::Absolute;
             style.inset = taffy::Rect {
-                left: lpa(x.unwrap_or(Dim::Px(0.0))),
-                top: lpa(y.unwrap_or(Dim::Px(0.0))),
+                left: length_auto(x.unwrap_or(Dim::Px(0.0))),
+                top: length_auto(y.unwrap_or(Dim::Px(0.0))),
                 right: LengthPercentageAuto::auto(),
                 bottom: LengthPercentageAuto::auto(),
             };
@@ -462,17 +389,11 @@ impl Ctx<'_> {
                 tag.head,
                 "`<repeat>` repeats what is in it, but nothing there has a length: put something with a length (a `<video>`, an `<audio>`, or a `<dur>`) in it",
             )),
-            Kind::Group(Flow::Root) => {
-                let head = tag.children.iter().find_map(|c| match c {
-                    crate::lang::ast::Child::Tag(t) => Some(t.head),
-                    _ => None,
-                });
-                Some((
-                    "E323",
-                    head.unwrap_or(tag.head),
-                    "the video needs a length: put something with a length (speech, a `<video>`, an `<audio>`, or a `<dur>`) in it",
-                ))
-            }
+            Kind::Group(Flow::Root) => Some((
+                "E323",
+                tag.children.first().map_or(tag.head, |t| t.head),
+                "the video needs a length: put something with a length (speech, a `<video>`, an `<audio>`, or a `<dur>`) in it",
+            )),
             _ => None,
         };
         if let Some((code, span, msg)) = need
@@ -492,7 +413,6 @@ impl Ctx<'_> {
     pub(super) fn leaf(&self, tag: &Tag, at: &Attrs, style: &mut Style, diags: &mut Vec<Diag>) -> Option<Leaf> {
         Some(match tag.name.as_str() {
             "text" => {
-                let text = tag.text();
                 let size = at.num("size", diags).unwrap_or(48.0);
                 let stroke = at.color("stroke", diags);
                 let style_t = TextStyle {
@@ -515,7 +435,7 @@ impl Ctx<'_> {
                     line_height: at.num("line-height", diags).unwrap_or(1.4),
                 };
                 Leaf::Text(TextSpec {
-                    text: text.display(),
+                    text: tag.text.clone(),
                     x: 0.0,
                     y: 0.0,
                     width: None,
@@ -655,10 +575,7 @@ pub(super) fn is_speed(t: &Tag) -> bool {
 }
 
 pub(super) fn speeds(tag: &Tag) -> impl Iterator<Item = &Tag> {
-    tag.children.iter().filter_map(|c| match c {
-        crate::lang::ast::Child::Tag(t) if is_speed(t) => Some(t),
-        _ => None,
-    })
+    tag.children.iter().filter(|t| is_speed(t))
 }
 
 pub(super) fn keep_ratio(style: &mut Style, natural: (f32, f32)) {

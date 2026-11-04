@@ -2,7 +2,7 @@ use mekuru_compiler::{
     Project,
     prepare::Prepared,
     preview,
-    render::{FrameRenderer, RenderInput, RenderTarget},
+    render::{FrameRenderer, RenderCtx, RenderTarget},
 };
 use std::path::Path;
 
@@ -15,12 +15,12 @@ fn preview_and_renderer_agree_on_a_static_scene() {
     assert!(!project.has_errors(), "{:?}", project.diags);
     let prepared = Prepared::default();
     let schedule = project.schedule(&prepared);
-    let input = RenderInput {
-        script: &project.script,
+    let ctx = RenderCtx {
+        project: &project,
         prepared: &prepared,
         sched: &schedule,
     };
-    let mut renderer = FrameRenderer::new(&input, RenderTarget::new(&project.script.settings, 1.0, None)).unwrap();
+    let mut renderer = FrameRenderer::new(ctx, RenderTarget::new(&project.script.settings, 1.0, None)).unwrap();
     assert!(renderer.render(0.0).unwrap());
     assert!(renderer.canvas().data().as_chunks::<4>().0.iter().all(|pixel| *pixel == [255, 0, 0, 255]));
     assert!(!renderer.render(1.0).unwrap());

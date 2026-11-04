@@ -1,37 +1,43 @@
 use crate::ir::{
-    AudioSpec, CircleSpec, Dash, Dur, Elem, ElemId, ElemKind, Hold, ImageSpec, MediaSrc, Node, NodeKind, PolySpec, RectSpec, Speed, Target, TextSpec, Time,
-    VideoSpec, ViewOp, ViewSpec,
+    AudioSpec, CircleSpec, Dash, Dur, Elem, ElemId, ElemKind, Hold, ImageSpec, MediaSrc, Node, NodeId, NodeKind, PolySpec, RectSpec, Script, Speed, Target,
+    TextSpec, Time, VideoSpec, ViewOp, ViewSpec,
 };
-use crate::lang::ast::{Tag, ValKind};
+use crate::lang::ast::{Document, Flow, Tag, ValKind};
 use crate::lang::attrs::{Attrs, Dim, MEDIA, TIMES, Times, dim};
-use crate::lang::diag::Diag;
+use crate::lang::diag::{Diag, did_you_mean};
 use crate::lang::span::Span;
 use crate::settings::{Align, Anchor, Rgba, Settings, TextStyle, resolve_font};
 use crate::typography::font::FontBook;
 use crate::typography::measure_text;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use taffy::prelude::*;
 use tiny_skia::Transform;
 
 mod parse;
 use parse::*;
-pub use parse::{Ctx, Lowered};
 
 mod measure;
 use measure::*;
 
-pub fn lower(root: &Tag, ctx: &Ctx, diags: &mut Vec<Diag>) -> Lowered {
+/// Lay out the document and turn it into timed nodes and elements.
+pub fn lower(doc: &Document, base_dir: &Path, fonts: &FontBook, diags: &mut Vec<Diag>, preview: bool) -> Script {
+    let ctx = Ctx {
+        settings: &doc.settings,
+        base_dir,
+        fonts,
+        preview,
+    };
     let mut out = Out {
         tree: TaffyTree::new(),
         nodes: vec![],
         elems: vec![],
         names: vec![],
     };
-    let root = ctx.node(root, diags).expect("`<mekuru>` is a group");
+    let root = ctx.node(&doc.root, diags).expect("`<mekuru>` is a group");
     out.tree.disable_rounding();
     let ids = add(&mut out.tree, &root);
     let (cw, ch) = (ctx.settings.width as f32, ctx.settings.height as f32);
-    let fonts = ctx.fonts;
     let result = out.tree.compute_layout_with_measure(
         ids.id.expect("`<mekuru>` takes space"),
         Size {
@@ -44,7 +50,7 @@ pub fn lower(root: &Tag, ctx: &Ctx, diags: &mut Vec<Diag>) -> Lowered {
                 style,
                 |_, _| 0.0,
                 |known, avail| match m {
-                    Some(m) => measure(fonts, m, known, avail),
+                    Some(m) => measure(ctx.fonts, m, known, avail),
                     None => Size::ZERO,
                 },
             )
@@ -57,10 +63,70 @@ pub fn lower(root: &Tag, ctx: &Ctx, diags: &mut Vec<Diag>) -> Lowered {
     let screen = Frame { x: 0.0, y: 0.0, w: cw, h: ch };
     let look = Look { node: 0, z: 0, opacity: 1.0 };
     out.children(&root, &ids, Bx { ids: &ids, r: screen }, Transform::identity(), look);
-    Lowered {
-        nodes: out.nodes,
-        elems: out.elems,
-        names: out.names,
+    let Out {
+        mut nodes, mut elems, names, ..
+    } = out;
+    resolve_ids(&mut nodes, &mut elems, names, diags);
+    let mut idx: Vec<usize> = (0..elems.len()).collect();
+    idx.sort_by_key(|&i| elems[i].site.lo);
+    for (rank, i) in idx.into_iter().enumerate() {
+        elems[i].order = rank as u32;
+    }
+    Script {
+        settings: doc.settings.clone(),
+        nodes,
+        elems,
+        base_dir: base_dir.to_path_buf(),
+    }
+}
+
+/// Check each `id` and point each `at` at its target.
+fn resolve_ids(nodes: &mut [Node], elems: &mut [Elem], names: Vec<(String, Target, Span)>, diags: &mut Vec<Diag>) {
+    // Each repeat body has its own clock. The repeat itself belongs to its parent's clock.
+    let scope = |mut parent: Option<NodeId>| {
+        while let Some(n) = parent {
+            if nodes[n].kind == NodeKind::Repeat {
+                return Some(n);
+            }
+            parent = nodes[n].parent;
+        }
+        None
+    };
+    let node_scopes: Vec<_> = nodes.iter().map(|n| scope(n.parent)).collect();
+    let elem_scopes: Vec<_> = elems.iter().map(|e| scope(Some(e.node))).collect();
+    let mut scopes: BTreeMap<Option<NodeId>, BTreeMap<String, Target>> = BTreeMap::new();
+    for (name, target, span) in names {
+        let scope = match target {
+            Target::Node(n) => node_scopes[n],
+            Target::Elem(e) => elem_scopes[e],
+        };
+        if !name.starts_with(|c: char| c.is_alphabetic() || c == '_') {
+            diags.push(Diag::new("E319", span, format!("invalid id `{name}`: an id starts with a letter")));
+        } else if scopes.entry(scope).or_default().insert(name.clone(), target).is_some() {
+            diags.push(Diag::new("E319", span, format!("the id `{name}` is used twice in the same clock")));
+        }
+    }
+    let mut check = |t: &mut Time, span: Span, scope: Option<NodeId>| {
+        if let Some(r) = &mut t.at {
+            let ids = scopes.entry(scope).or_default();
+            if let Some(target) = ids.get(&r.id) {
+                r.target = Some(*target);
+            } else {
+                let hint = did_you_mean(&r.id, ids.keys().map(String::as_str));
+                diags.push(Diag::new(
+                    "E318",
+                    span,
+                    format!("unknown id `{}` in this clock{hint}; references cannot cross a repeat body", r.id),
+                ));
+                t.at = None;
+            }
+        }
+    };
+    for n in nodes.iter_mut() {
+        check(&mut n.t, n.head, node_scopes[n.id]);
+    }
+    for e in elems.iter_mut() {
+        check(&mut e.t, e.site, elem_scopes[e.id]);
     }
 }
 

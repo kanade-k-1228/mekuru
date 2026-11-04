@@ -32,7 +32,7 @@ impl Subscription {
         // The publication lock makes the snapshot and all subsequent updates contiguous.
         let live = self.app.live.lock().unwrap();
         self.receiver = self.app.events.subscribe();
-        live.snapshot().expect("snapshot JSON").into()
+        live.snapshot().into()
     }
     pub(super) async fn next(&mut self) -> Option<Utf8Bytes> {
         match self.receiver.recv().await {

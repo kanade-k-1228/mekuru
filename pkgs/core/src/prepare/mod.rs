@@ -1,16 +1,30 @@
-pub mod cache;
-
 use crate::ir::{ElemId, ElemKind, Script};
 use crate::lang::diag::Diag;
 use crate::media::pcm::{self, Pcm};
 use crate::media::probe::{self, MediaProbe};
-use crate::progress::{Progress, Stage};
-use crate::schedule::{MediaDb, MediaInfo};
-use crate::util::hash::sha256_hex;
-use cache::Cache;
+use crate::util::{file_stamp, sha256_hex};
 use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+
+#[derive(Clone, Debug)]
+pub struct Cache {
+    pub root: PathBuf,
+}
+
+impl Cache {
+    fn sharded(&self, kind: &str, key: &str, ext: &str) -> PathBuf {
+        self.root.join("cache").join(kind).join(&key[..2.min(key.len())]).join(format!("{key}.{ext}"))
+    }
+
+    pub fn pcm(&self, key: &str) -> PathBuf {
+        self.sharded("pcm", key, "s16")
+    }
+
+    pub fn tmp(&self) -> PathBuf {
+        self.root.join("tmp")
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct MediaAsset {
@@ -24,23 +38,7 @@ pub struct Prepared {
     pub diags: Vec<Diag>,
 }
 
-impl MediaDb for Prepared {
-    fn info(&self, e: &crate::ir::Elem) -> Option<MediaInfo> {
-        self.media.get(&e.id).map(|m| MediaInfo {
-            len: m.probe.duration,
-            has_audio: m.probe.has_audio,
-        })
-    }
-}
-
-fn file_stamp(p: &Path) -> Option<(u64, i64)> {
-    let m = std::fs::metadata(p).ok()?;
-    let mtime = m.modified().ok()?.duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_millis() as i64);
-    Some((m.len(), mtime))
-}
-
-pub fn prepare(script: &Script, cache: &Cache, progress: &dyn Fn(Progress)) -> Prepared {
-    progress(Progress::Stage { stage: Stage::Prepare });
+pub fn prepare(script: &Script, cache: &Cache) -> Prepared {
     let mut out = inspect(script);
     let sources: std::collections::HashSet<_> = script
         .elems
@@ -124,8 +122,11 @@ pub fn inspect(script: &Script) -> Prepared {
 }
 
 fn prepare_pcm(p: &Path, cache: &Cache) -> anyhow::Result<Pcm> {
-    let (len, mtime) = file_stamp(p).ok_or_else(|| anyhow::anyhow!("file not found: {}", p.display()))?;
-    let key = sha256_hex(format!("{}|{len}|{mtime}", p.display()).as_bytes());
+    let stamp = file_stamp(p);
+    if stamp.1.is_none() {
+        anyhow::bail!("file not found: {}", p.display());
+    }
+    let key = sha256_hex(format!("{stamp:?}").as_bytes());
     let dst = cache.pcm(&key);
     if dst.exists() { Pcm::open(&dst) } else { pcm::convert(p, &dst) }
 }

@@ -31,10 +31,6 @@ impl Fps {
         self.num as f64 / self.den as f64
     }
 
-    pub fn time(&self, k: u64) -> f64 {
-        self.secs(k as f64)
-    }
-
     pub fn secs(&self, frames: f64) -> f64 {
         frames * self.den as f64 / self.num as f64
     }

@@ -1,27 +1,24 @@
 pub mod shapes;
 pub mod text;
-pub mod vector;
 
-use crate::ir::{ElemId, ElemKind, ImageSpec, VideoSpec, ViewOp, scaled};
+use crate::ir::{ElemId, ElemKind, ImageSpec, VideoSpec, ViewOp};
 use crate::media::Fps;
 use crate::media::probe::VideoStream;
 use crate::media::video::VideoReader;
-use crate::{ir::Script, prepare::Prepared, schedule::Schedule};
-
-#[derive(Clone, Copy)]
-pub struct RenderInput<'a> {
-    pub script: &'a Script,
-    pub prepared: &'a Prepared,
-    pub sched: &'a Schedule,
-}
-
 use crate::settings::Settings;
-use crate::typography::font::FontBook;
+use crate::{Project, prepare::Prepared, schedule::Schedule};
 use anyhow::Result;
+use shapes::{PaintedPath, rasterize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tiny_skia::{Color, FilterQuality, Pixmap, PixmapPaint, Point, Transform};
-use vector::{PaintedPath, rasterize};
+
+#[derive(Clone, Copy)]
+pub struct RenderCtx<'a> {
+    pub project: &'a Project,
+    pub prepared: &'a Prepared,
+    pub sched: &'a Schedule,
+}
 
 pub struct Sprite {
     pub pixmap: Pixmap,
@@ -89,6 +86,11 @@ pub(crate) fn transform_paths(paths: Vec<PaintedPath>, t: Transform) -> Vec<Pain
         .collect()
 }
 
+/// `t` in output pixels, for a transform written in canvas coordinates.
+fn scaled(t: Transform, scale: f32) -> Transform {
+    Transform::from_row(t.sx, t.ky, t.kx, t.sy, t.tx * scale, t.ty * scale)
+}
+
 fn transform_sprite(sp: Sprite, t: Transform) -> Option<Sprite> {
     if t.is_identity() {
         return Some(sp);
@@ -138,8 +140,7 @@ struct VideoSlot {
 type Key = Vec<(ElemId, u8, i64)>;
 
 pub struct FrameRenderer<'a> {
-    ctx: RenderInput<'a>,
-    fonts: Arc<FontBook>,
+    ctx: RenderCtx<'a>,
     pub target: RenderTarget,
     order: Vec<ElemId>,
     sprites: HashMap<ElemId, Option<Arc<Sprite>>>,
@@ -153,15 +154,13 @@ pub struct FrameRenderer<'a> {
 const SPRITE_BUDGET: usize = 512 << 20;
 
 impl<'a> FrameRenderer<'a> {
-    pub fn new(ctx: &RenderInput<'a>, target: RenderTarget) -> Result<Self> {
-        let ctx = *ctx;
-        let script = &ctx.script;
+    pub fn new(ctx: RenderCtx<'a>, target: RenderTarget) -> Result<Self> {
+        let script = &ctx.project.script;
         let mut order: Vec<ElemId> = script.elems.iter().filter(|e| e.kind.is_visual()).map(|e| e.id).collect();
         order.sort_by_key(|&id| (script.elems[id].z, script.elems[id].order));
         let canvas = Pixmap::new(target.width, target.height).ok_or_else(|| anyhow::anyhow!("invalid output size"))?;
         Ok(FrameRenderer {
             ctx,
-            fonts: crate::typography::font_book(&ctx.script.settings, &ctx.script.base_dir, &ctx.script.fonts),
             target,
             order,
             sprites: HashMap::new(),
@@ -182,7 +181,7 @@ impl<'a> FrameRenderer<'a> {
             return s.clone();
         }
         let s = self.target.scale;
-        let elem = &self.ctx.script.elems[id];
+        let elem = &self.ctx.project.script.elems[id];
         let sprite = match &elem.kind {
             ElemKind::View(v) => {
                 let ops = v.ops.clone();
@@ -219,7 +218,7 @@ impl<'a> FrameRenderer<'a> {
             ViewOp::Circle(c) => shapes::circle_paths(c, s),
             ViewOp::Poly(l) => shapes::poly_paths(l, s),
             ViewOp::Text(text) => {
-                let paths = text::draw::text_paths(&self.fonts, text, s);
+                let paths = text::text_paths(&self.ctx.project.fonts, text, s);
                 if paths.is_none() && !text.text.trim().is_empty() {
                     self.warnings
                         .push("no usable font found; text is not drawn (install a Japanese font or set `font` on `<mekuru>`)".into());
@@ -232,7 +231,7 @@ impl<'a> FrameRenderer<'a> {
 
     fn video_slot(&mut self, id: ElemId) -> Option<&mut VideoSlot> {
         if !self.videos.contains_key(&id) {
-            let script = &self.ctx.script;
+            let script = &self.ctx.project.script;
             let ElemKind::Video(v) = &script.elems[id].kind else { return None };
             let probe = self.ctx.prepared.media.get(&id)?.probe;
             let vs = probe.video?;
@@ -254,7 +253,8 @@ impl<'a> FrameRenderer<'a> {
 
     pub fn render(&mut self, t: f64) -> Result<bool> {
         let fps = self.target.fps.as_f64();
-        let RenderInput { script, sched, .. } = self.ctx;
+        let RenderCtx { project, sched, .. } = self.ctx;
+        let script = &project.script;
         let doc = script.settings.rate();
         let mut key: Key = vec![];
         for &id in &self.order {

@@ -1,38 +1,14 @@
 use anyhow::{Context, Result, bail};
-use std::io::{BufRead, BufReader, Read};
 use std::process::{Child, Command, Output, Stdio};
-use std::sync::{Arc, Mutex};
-use std::thread::JoinHandle;
 
-pub fn ffmpeg() -> String {
-    std::env::var("MEKURU_FFMPEG").unwrap_or_else(|_| "ffmpeg".into())
-}
-
-pub fn ffprobe() -> String {
-    std::env::var("MEKURU_FFPROBE").unwrap_or_else(|_| "ffprobe".into())
-}
-
-pub fn command(argv: &[String]) -> Command {
-    let mut c = Command::new(&argv[0]);
-    c.args(&argv[1..]);
-    c
-}
-
-pub fn display_argv(argv: &[String]) -> String {
-    argv.iter()
-        .map(|a| if a.contains([' ', '"', '\'']) { format!("'{a}'") } else { a.clone() })
-        .collect::<Vec<_>>()
-        .join(" ")
-}
-
-pub fn run_checked(argv: &[String]) -> Result<Output> {
-    let out = command(argv)
+pub fn run_checked(mut cmd: Command) -> Result<Output> {
+    let out = cmd
         .stdin(Stdio::null())
         .output()
-        .with_context(|| format!("failed to start `{}` (is it installed and on PATH?)", argv[0]))?;
+        .with_context(|| format!("failed to start `{}` (is it installed and on PATH?)", cmd.get_program().display()))?;
     if !out.status.success() {
         let err = String::from_utf8_lossy(&out.stderr);
-        bail!("`{}` failed ({}):\n{}", display_argv(argv), out.status, tail(&err, 20));
+        bail!("{cmd:?} failed ({}):\n{}", out.status, tail(&err, 20));
     }
     Ok(out)
 }
@@ -56,34 +32,5 @@ impl Drop for ChildGuard {
             let _ = c.kill();
             let _ = c.wait();
         }
-    }
-}
-
-pub struct StderrTail {
-    buf: Arc<Mutex<Vec<String>>>,
-    handle: Option<JoinHandle<()>>,
-}
-
-impl StderrTail {
-    pub fn spawn(stderr: impl Read + Send + 'static) -> Self {
-        let buf = Arc::new(Mutex::new(Vec::new()));
-        let b = buf.clone();
-        let handle = std::thread::spawn(move || {
-            for line in BufReader::new(stderr).lines().map_while(Result::ok) {
-                let mut v = b.lock().unwrap();
-                v.push(line);
-                if v.len() > 40 {
-                    v.remove(0);
-                }
-            }
-        });
-        StderrTail { buf, handle: Some(handle) }
-    }
-
-    pub fn text(&mut self) -> String {
-        if let Some(h) = self.handle.take() {
-            let _ = h.join();
-        }
-        self.buf.lock().unwrap().join("\n")
     }
 }

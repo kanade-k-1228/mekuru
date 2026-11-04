@@ -14,6 +14,12 @@ pub struct Diagnostic {
     pub message: String,
 }
 
+impl std::fmt::Display for Diagnostic {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "L{} {}: {}", self.line, self.code, self.message)
+    }
+}
+
 pub struct Resolved {
     pub prepared: Prepared,
     pub schedule: Schedule,
@@ -56,18 +62,14 @@ impl Compilation {
     }
 
     pub fn diagnostics(&self) -> Vec<Diagnostic> {
-        diagnostics(&self.project, &self.diagnostics)
+        self.diagnostics
+            .iter()
+            .map(|d| Diagnostic {
+                code: d.code.into(),
+                severity: if d.is_error() { "error" } else { "warning" },
+                line: self.project.index.line(d.span.lo),
+                message: d.msg.clone(),
+            })
+            .collect()
     }
-}
-
-pub fn diagnostics(p: &Project, diags: &[Diag]) -> Vec<Diagnostic> {
-    diags
-        .iter()
-        .map(|d| Diagnostic {
-            code: d.code.into(),
-            severity: if d.is_error() { "error" } else { "warning" },
-            line: p.index.line(d.span.lo),
-            message: d.msg.clone(),
-        })
-        .collect()
 }

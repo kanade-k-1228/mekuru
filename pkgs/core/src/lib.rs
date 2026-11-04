@@ -20,6 +20,8 @@ use anyhow::{Context, Result};
 use lang::diag::{Diag, has_errors};
 use lang::span::LineIndex;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use typography::font::FontBook;
 
 fn normalize(p: &Path) -> PathBuf {
     use std::path::Component;
@@ -38,11 +40,21 @@ fn normalize(p: &Path) -> PathBuf {
     out
 }
 
+/// The absolute folder that `src` paths start from: `root`, else the XML's folder (the project above it for `.mekuru/`).
+pub fn project_root(xml: &Path, root: Option<&Path>) -> PathBuf {
+    let parent = |p: &Path| p.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new(".")).to_path_buf();
+    let dir = parent(xml);
+    let dir = if dir.file_name().is_some_and(|n| n == ".mekuru") { parent(&dir) } else { dir };
+    let root = root.map_or(dir, Path::to_path_buf);
+    std::path::absolute(&root).map_or(root, |r| normalize(&r))
+}
+
 pub struct Project {
     pub path: PathBuf,
     pub source: String,
     pub index: LineIndex,
     pub script: ir::Script,
+    pub fonts: Arc<FontBook>,
     pub syntax: lang::ast::Tag,
     pub diags: Vec<Diag>,
 }
@@ -59,21 +71,16 @@ impl Project {
 
     pub(crate) fn from_source_mode(path: &Path, root: Option<&Path>, source: String, preview: bool) -> Project {
         let (doc, mut diags) = lang::xml::parse(&source);
-        let dir = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
-        let dir = if dir.file_name().is_some_and(|n| n == ".mekuru") {
-            dir.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."))
-        } else {
-            dir
-        };
-        let base = root.unwrap_or(dir).to_path_buf();
-        let base = std::path::absolute(&base).map(|b| normalize(&b)).unwrap_or(base);
-        let script = lang::expand::lower(&doc, &base, &mut diags, preview);
+        let base = project_root(path, root);
+        let fonts = typography::font_book(&doc.settings, &base, &doc.root);
+        let script = layout::lower(&doc, &base, &fonts, &mut diags, preview);
         let index = LineIndex::new(&source);
         Project {
             path: path.to_path_buf(),
             source,
             index,
             script,
+            fonts,
             syntax: doc.root,
             diags,
         }
@@ -83,12 +90,8 @@ impl Project {
         has_errors(&self.diags)
     }
 
-    pub fn schedule(&self, media: &dyn schedule::MediaDb) -> schedule::Schedule {
-        schedule::schedule(&self.script, media)
-    }
-
-    pub fn fonts(&self) -> std::sync::Arc<typography::font::FontBook> {
-        typography::font_book(&self.script.settings, &self.script.base_dir, &self.script.fonts)
+    pub fn schedule(&self, prepared: &prepare::Prepared) -> schedule::Schedule {
+        schedule::schedule(&self.script, prepared)
     }
 
     pub fn default_output(&self) -> PathBuf {
@@ -97,8 +100,8 @@ impl Project {
         self.script.base_dir.join(format!("{stem}.mp4"))
     }
 
-    pub fn cache(&self) -> prepare::cache::Cache {
-        prepare::cache::Cache {
+    pub fn cache(&self) -> prepare::Cache {
+        prepare::Cache {
             root: self.script.base_dir.join(".mekuru"),
         }
     }

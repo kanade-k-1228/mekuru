@@ -140,10 +140,12 @@ test("native patches reconstruct the reconnect snapshot, retain failures and rec
     expect(recovered.type).toBe("status");
     expect(recovered.state.status).toBe("ready");
     expect(recovered.state.previewVersion).toBe(patch.version);
-    // A large structural replacement is sent as a new snapshot.
+    // Even a large structural replacement is a patch on the acknowledged scene.
     await save(previewXml(1, 0, "ja"));
     await connection.next();
-    expect((await connection.next()).type).toBe("snapshot");
+    const replaced = await connection.next();
+    if (replaced.type !== "patch") throw new Error("expected patch");
+    expect(store.apply(replaced)).toEqual(fresh.apply(await snapshot()));
   } finally {
     connection.close();
   }

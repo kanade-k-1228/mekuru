@@ -2,9 +2,10 @@ use anyhow::{Result, bail};
 use clap::Parser;
 use mekuru_compiler::Project;
 use mekuru_compiler::lang::diag::Diag;
-use mekuru_compiler::pipeline::{self, RenderCtx, RenderOptions};
+use mekuru_compiler::pipeline::{self, RenderOptions};
 use mekuru_compiler::prepare::prepare;
-use mekuru_compiler::progress::{Progress, Stage};
+use mekuru_compiler::progress::Progress;
+use mekuru_compiler::render::RenderCtx;
 use std::cell::Cell;
 use std::io::{IsTerminal, Write};
 use std::path::PathBuf;
@@ -104,7 +105,10 @@ fn run(cli: Cli) -> Result<()> {
     let project = Project::load(&script, root.as_deref())?;
     let cache = project.cache();
     let printer = Printer::new();
-    let compilation = mekuru_compiler::analysis::Compilation::new(project, |script| prepare(script, &cache, &|e| printer.emit(e)));
+    let compilation = mekuru_compiler::analysis::Compilation::new(project, |script| {
+        printer.emit(Progress::Prepare);
+        prepare(script, &cache)
+    });
     printer.done();
     let p = &compilation.project;
     print_diags(p, &compilation.diagnostics);
@@ -182,10 +186,10 @@ impl Printer {
             return;
         }
         let s = match p {
-            Progress::Stage { stage: Stage::Prepare } => "preparing media…".to_string(),
-            Progress::Stage { stage: Stage::Mix } => "mixing audio…".to_string(),
-            Progress::Stage { stage: Stage::Render } => "rendering frames…".to_string(),
-            Progress::Stage { stage: Stage::Finalize } => "finishing…".to_string(),
+            Progress::Prepare => "preparing media…".to_string(),
+            Progress::Mix => "mixing audio…".to_string(),
+            Progress::Render => "rendering frames…".to_string(),
+            Progress::Finalize => "finishing…".to_string(),
             Progress::Frames { done, total, elapsed } => {
                 let pct = done as f64 / total.max(1) as f64 * 100.0;
                 let fps = done as f64 / elapsed.max(1e-3);
