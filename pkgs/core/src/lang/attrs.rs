@@ -16,7 +16,7 @@ pub enum Dim {
     Frac(f32),
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, PartialEq)]
 pub struct Times {
     pub id: Option<String>,
     pub at: Option<Ref>,
@@ -30,14 +30,7 @@ pub struct Times {
 
 impl Times {
     pub fn any(&self) -> bool {
-        self.id.is_some()
-            || self.at.is_some()
-            || self.delay.is_some()
-            || self.fadein.is_some()
-            || self.fadeout.is_some()
-            || self.slot.is_some()
-            || self.z.is_some()
-            || self.opacity.is_some()
+        *self != Times::default()
     }
 
     pub fn time(&self, dur: Dur) -> Time {
