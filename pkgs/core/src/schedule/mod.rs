@@ -535,7 +535,7 @@ impl<'a> Solver<'a> {
             if n.t.fade_in + n.t.fade_out <= 0 {
                 continue;
             }
-            let (fade_in, fade_out) = self.fit_fades(n.t.fade_in, n.t.fade_out, nt.end - nt.start, n.head);
+            let (fade_in, fade_out) = fit_fades(n.t.fade_in, n.t.fade_out, nt.end - nt.start, n.head, &mut self.diags);
             fades[n.id] = Some(Fade {
                 start: nt.start as f64,
                 end: nt.end as f64,
@@ -544,22 +544,10 @@ impl<'a> Solver<'a> {
                 level: level(n),
             });
         }
-        let outer = |mut n: Option<NodeId>| {
-            let mut out = vec![];
-            while let Some(i) = n {
-                out.extend(fades[i]);
-                n = s.nodes[i].parent;
-            }
-            out
-        };
         let hidden = self.hidden(&repeats);
         let hidden_in = |e: &Elem| {
             let mut out = hidden.get(&Target::Elem(e.id)).cloned().unwrap_or_default();
-            let mut n = Some(e.node);
-            while let Some(i) = n {
-                out.extend(hidden.get(&Target::Node(i)).into_iter().flatten());
-                n = s.nodes[i].parent;
-            }
+            out.extend(ancestors(&s.nodes, Some(e.node)).filter_map(|i| hidden.get(&Target::Node(i))).flatten());
             merge(out)
         };
         let mut elems = Vec::with_capacity(s.elems.len());
@@ -576,13 +564,13 @@ impl<'a> Solver<'a> {
                     format!("`{}` is never visible (its interval is empty)", e.kind.name()),
                 ));
             }
-            let (fi, fo) = self.fit_fades(e.t.fade_in, e.t.fade_out, end - start, e.site);
+            let (fi, fo) = fit_fades(e.t.fade_in, e.t.fade_out, end - start, e.site, &mut self.diags);
             let mut et = ElemTime {
                 start,
                 end,
                 fade_in: fi,
                 fade_out: fo,
-                outer: outer(Some(e.node)),
+                outer: ancestors(&s.nodes, Some(e.node)).filter_map(|i| fades[i]).collect(),
                 src: None,
                 repeat: repeats[e.node].clone(),
                 hidden: vec![],
@@ -684,15 +672,6 @@ impl<'a> Solver<'a> {
             }
         }
         hidden
-    }
-
-    fn fit_fades(&mut self, fade_in: i64, fade_out: i64, len: i64, site: Span) -> (f64, f64) {
-        let (fades, shortened) = fit_fades(fade_in, fade_out, len);
-        if shortened {
-            self.diags
-                .push(Diag::new("W553", site, "fades are longer than the element is shown; they were shortened"));
-        }
-        fades
     }
 
     fn checks(&mut self, nodes: &[NodeTime]) {

@@ -1,6 +1,6 @@
 use crate::ir::{
     AudioSpec, CircleSpec, Dash, Dur, Elem, ElemId, ElemKind, Hold, ImageSpec, MediaSrc, Node, NodeId, PolySpec, RectSpec, Script, Speed, Target, TextSpec,
-    Time, VideoSpec, ViewOp, ViewSpec,
+    Time, VideoSpec, ViewOp, ViewSpec, ancestors,
 };
 use crate::lang::ast::{Document, Flow, Tag, ValKind};
 use crate::lang::attrs::{Attrs, Dim, MEDIA, TIMES, Times, dim};
@@ -78,15 +78,7 @@ pub fn lower(doc: &Document, base_dir: &Path, fonts: &FontBook, diags: &mut Vec<
 /// Check each `id` and point each `at` at its target.
 fn resolve_ids(nodes: &mut [Node], elems: &mut [Elem], names: Vec<(String, Target, Span)>, diags: &mut Vec<Diag>) {
     // Each repeat body has its own clock. The repeat itself belongs to its parent's clock.
-    let scope = |mut parent: Option<NodeId>| {
-        while let Some(n) = parent {
-            if nodes[n].flow == Flow::Repeat {
-                return Some(n);
-            }
-            parent = nodes[n].parent;
-        }
-        None
-    };
+    let scope = |parent: Option<NodeId>| ancestors(nodes, parent).find(|&n| nodes[n].flow == Flow::Repeat);
     let node_scopes: Vec<_> = nodes.iter().map(|n| scope(n.parent)).collect();
     let elem_scopes: Vec<_> = elems.iter().map(|e| scope(Some(e.node))).collect();
     let mut scopes: BTreeMap<Option<NodeId>, BTreeMap<String, Target>> = BTreeMap::new();

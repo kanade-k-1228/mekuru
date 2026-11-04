@@ -73,6 +73,11 @@ pub struct Hold {
     pub at: i64,
 }
 
+/// `from` and the nodes it is in, innermost first.
+pub fn ancestors(nodes: &[Node], from: Option<NodeId>) -> impl Iterator<Item = NodeId> + '_ {
+    std::iter::successors(from, |&n| nodes[n].parent)
+}
+
 #[derive(Clone, Debug)]
 pub struct Node {
     pub id: NodeId,

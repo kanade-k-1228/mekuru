@@ -31,7 +31,7 @@ impl SrcMap {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct NodeTime {
     pub start: i64,
     pub end: i64,
@@ -68,13 +68,15 @@ impl Fade {
     }
 }
 
-pub(super) fn fit_fades(fade_in: i64, fade_out: i64, span: i64) -> ((f64, f64), bool) {
+/// The fades, shortened in proportion (with W553) when together they are longer than `span`.
+pub(super) fn fit_fades(fade_in: i64, fade_out: i64, span: i64, site: Span, diags: &mut Vec<Diag>) -> (f64, f64) {
     let (fi, fo) = (fade_in as f64, fade_out as f64);
     if fade_in + fade_out > span && span > 0 {
+        diags.push(Diag::new("W553", site, "fades are longer than the element is shown; they were shortened"));
         let k = span as f64 / (fi + fo);
-        ((fi * k, fo * k), true)
+        (fi * k, fo * k)
     } else {
-        ((fi, fo), false)
+        (fi, fo)
     }
 }
 
@@ -92,7 +94,7 @@ impl Repeat {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct ElemTime {
     pub start: i64,
     pub end: i64,
@@ -198,22 +200,11 @@ pub struct Schedule {
 
 impl Schedule {
     pub(super) fn failed(s: &Script, diags: Vec<Diag>) -> Schedule {
-        let nothing = ElemTime {
-            start: 0,
-            end: 0,
-            fade_in: 0.0,
-            fade_out: 0.0,
-            outer: vec![],
-            src: None,
-            repeat: vec![],
-            hidden: vec![],
-        };
         Schedule {
-            total: 0,
-            nodes: vec![NodeTime { start: 0, end: 0 }; s.nodes.len()],
-            elems: vec![nothing; s.elems.len()],
-            audio: vec![],
+            nodes: vec![NodeTime::default(); s.nodes.len()],
+            elems: vec![ElemTime::default(); s.elems.len()],
             diags,
+            ..Schedule::default()
         }
     }
 }
