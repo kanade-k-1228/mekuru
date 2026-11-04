@@ -4,6 +4,7 @@ const DECO: &[&str] = &["fill", "stroke", "stroke-width", "radius"];
 const GROUP: &[&str] = &["padding", "align"];
 const FLOW: &[&str] = &["gap", "justify", "wrap"];
 const TEXT: &[&str] = &[
+    "text",
     "size",
     "color",
     "font",
@@ -14,7 +15,6 @@ const TEXT: &[&str] = &[
     "stroke-width",
     "background",
     "radius",
-    "pre",
     "padding",
 ];
 const LINE: &[&str] = &["p", "closed", "fill", "stroke", "stroke-width", "head", "dashed", "dotted"];
@@ -401,6 +401,7 @@ impl Ctx<'_> {
     pub(super) fn leaf(&self, tag: &Tag, at: &Attrs, style: &mut Style, diags: &mut Vec<Diag>) -> Option<Leaf> {
         Some(match tag.name.as_str() {
             "text" => {
+                at.require("text", diags)?;
                 let size = at.num("size", diags).unwrap_or(48.0);
                 let stroke = at.color("stroke", diags);
                 let style_t = TextStyle {

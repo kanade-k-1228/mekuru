@@ -78,7 +78,7 @@ beforeEach(() => {
 });
 
 test("reads a line with the newest version of a voice found by its display name", async () => {
-  const xml = await say({ voice: "田中傘", speed: 1.2, style: { happy: 0.5 }, children: "こんにちは" });
+  const xml = await say({ voice: "田中傘", speed: 1.2, style: { happy: 0.5 }, text: "こんにちは" });
   expect(posts).toEqual([
     {
       language: "ja_JP",
@@ -96,7 +96,7 @@ test("reads a line with the newest version of a voice found by its display name"
 });
 
 test("splits long lines and joins the audio", async () => {
-  await say({ voice: "tanaka-san_ja_JP", version: "1.0.0", "max-chars": 4, children: "あいう。えおか。" });
+  await say({ voice: "tanaka-san_ja_JP", version: "1.0.0", "max-chars": 4, text: "あいう。えおか。" });
   expect(posts.map((p) => [p.text, p.voice_version])).toEqual([
     ["あいう。", "1.0.0"],
     ["えおか。", "1.0.0"],
@@ -105,20 +105,20 @@ test("splits long lines and joins the audio", async () => {
 });
 
 test("reports unknown voices, styles and versions with what VoiSona Talk has", async () => {
-  await expect(say({ voice: "知声", children: "a" })).rejects.toThrow("has no voice `知声` (it has tanaka-san_ja_JP (田中傘)");
-  await expect(say({ voice: "田中傘", style: { angry: 1 }, children: "b" })).rejects.toThrow("has no style `angry` (it has normal, happy)");
-  await expect(say({ voice: "田中傘", version: "3.0.0", children: "c" })).rejects.toThrow("(it has 2.0.0, 1.0.0)");
+  await expect(say({ voice: "知声", text: "a" })).rejects.toThrow("has no voice `知声` (it has tanaka-san_ja_JP (田中傘)");
+  await expect(say({ voice: "田中傘", style: { angry: 1 }, text: "b" })).rejects.toThrow("has no style `angry` (it has normal, happy)");
+  await expect(say({ voice: "田中傘", version: "3.0.0", text: "c" })).rejects.toThrow("(it has 2.0.0, 1.0.0)");
 });
 
 test("failed syntheses are reported and deleted", async () => {
   failText = "だめ";
-  await expect(say({ voice: "田中傘", children: "だめ" })).rejects.toThrow("VoiSona Talk could not read: だめ");
+  await expect(say({ voice: "田中傘", text: "だめ" })).rejects.toThrow("VoiSona Talk could not read: だめ");
   expect(deleted).toEqual(["u1"]);
 });
 
 test("missing or wrong credentials say which environment variables to set", async () => {
   delete process.env.MEKURU_VOISONA_PASSWORD;
-  await expect(say({ voice: "田中傘", children: "d" })).rejects.toThrow("MEKURU_VOISONA_USER and MEKURU_VOISONA_PASSWORD");
+  await expect(say({ voice: "田中傘", text: "d" })).rejects.toThrow("MEKURU_VOISONA_USER and MEKURU_VOISONA_PASSWORD");
   process.env.MEKURU_VOISONA_PASSWORD = "wrong";
-  await expect(say({ voice: "田中傘", children: "e" })).rejects.toThrow(/HTTP 401[\s\S]*MEKURU_VOISONA_PASSWORD/);
+  await expect(say({ voice: "田中傘", text: "e" })).rejects.toThrow(/HTTP 401[\s\S]*MEKURU_VOISONA_PASSWORD/);
 });

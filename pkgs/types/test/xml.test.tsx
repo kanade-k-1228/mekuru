@@ -15,11 +15,11 @@ test("nothing says whether it has a length: its kind does", async () => {
       <>
         <rect w="100%" h="100%" fill="white" />
         <stack>
-          <text>見出し</text>
+          <text text="見出し" />
           <audio src="a.wav" />
         </stack>
         <stack x={10}>
-          <text>字幕</text>
+          <text text="字幕" />
         </stack>
         <repeat fadein={30} fadeout={60}>
           <audio src="bgm.mp3" volume="50%" />
@@ -29,11 +29,11 @@ test("nothing says whether it has a length: its kind does", async () => {
   ).toEqual([
     '<rect w="100%" h="100%" fill="#FFFFFF"/>',
     "<stack>",
-    "<text>見出し</text>",
+    '<text text="見出し"/>',
     '<audio src="a.wav"/>',
     "</stack>",
     '<stack x="10">',
-    "<text>字幕</text>",
+    '<text text="字幕"/>',
     "</stack>",
     '<repeat fadein="30" fadeout="60">',
     '<audio src="bgm.mp3" volume="0.5"/>',
@@ -79,11 +79,11 @@ test("a hold is in its media, and makes the media wait however long it is", asyn
     await body(
       <video id="life" src="life.mp4">
         <hold at={285}>
-          <text>一時停止中</text>
+          <text text="一時停止中" />
         </hold>
       </video>,
     ),
-  ).toEqual(['<video id="life" src="life.mp4">', '<hold at="285">', "<text>一時停止中</text>", "</hold>", "</video>"]);
+  ).toEqual(['<video id="life" src="life.mp4">', '<hold at="285">', '<text text="一時停止中"/>', "</hold>", "</video>"]);
 });
 
 test("components see the frame rate of the video", async () => {
@@ -100,41 +100,51 @@ test("components see the frame rate of the video", async () => {
 });
 
 test("components run, async ones too, and see whether this is the draft", async () => {
-  const Line = async ({ children }: { children: string }) => {
+  const Line = async ({ label }: { label: string }) => {
     await Promise.resolve();
     return isDraft() ? (
       <dur len={30}>
-        <audio draft label={children} />
+        <audio draft label={label} />
       </dur>
     ) : (
-      <audio src="line.wav" label={children} />
+      <audio src="line.wav" label={label} />
     );
   };
   const Both = ({ children }: { children: Node }) => (
     <stack>
       {children}
-      <text>
-        a &amp; b<br />
-        &lt;c&gt;
-      </text>
+      <text text={"a & b\n<c>"} />
     </stack>
   );
   expect(
     await body(
       <Both>
-        <Line>こんにちは</Line>
+        <Line label="こんにちは" />
       </Both>,
     ),
-  ).toEqual(["<stack>", '<audio src="line.wav" label="こんにちは"/>', "<text>a &amp; b<br/>&lt;c&gt;</text>", "</stack>"]);
+  ).toEqual(["<stack>", '<audio src="line.wav" label="こんにちは"/>', '<text text="a &amp; b&#10;&lt;c&gt;"/>', "</stack>"]);
 });
 
 test("the video is one seq", async () => {
   const xml = await toXml(
     <mekuru fps={30}>
       <dur len={30}>
-        <text>a</text>
+        <text text="a" />
       </dur>
     </mekuru>,
   );
-  expect(xml).toBe('<mekuru fps="30">\n  <seq>\n    <dur len="30">\n      <text>a</text>\n    </dur>\n  </seq>\n</mekuru>\n');
+  expect(xml).toBe('<mekuru fps="30">\n  <seq>\n    <dur len="30">\n      <text text="a"/>\n    </dur>\n  </seq>\n</mekuru>\n');
+});
+
+test("text is an attribute: no element holds text", async () => {
+  const children = { children: "a" } as unknown as { text: string };
+  await expect(toXml(<mekuru>{<text {...children} />}</mekuru>)).rejects.toThrow("`<text>` takes its string in `text`");
+  await expect(
+    toXml(
+      <mekuru>
+        <stack>a</stack>
+      </mekuru>,
+    ),
+  ).rejects.toThrow("text cannot be in `<stack>`");
+  expect(await body(<stack> </stack>)).toEqual(["<stack/>"]);
 });

@@ -25,7 +25,7 @@ test("--run creates a missing XML file using the explicit project root", async (
   await mkdir(project);
   const xml = join(root, "output/scene.xml");
   const script = join(root, "write script.cjs");
-  const source = '<mekuru><seq><dur len="30"><text>Created by script</text></dur></seq></mekuru>';
+  const source = '<mekuru><seq><dur len="30"><text text="Created by script"/></dur></seq></mekuru>';
   await Bun.write(join(project, "asset.txt"), "explicit project root");
   await Bun.write(
     script,

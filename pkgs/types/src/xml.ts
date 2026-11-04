@@ -4,24 +4,20 @@ import { attributes } from "./normalize.ts";
 import { expand, type Element, type Item } from "./expand.ts";
 import { builds, context } from "./context.ts";
 
-const escapeXml = (s: string, quote: boolean) =>
-  s.replace(
-    quote ? /[&<>"\n\r\t]/g : /[&<>]/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "\n": "&#10;", "\r": "&#13;", "\t": "&#9;" })[c] ?? c,
-  );
+const escapeXml = (s: string) =>
+  s.replace(/[&<>"\n\r\t]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "\n": "&#10;", "\r": "&#13;", "\t": "&#9;" })[c] ?? c);
 
 const head = (element: Element) =>
   `<${element.tag}${attributes(element.tag, element.props)
-    .map(([key, value]) => ` ${key}="${escapeXml(value, true)}"`)
+    .map(([key, value]) => ` ${key}="${escapeXml(value)}"`)
     .join("")}`;
 
-const serialize = (element: Element, indent = "", compact = false): string => {
-  const children = element.children.filter((child) => typeof child !== "string" || element.tag === "text" || child.trim());
+/** Text lives in attributes (`<text text="…"/>`), so elements hold only elements. */
+const serialize = (element: Element, indent = ""): string => {
+  const children = element.children.filter((child): child is Element => typeof child !== "string");
   const opening = `${indent}${head(element)}`;
   if (!children.length) return `${opening}/>`;
-  const inline = compact || children.some((child) => typeof child === "string");
-  const body = children.map((child) => (typeof child === "string" ? escapeXml(child, false) : serialize(child, inline ? "" : `${indent}  `, inline)));
-  return inline ? `${opening}>${body.join("")}</${element.tag}>` : `${opening}>\n${body.join("\n")}\n${indent}</${element.tag}>`;
+  return `${opening}>\n${children.map((child) => serialize(child, `${indent}  `)).join("\n")}\n${indent}</${element.tag}>`;
 };
 
 const renderXml = async (video: unknown): Promise<string> => {

@@ -28,24 +28,24 @@ import { Voisona } from "@mekuru/voisona";
 import type { LayerProps } from "./assets/character/tsuzumi/portrait";
 
 const actor = portrait<LayerProps>({ src: "assets/character/tsuzumi" });
-type TsuzumiProps = { children?: Node; face?: LayerProps["face"]; id?: string; at?: At };
+type TsuzumiProps = { text: Node; face?: LayerProps["face"]; id?: string; at?: At };
 
 export const TsuzumiStand = actor.Stand;
-export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
-  const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", children });
+export const Tsuzumi: FC<TsuzumiProps> = async ({ text, face, id, at }) => {
+  const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", text });
   return (
     <dur len={line.audio.len} id={id} at={at}>
       <stack>
         <Audio source={line.audio} />
         <actor.Talk source={line.audio} face={face} />
-        <Subtitle color="#E0161E">{line.display}</Subtitle>
+        <Subtitle color="#E0161E" text={line.display} />
       </stack>
     </dur>
   );
 };
 ```
 
-Place `<Tsuzumi>漢字《かんじ》を読みます。</Tsuzumi>` inside `<mekuru>`. Speech uses “かんじ”, while the subtitle shows “漢字”. To show an idle portrait, place `<TsuzumiStand />` in the scene's `<stack>`.
+Place `<Tsuzumi text="こんにちは。" />` inside `<mekuru>`. The same line is spoken and shown as the subtitle. To show an idle portrait, place `<TsuzumiStand />` in the scene's `<stack>`.
 
 - The speech component owns synthesis, caching, and duration.
 - `portrait()` in this package owns expressions, lip sync, and idle portraits. Use `<image>` for a static portrait.
@@ -64,12 +64,10 @@ Use `blink` for the average blinking interval and `x`, `y`, `w`, `h`, `z`, `rota
 Defaults: `x="50%"`, `y="95%"`, `anchor="b"`, `max-w="90%"`, `align="center"`, `size={54}`, white text, black stroke of width 7, and `z={100}`. Override any default through props.
 
 ```tsx
-<Subtitle y="90%" size={48} stroke="#2E5E8C">
-  Mekuru の字幕です。<br />Explicit line breaks are preserved.
-</Subtitle>
+<Subtitle y="90%" size={48} stroke="#2E5E8C" text={"Mekuru の字幕です。\nExplicit line breaks are preserved."} />
 ```
 
-`Subtitle` expands children exactly like `<text>`. It does not trim whitespace, and `<br />` and `pre` are passed through. Ruby notation stays in the XML as written; as in every `<text>`, the compiler shows only the base text (`漢字《かんじ》` appears as “漢字”). For speech, pass `line.display`.
+`Subtitle` takes `text` like `<text>` and passes every prop through unchanged: the string is shown as given, `\n` breaks a line, and nothing is trimmed. For speech, pass `line.display`. To show a line that contains text components without speech, pass `await subtitleText(text)` from `@mekuru/speech`.
 
 For multiple outlines, layer `Subtitle` components at the same position with different `stroke` and `stroke-width` values.
 

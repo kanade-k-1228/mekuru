@@ -44,7 +44,7 @@ Pass your WAV-writing callback to `createSpeech()` and use the returned componen
 
 Every speech component, such as `<Voicevox>`, `<Coeiroink>`, `<StyleBertVits2>`, `<Voisona>` or one made with `defineSpeech()`, takes these props (`SpeechProps`) besides its voice settings:
 
-- `children`: Dialogue: strings, numbers, fragments, or `<br />`. Empty speech is an error.
+- `text`: Required. Dialogue: a string, number, fragment, or component returning text. Empty speech and children are errors.
 - `name`: Timeline speaker label. Default: the speaker; each engine's README says which prop that is, and `prepare()` uses `who`.
 - `reading`: Pronunciation dictionary, e.g. `{ Mekuru: "めくる" }`. Longer keys win; displayed text is unchanged.
 - `gap`: Trailing silence in frames. Default: `Math.round(0.3 * fps)` (9 at 30 fps).
@@ -52,7 +52,7 @@ Every speech component, such as `<Voicevox>`, `<Coeiroink>`, `<StyleBertVits2>`,
 - `len`: Total frames, including the gap. Default: rounded-up audio duration + `gap`. Does not change speaking speed.
 - `id`, `at`: Identifier and start timing for the generated `<dur>`; see [timing](../../docs/reference/Syntax.md#timing-attributes).
 
-Ruby `｜表示《よみ》` reads `よみ` and keeps `表示` in the timeline. ASCII `|` and `漢字《かんじ》` also work. `<br />` becomes a space. Synchronous and asynchronous components returning text or `<br />` also work; other nested elements are rejected. Use `<seq>` for successive lines and `<stack>` for speech with subtitles. For lip sync, wrap a line in a [portrait's `Talk`](../narrator/README.md).
+`\n` is read as a space and breaks the line in the displayed text. Synchronous and asynchronous components returning text also work; other elements are rejected. Use `<seq>` for successive lines and `<stack>` for speech with subtitles. For lip sync, wrap a line in a [portrait's `Talk`](../narrator/README.md).
 
 ### Cache and preview
 
@@ -72,10 +72,11 @@ The cache key contains `kind`, `voice`, and processed text. Include all synthesi
 
 ### Shared audio sources
 
-`Voisona.prepare(props)`, `Voicevox.prepare(props)`, `Coeiroink.prepare(props)`, and `StyleBertVits2.prepare(props)` return a `PreparedLine`. Pass children, voice, pronunciation, and duration settings; put `id` and `at` on the components that place the result. Call preparation in an async component under `<mekuru>`.
+`Voisona.prepare(props)`, `Voicevox.prepare(props)`, `Coeiroink.prepare(props)`, and `StyleBertVits2.prepare(props)` return a `PreparedLine`. Pass `text`, voice, pronunciation, and duration settings; put `id` and `at` on the components that place the result. Call preparation in an async component under `<mekuru>`.
 
 - `line.audio`: A readonly `AudioSource` (type exported by `@mekuru/audio`). `status` is `draft` or `ready`; `len` includes trailing silence in frames. `label` and `volume` describe playback. Ready sources have an absolute `src` path.
-- `line.display`: Display nodes preserving ruby base text, whitespace, and breaks. Text components expand once during preparation.
+- `line.display`: The displayed string, with `\n` line breaks and each line trimmed. Text components expand once during preparation.
+- `await subtitleText(text)`: Expands `text` to the same string as `line.display`, to show a line without speech.
 - `<Audio source={line.audio} id="line" />`: Emits existing `<dur><audio /></dur>` elements.
 - `readAudio(src, { gap?, len?, label?, volume? })`: Creates the same source from an existing WAV. The default gap is zero; relative paths use the project root captured at build start.
 

@@ -32,8 +32,8 @@ await writeXml(
   ".mekuru/main.xml",
   <mekuru size="1280x720" fps={30}>
     <stack>
-      <StyleBertVits2 model="jvnv-F1-jp">{text}</StyleBertVits2>
-      <text x="50%" y="50%" anchor="center" size={60} color="#FFFFFF">{text}</text>
+      <StyleBertVits2 model="jvnv-F1-jp" text={text} />
+      <text x="50%" y="50%" anchor="center" size={60} color="#FFFFFF" text={text} />
     </stack>
   </mekuru>,
 );
@@ -53,7 +53,7 @@ bunx mekuru-compiler .mekuru/main.xml --serve
 ```tsx
 import { StyleBertVits2, amitaro } from "@mekuru/style-bert-vits2";
 
-<StyleBertVits2 {...amitaro}>こんにちは。</StyleBertVits2>;
+<StyleBertVits2 {...amitaro} text="こんにちは。" />;
 ```
 
 | エクスポート | 名前 | `model` |
@@ -95,4 +95,4 @@ curl http://127.0.0.1:5000/models/info
 
 接続できない場合は起動状態とポートを確認します。Windows のエンジンには [WSL の mirrored ネットワーク](https://learn.microsoft.com/en-us/windows/wsl/networking#mirrored-mode-networking)で `127.0.0.1` から接続できます。
 
-独自のナレータでは `await StyleBertVits2.prepare({ ...声の設定, children })` で音声素材・表示文字・長さをまとめて取得できます。`id`・`at` は配置する部品に付けます。[共有する音声素材](../speech/README.jp.md#共有する音声素材)と[ナレータの組み立て](../narrator/README.jp.md)を参照してください。
+独自のナレータでは `await StyleBertVits2.prepare({ ...声の設定, text })` で音声素材・表示文字・長さをまとめて取得できます。`id`・`at` は配置する部品に付けます。[共有する音声素材](../speech/README.jp.md#共有する音声素材)と[ナレータの組み立て](../narrator/README.jp.md)を参照してください。

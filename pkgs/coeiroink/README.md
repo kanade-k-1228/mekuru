@@ -30,8 +30,8 @@ await writeXml(
   ".mekuru/main.xml",
   <mekuru size="1280x720" fps={30}>
     <stack>
-      <Coeiroink speaker="つくよみちゃん/れいせい">{text}</Coeiroink>
-      <text x="50%" y="50%" anchor="center" size={60} color="#FFFFFF">{text}</text>
+      <Coeiroink speaker="つくよみちゃん/れいせい" text={text} />
+      <text x="50%" y="50%" anchor="center" size={60} color="#FFFFFF" text={text} />
     </stack>
   </mekuru>,
 );
@@ -51,7 +51,7 @@ The package exports each character's settings for `<Coeiroink>`. Spread one and 
 ```tsx
 import { Coeiroink, tsukuyomi } from "@mekuru/coeiroink";
 
-<Coeiroink {...tsukuyomi}>こんにちは。</Coeiroink>;
+<Coeiroink {...tsukuyomi} text="こんにちは。" />;
 ```
 
 | Export | Name | `speaker` |
@@ -101,4 +101,4 @@ curl http://127.0.0.1:50032/v1/speakers
 
 For connection errors, check the engine and port. On Windows, use [WSL mirrored networking](https://learn.microsoft.com/en-us/windows/wsl/networking#mirrored-mode-networking) to reach the engine through `127.0.0.1`.
 
-For custom narrators, `await Coeiroink.prepare({ ...voiceSettings, children })` returns shared audio, display text, and duration. Put `id` and `at` on the components that place it. See [shared audio sources](../speech/README.md#shared-audio-sources) and [composing narrators](../narrator/README.md).
+For custom narrators, `await Coeiroink.prepare({ ...voiceSettings, text })` returns shared audio, display text, and duration. Put `id` and `at` on the components that place it. See [shared audio sources](../speech/README.md#shared-audio-sources) and [composing narrators](../narrator/README.md).

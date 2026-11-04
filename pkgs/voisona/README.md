@@ -39,8 +39,8 @@ await writeXml(
   ".mekuru/main.xml",
   <mekuru size="1280x720" fps={30}>
     <stack>
-      <Voisona voice="tanaka-san_ja_JP">{text}</Voisona>
-      <text x="50%" y="50%" anchor="center" size={60} color="#FFFFFF">{text}</text>
+      <Voisona voice="tanaka-san_ja_JP" text={text} />
+      <text x="50%" y="50%" anchor="center" size={60} color="#FFFFFF" text={text} />
     </stack>
   </mekuru>,
 );
@@ -60,7 +60,7 @@ The package exports each character's settings for `<Voisona>`. Spread one and ad
 ```tsx
 import { Voisona, tanaka } from "@mekuru/voisona";
 
-<Voisona {...tanaka}>こんにちは。</Voisona>;
+<Voisona {...tanaka} text="こんにちは。" />;
 ```
 
 | Export | Name | `voice` |
@@ -108,4 +108,4 @@ curl --user "$MEKURU_VOISONA_USER" http://localhost:32766/api/talk/v1/voices
 
 curl prompts for the API password. For HTTP 401, check the email and API password. For connection errors, check the engine and port. On Windows, use [WSL mirrored networking](https://learn.microsoft.com/en-us/windows/wsl/networking#mirrored-mode-networking) to reach the engine through `127.0.0.1`. Set `MEKURU_VOISONA_URL=http://127.0.0.1:32766` if `localhost` fails.
 
-For custom narrators, `await Voisona.prepare({ ...voiceSettings, children })` returns shared audio, display text, and duration. Put `id` and `at` on the components that place it. See [shared audio sources](../speech/README.md#shared-audio-sources) and [composing narrators](../narrator/README.md).
+For custom narrators, `await Voisona.prepare({ ...voiceSettings, text })` returns shared audio, display text, and duration. Put `id` and `at` on the components that place it. See [shared audio sources](../speech/README.md#shared-audio-sources) and [composing narrators](../narrator/README.md).

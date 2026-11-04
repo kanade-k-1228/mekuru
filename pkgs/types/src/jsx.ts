@@ -103,7 +103,7 @@ export interface IntrinsicElements {
   repeat: Base & Timed & Look & WithChildren;
   dur: Base & Timed & Look & WithChildren & { len: Time };
 
-  text: Base & Timed & Look & Box & TextStyle & WithChildren & { weight?: "normal" | "bold"; align?: "left" | "center" | "right"; pre?: boolean };
+  text: Base & Timed & Look & Box & TextStyle & { text: string; weight?: "normal" | "bold"; align?: "left" | "center" | "right" };
   image: Base & Timed & Look & Box & { src: string };
   video: Base & Timed & Look & Omit<Box, "rotate"> & Media;
   audio: Base & Omit<Timed, "slot"> & Omit<Media, "src"> & { src?: string; label?: string; draft?: boolean };
@@ -124,7 +124,6 @@ export interface IntrinsicElements {
       dashed?: boolean;
       dotted?: boolean;
     };
-  br: Base;
 }
 
 export namespace JSX {

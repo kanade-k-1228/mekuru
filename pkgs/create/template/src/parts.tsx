@@ -2,7 +2,7 @@ import type { At, Node } from "@mekuru/types";
 
 export type Children = { children?: Node };
 
-export type Line = Children & { id?: string; at?: At };
+export type Line = { id?: string; at?: At; text: Node };
 
 export const READING = { Mekuru: "めくる", bun: "バン" };
 

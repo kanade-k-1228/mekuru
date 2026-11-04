@@ -2,6 +2,7 @@ import type { At, FC, Length, Node } from "@mekuru/types";
 import { portrait, Subtitle as NarratorSubtitle } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
+import { subtitleText } from "@mekuru/speech";
 import { Voicevox, zunda } from "@mekuru/voicevox";
 import type { LayerProps } from "../tutorial/assets/character/zundamon/portrait";
 
@@ -65,8 +66,8 @@ const READING: Record<string, string> = {
 
 const LINE = 25;
 const ems = (t: string) => [...t].reduce((w, c) => w + (c.charCodeAt(0) < 0x80 ? 0.55 : 1), 0);
-const balance = (text: Node): Node => {
-  if (typeof text !== "string" || ems(text) <= LINE) return text;
+const balance = (text: string): string => {
+  if (text.includes("\n") || ems(text) <= LINE) return text;
   let [at, best] = [-1, Infinity];
   for (let i = 0; i < text.length - 1; i++) {
     if (!"、。！？".includes(text[i])) continue;
@@ -74,16 +75,10 @@ const balance = (text: Node): Node => {
     if (longer < best) [at, best] = [i, longer];
   }
   if (best > LINE) return text;
-  return (
-    <>
-      {text.slice(0, at + 1)}
-      <br />
-      {text.slice(at + 1).trim()}
-    </>
-  );
+  return `${text.slice(0, at + 1)}\n${text.slice(at + 1).trim()}`;
 };
 
-const Subtitle: FC<Children> = ({ children }) => (
+const Subtitle: FC<{ text: string }> = ({ text }) => (
   <>
     {(
       [
@@ -91,9 +86,7 @@ const Subtitle: FC<Children> = ({ children }) => (
         ["#FFFFFF", 6],
       ] as const
     ).map(([stroke, width]) => (
-      <NarratorSubtitle y="97%" max-w="74%" size={56} weight="bold" color="#3F782D" stroke={stroke} stroke-width={width}>
-        {balance(children)}
-      </NarratorSubtitle>
+      <NarratorSubtitle y="97%" max-w="74%" size={56} weight="bold" color="#3F782D" stroke={stroke} stroke-width={width} text={balance(text)} />
     ))}
   </>
 );
@@ -118,30 +111,29 @@ export const ZundamonStand = zundamon.Stand;
 
 const voice = { ...zunda, gap: 6, reading: READING };
 
-type Line = Children & { id?: string; at?: At; face?: FaceName; show?: Node };
+// text: subtitle. say: what is spoken (defaults to text). children: shown only during this line.
+type Line = Children & { id?: string; at?: At; face?: FaceName; text: Node; say?: Node };
 
-export const Zundamon: FC<Line> = async ({ children, face, show, ...time }) => {
-  const line = await Voicevox.prepare({ ...voice, children });
+export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time }) => {
+  const line = await Voicevox.prepare({ ...voice, text: say ?? text });
   return (
     <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
         <zundamon.Talk source={line.audio} {...(face ? FACES[face] : { face: "normal" })} />
-        <Subtitle>{line.display}</Subtitle>
-        {show}
+        <Subtitle text={say === undefined ? line.display : await subtitleText(text)} />
+        {children}
       </stack>
     </dur>
   );
 };
 
-export const Jingle: FC<{ children: string }> = async ({ children }) => {
-  const line = await Voicevox.prepare({ ...voice, children });
+export const Jingle: FC<{ text: string }> = async ({ text }) => {
+  const line = await Voicevox.prepare({ ...voice, text });
   return (
     <stack>
       <rect w="100%" h="100%" fill={COLOR.pink} z={20} />
-      <text x="30%" y="47%" anchor="c" size={180} weight="bold" color="#FFFFFF" stroke={COLOR.magenta} stroke-width={18} rotate={-9} z={21}>
-        {children}
-      </text>
+      <text x="30%" y="47%" anchor="c" size={180} weight="bold" color="#FFFFFF" stroke={COLOR.magenta} stroke-width={18} rotate={-9} z={21} text={text} />
       <audio src="assets/chime.wav" volume={0.5} />
       <big.Stand {...FACES.決め} />
       <seq>
@@ -175,52 +167,34 @@ export const EndCard: FC<{ top: string; bottom: string; credit: string; len: num
     <dur len={len}>
       <rect w="100%" h="100%" fill="#FFF3F7" z={20} />
       {rays}
-      <text x={60} y={70} size={210} weight="bold" color={COLOR.red} stroke="#FFFFFF" stroke-width={16} rotate={-5} z={40}>
-        {top}
-      </text>
-      <text x={60} y={700} size={150} weight="bold" color={COLOR.red} stroke="#FFFFFF" stroke-width={14} rotate={-5} z={40}>
-        {bottom}
-      </text>
-      <text x={70} y="97%" anchor="bl" size={34} weight="bold" color={COLOR.sub} stroke="#FFFFFF" stroke-width={6} z={40}>
-        {credit}
-      </text>
+      <text x={60} y={70} size={210} weight="bold" color={COLOR.red} stroke="#FFFFFF" stroke-width={16} rotate={-5} z={40} text={top} />
+      <text x={60} y={700} size={150} weight="bold" color={COLOR.red} stroke="#FFFFFF" stroke-width={14} rotate={-5} z={40} text={bottom} />
+      <text x={70} y="97%" anchor="bl" size={34} weight="bold" color={COLOR.sub} stroke="#FFFFFF" stroke-width={6} z={40} text={credit} />
       <big.Stand {...FACES.決め} />
     </dur>
   );
 };
 
-export const Step: FC<{ n?: string } & Children> = ({ n, children }) => (
+export const Step: FC<{ n?: string; text: string }> = ({ n, text }) => (
   <row x={60} y={36} gap={22} align="center">
-    {n && (
-      <text size={72} weight="bold" color={COLOR.orange} stroke="#FFFFFF" stroke-width={8}>
-        {n}
-      </text>
-    )}
-    <text size={54} weight="bold" color={COLOR.ink} stroke="#FFFFFF" stroke-width={8}>
-      {children}
-    </text>
+    {n && <text size={72} weight="bold" color={COLOR.orange} stroke="#FFFFFF" stroke-width={8} text={n} />}
+    <text size={54} weight="bold" color={COLOR.ink} stroke="#FFFFFF" stroke-width={8} text={text} />
   </row>
 );
 
-export const Keyword: FC<{ x: Length; y: Length; size?: number; anchor?: "tl" | "c" | "t" } & Children> = ({ x, y, size = 140, anchor, children }) => (
-  <text x={x} y={y} anchor={anchor} size={size} weight="bold" color="#1A1A1A" stroke="#FFFFFF" stroke-width={12}>
-    {children}
-  </text>
+export const Keyword: FC<{ x: Length; y: Length; size?: number; anchor?: "tl" | "c" | "t"; text: string }> = ({ x, y, size = 140, anchor, text }) => (
+  <text x={x} y={y} anchor={anchor} size={size} weight="bold" color="#1A1A1A" stroke="#FFFFFF" stroke-width={12} text={text} />
 );
 
-export const Label: FC<{ x: Length; y: Length; anchor?: "tl" | "c" | "b" | "l"; size?: number; color?: string; at?: At } & Children> = ({
+export const Label: FC<{ x: Length; y: Length; anchor?: "tl" | "c" | "b" | "l"; size?: number; color?: string; at?: At; text: string }> = ({
   x,
   y,
   anchor = "c",
   size = 56,
   color = COLOR.orange,
   at,
-  children,
-}) => (
-  <text x={x} y={y} anchor={anchor} size={size} weight="bold" color={color} stroke="#FFFFFF" stroke-width={9} at={at} fadein={5} z={50}>
-    {children}
-  </text>
-);
+  text,
+}) => <text x={x} y={y} anchor={anchor} size={size} weight="bold" color={color} stroke="#FFFFFF" stroke-width={9} at={at} fadein={5} z={50} text={text} />;
 
 export const Mark: FC<{ x: Length; y: Length; w: Length; h: Length; at?: At }> = ({ x, y, w, h, at }) => (
   <rect x={x} y={y} w={w} h={h} stroke={COLOR.red} stroke-width={7} radius={10} at={at} fadein={5} z={50} />
@@ -230,20 +204,14 @@ export const Arrow: FC<{ x1: number; y1: number; x2: number; y2: number; at?: At
   <line p={`${x1}:${y1},${x2}:${y2}`} head="end" stroke={COLOR.orange} stroke-width={14} at={at} fadein={5} z={50} />
 );
 
-export const Point: FC<Children & { size?: number }> = ({ children, size = 46 }) => (
+export const Point: FC<{ text: string; size?: number }> = ({ text, size = 46 }) => (
   <row gap={22} align="center">
     <circle w={24} h={24} fill={COLOR.red} />
-    <text size={size} weight="bold" color={COLOR.ink}>
-      {children}
-    </text>
+    <text size={size} weight="bold" color={COLOR.ink} text={text} />
   </row>
 );
 
-export const Note: FC<Children & { size?: number }> = ({ children, size = 36 }) => (
-  <text size={size} color={COLOR.sub}>
-    {children}
-  </text>
-);
+export const Note: FC<{ text: string; size?: number }> = ({ text, size = 36 }) => <text size={size} color={COLOR.sub} text={text} />;
 
 export interface CodeAt {
   x: number;
@@ -253,18 +221,21 @@ export interface CodeAt {
 const LH = 1.45;
 const PAD: [number, number] = [18, 24];
 
-export const Code: FC<{ at: CodeAt; w?: number; children: string }> = ({ at: { x, y, size }, w, children }) => (
+export const Code: FC<{ at: CodeAt; w?: number; text: string }> = ({ at: { x, y, size }, w, text }) => (
   <column x={x} y={y} w={w} fill="#FAFAFA" stroke="#C8C8C8" stroke-width={3} radius={8} padding={PAD}>
     <row gap={24}>
-      <text pre font={MONO} size={size} line-height={LH} color="#A8A8A8" align="right">
-        {children
+      <text
+        font={MONO}
+        size={size}
+        line-height={LH}
+        color="#A8A8A8"
+        align="right"
+        text={text
           .split("\n")
           .map((_, i) => String(i + 1))
           .join("\n")}
-      </text>
-      <text pre font={MONO} size={size} line-height={LH} color={COLOR.ink}>
-        {children}
-      </text>
+      />
+      <text font={MONO} size={size} line-height={LH} color={COLOR.ink} text={text} />
     </row>
   </column>
 );
@@ -277,7 +248,7 @@ export const CodeMark: FC<{ code: CodeAt; from: number; to?: number; w: number; 
 const TERM_BAR = 46;
 const TERM_LH = 1.75;
 
-export const Terminal: FC<{ at: CodeAt; w?: Length; children: string }> = ({ at: { x, y, size }, w, children }) => {
+export const Terminal: FC<{ at: CodeAt; w?: Length; text: string }> = ({ at: { x, y, size }, w, text }) => {
   let command = false;
   return (
     <column x={x} y={y} w={w} fill="#1F2229" radius={12} padding={[0, 0, 22, 0]}>
@@ -287,22 +258,24 @@ export const Terminal: FC<{ at: CodeAt; w?: Length; children: string }> = ({ at:
         <circle w={16} h={16} fill="#28C840" />
       </row>
       <column padding={[4, 30]} gap={size * (TERM_LH - 1.4)}>
-        {children.split("\n").map((line) => {
+        {text.split("\n").map((line) => {
           const prompt = line.startsWith("$ ");
           command = prompt || (command && line.startsWith(" "));
           const indent = line.length - line.trimStart().length;
           const body = (
-            <text pre font={MONO} size={size} color={command ? "#F2F2F2" : "#A9B1BC"} padding={[0, 0, 0, prompt ? 0 : indent * size * 0.6]}>
-              {(prompt ? line.slice(2) : line.trim()) || " "}
-            </text>
+            <text
+              font={MONO}
+              size={size}
+              color={command ? "#F2F2F2" : "#A9B1BC"}
+              padding={[0, 0, 0, prompt ? 0 : indent * size * 0.6]}
+              text={(prompt ? line.slice(2) : line.trim()) || " "}
+            />
           );
           command &&= line.endsWith("\\");
           if (!prompt) return body;
           return (
             <row gap={size * 0.6}>
-              <text font={MONO} size={size} color="#5FD068">
-                $
-              </text>
+              <text font={MONO} size={size} color="#5FD068" text="$" />
               {body}
             </row>
           );
@@ -329,14 +302,8 @@ export const Tree: FC<{ at: CodeAt; w: number; entries: readonly Entry[] }> = ({
         ) : (
           <rect w={26} h={32} radius={3} fill="#FFFFFF" stroke="#9AA0A8" stroke-width={3} />
         )}
-        <text font={MONO} size={size} color={COLOR.ink} w={340 - depth * 38}>
-          {name}
-        </text>
-        {note && (
-          <text size={size - 2} color={COLOR.sub}>
-            {note}
-          </text>
-        )}
+        <text font={MONO} size={size} color={COLOR.ink} w={340 - depth * 38} text={name} />
+        {note && <text size={size - 2} color={COLOR.sub} text={note} />}
       </row>
     ))}
   </column>

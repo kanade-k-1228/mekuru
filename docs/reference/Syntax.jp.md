@@ -2,7 +2,7 @@
 
 [English](Syntax.md)
 
-- 18 種類のタグで動画を表す。[TSX の台本](Component.jp.md) に小文字の要素として書く
+- 17 種類のタグで動画を表す。[TSX の台本](Component.jp.md) に小文字の要素として書く
 - `writeXml` が部品を展開し、組み込みの要素だけの XML（[中間形式](#xml中間形式)）にする
 - 素材の相対パスは、プロジェクトのフォルダが基準（[コマンド](Component.jp.md#コマンド)）
 - 例は `<mekuru>` 内に置く TSX の断片です。実際の台本は [チュートリアル](../../example/tutorial/main.tsx) と [解説動画](../../example/src/main.tsx) を参照してください。
@@ -12,7 +12,7 @@
 - 全体: `<mekuru>`
 - 入れ物: `<seq>`・`<row>`・`<column>`・`<stack>`
 - 時間: `<dur>`（長さを決める）・`<repeat>`（繰り返す）。空間では何もしない
-- 表示: `<text>`（中で `<br/>`）・`<image>`・`<video>`・`<rect>`・`<circle>`・`<line>`
+- 表示: `<text>`（文字は `text` 属性）・`<image>`・`<video>`・`<rect>`・`<circle>`・`<line>`
 - 音: `<audio>`
 - 素材の再生: `<hold>`（一時停止）・`<speed>`（倍速・スロー）・`<cut>`（カット）。どれも `<video>`・`<audio>` の中
 
@@ -61,12 +61,10 @@
 ```tsx
 // example/tutorial/main.tsx（抜粋）
 <stack>
-  <text x="50%" y="35%" anchor="center" size={90}>
-    はじめての動画
-  </text>
+  <text x="50%" y="35%" anchor="center" size={90} text="はじめての動画" />
   <seq>
-    <Zunda>こんにちは、ずんだもんなのだ。</Zunda>
-    <Metan>今日は Mekuru で動画を作るわ。</Metan>
+    <Zundamon text="こんにちは、ずんだもんなのだ。" />
+    <Zundamon text="今日は Mekuru で動画を作るのだ。" />
   </seq>
 </stack>
 ```
@@ -136,7 +134,7 @@
 ```tsx
 <video id="life" src="assets/life.mp4">
   <hold at={150}>
-    <dur len={60}><text>一時停止中</text></dur>
+    <dur len={60}><text text="一時停止中" /></dur>
   </hold>
 </video>
 ```
@@ -192,12 +190,13 @@
 
 ### 表示する要素
 
-- `<text>`: 文字
-  - 文字は必ず `<text>` の中に書く（`<`・`&` は `&lt;`・`&amp;`）
-  - `<br/>` で改行する
+- `<text text>`: 文字
+  - 文字は必ず `text` 属性に書く。`<text>` にもほかの要素にも、中に文字は書けない
+  - `text` の文字列をそのまま表示する。空白・字下げ・前後の改行も詰めたり除いたりしない
+  - `\n` で改行する（`text={"一行目\n二行目"}`）。`text="…"` と引用符で書いた属性では、`\n` は文字のまま
   - `w`・`max-w` で折り返す。`align="center"` で中央揃え
   - `color`: 文字の色。`stroke`・`stroke-width`: 文字の縁取り。`background`・`radius`・`padding`: 文字の背景
-  - `pre`: ソースの改行をそのまま表示する
+  - エラー E302: `text` がない。エラー E107: 中に文字や要素がある
 - `<image src>`: 画像。`w`・`h` の片方だけなら縦横比を保つ。両方なら中に収める
 - `<rect>`: 四角形
 - `<circle>`: 円（`w`・`h` が違えば楕円）
@@ -254,6 +253,7 @@
 - `writeXml` が書き出し、`mekuru-compiler` が読む（`.mekuru/main.xml`）。人が書くことは想定しない
 - TSX で省いたものを補い、値の書き方を 1 通りにする。ほかの書き方はエラーになる（黙って直さない）
 - 属性名は TSX と同じ（`stroke-width` など）
+- 要素の中には要素だけを書く（文字データを持たない）。文字は `<text>` の `text` 属性に入れ、改行は `&#10;` と書く（`<text text="一行目&#10;二行目"/>`）
 
 TSX → XML:
 

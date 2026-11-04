@@ -44,7 +44,7 @@ export const createSpeech = (synthesize: Synthesize) =>
 
 `<Voicevox>`・`<Coeiroink>`・`<StyleBertVits2>`・`<Voisona>` や `defineSpeech()` で作った部品など、どの読み上げ部品も声の設定のほかに次の属性（`SpeechProps`）を受け取ります。
 
-- `children`: セリフ。文字列・数値・フラグメント・`<br />`。空の読み上げはエラー。
+- `text`: 必須: セリフ。文字列・数値・フラグメント・文字を返す部品。空の読み上げと、子を渡した場合はエラー。
 - `name`: タイムラインの話者名。既定: 話者。どの属性かは各エンジンの README を参照。`prepare()` では `who`。
 - `reading`: 読みの辞書。例: `{ Mekuru: "めくる" }`。長いキーを優先し、表示は変えない。
 - `gap`: セリフの後の無音（フレーム）。既定: `Math.round(0.3 * fps)`（30 fps で9）。
@@ -52,7 +52,7 @@ export const createSpeech = (synthesize: Synthesize) =>
 - `len`: 無音を含む全体のフレーム数。既定: 音声の長さを切り上げた値 + `gap`。話速は変えない。
 - `id`・`at`: 生成する `<dur>` の識別名と開始時刻。[時間の属性](../../docs/reference/Syntax.jp.md#時間の属性)を参照。
 
-ルビ `｜表示《よみ》` は「よみ」を読み、タイムラインには「表示」を残します。半角 `|` と `漢字《かんじ》` も使用できます。`<br />` は空白になります。文字や `<br />` を返す同期・非同期の部品も使えます。ほかの要素は入れられません。セリフの連続再生は `<seq>`、字幕との同時表示は `<stack>`、口パクは[立ち絵の `Talk`](../narrator/README.jp.md) を使います。
+`\n` は空白として読み、表示文字では改行になります。文字を返す同期・非同期の部品も使えます。ほかの要素は入れられません。セリフの連続再生は `<seq>`、字幕との同時表示は `<stack>`、口パクは[立ち絵の `Talk`](../narrator/README.jp.md) を使います。
 
 ### キャッシュとプレビュー
 
@@ -72,10 +72,11 @@ export const createSpeech = (synthesize: Synthesize) =>
 
 ### 共有する音声素材
 
-エンジンの `Voisona.prepare(props)`・`Voicevox.prepare(props)`・`Coeiroink.prepare(props)`・`StyleBertVits2.prepare(props)` は `PreparedLine` を返します。`children` と声・読み・長さの設定を渡し、`id`・`at` は返された素材を配置する側に付けます。`<mekuru>` 内の非同期部品で呼びます。
+エンジンの `Voisona.prepare(props)`・`Voicevox.prepare(props)`・`Coeiroink.prepare(props)`・`StyleBertVits2.prepare(props)` は `PreparedLine` を返します。`text` と声・読み・長さの設定を渡し、`id`・`at` は返された素材を配置する側に付けます。`<mekuru>` 内の非同期部品で呼びます。
 
 - `line.audio`: 読み取り専用の `AudioSource`（型は `@mekuru/audio`）。`status` は `draft` または `ready`。`len` は句末の間を含むフレーム数、`label` と `volume` は再生時の設定。完成版の `src` は絶対パスです。
-- `line.display`: ルビの表記部分・空白・改行を保持した表示用 Node。文字コンポーネントは準備時に一度だけ展開します。
+- `line.display`: 表示する文字列。`\n` で改行し、各行の前後の空白を除きます。文字コンポーネントは準備時に一度だけ展開します。
+- `await subtitleText(text)`: `text` を展開し、`line.display` と同じ文字列を返します。音声なしでセリフを表示するときに使います。
 - `<Audio source={line.audio} id="line" />`: 素材を既存の `<dur><audio /></dur>` に展開します。
 - `readAudio(src, { gap?, len?, label?, volume? })`: 既存の WAV から同じ素材を作ります。`gap` の既定値は 0。相対パスは構築開始時のプロジェクトが基準です。
 
