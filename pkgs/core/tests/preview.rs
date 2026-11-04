@@ -386,7 +386,7 @@ const STATIC: &str = r##"<mekuru size="16x16" fps="30"><dur len="30"><rect w="16
 #[test]
 fn preview_and_renderer_agree_on_a_static_scene() {
     let path = Path::new("fixture.xml");
-    let project = Project::from_source(path, None, STATIC.into());
+    let project = Project::from_source(path, None, STATIC.into(), false);
     assert!(!project.has_errors(), "{:?}", project.diags);
     let prepared = Prepared::default();
     let schedule = project.schedule(&prepared);

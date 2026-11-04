@@ -33,7 +33,7 @@ pub struct Compilation {
 
 impl Compilation {
     pub fn inspect(path: &Path, root: Option<&Path>, source: String) -> Self {
-        Self::new(Project::from_source_mode(path, root, source, true), prepare::inspect)
+        Self::new(Project::from_source(path, root, source, true), prepare::inspect)
     }
 
     pub fn new(project: Project, prepare: impl FnOnce(&crate::ir::Script) -> Prepared) -> Self {

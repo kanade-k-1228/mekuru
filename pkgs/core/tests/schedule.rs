@@ -22,7 +22,7 @@ fn media(p: &Project) -> Prepared {
 }
 
 fn project(body: &str) -> Project {
-    Project::from_source(Path::new("test.xml"), None, format!(r#"<mekuru fps="1"><seq>{body}</seq></mekuru>"#))
+    Project::from_source(Path::new("test.xml"), None, format!(r#"<mekuru fps="1"><seq>{body}</seq></mekuru>"#), false)
 }
 
 fn compile(body: &str) -> (Project, Schedule) {
@@ -948,7 +948,7 @@ fn xml_is_strict() {
         r#"<mekuru fps="30fps"><seq/></mekuru>"#,
         r#"<mekuru version="2"><seq/></mekuru>"#,
     ] {
-        let p = Project::from_source(Path::new("test.xml"), None, doc.into());
+        let p = Project::from_source(Path::new("test.xml"), None, doc.into(), false);
         assert!(p.has_errors(), "{doc}: {:?}", p.diags);
     }
 }

@@ -9,6 +9,7 @@ fn project(body: &str) -> Project {
         Path::new("test.xml"),
         None,
         format!(r#"<mekuru size="100x100"><dur len="1"><stack>{body}</stack></dur></mekuru>"#),
+        false,
     )
 }
 
