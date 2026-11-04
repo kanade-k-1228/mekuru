@@ -16,7 +16,7 @@ export interface Engine<P extends EngineProps> {
   /** Engine name in error messages. */
   name: string;
   defaultUrl: string;
-  /** How to start the server, shown when it is not reachable. */
+  /** How to start the server, shown when it is not reachable (before how to set `url`). */
   help: string;
   /** Lines synthesized at once by one server. */
   concurrency: number;
@@ -89,12 +89,16 @@ const splitText = (text: string, max: number): string[] => {
 
 export const defineEngine = <P extends EngineProps>(engine: Engine<P>) => {
   const env = `MEKURU_${engine.kind.toUpperCase().replaceAll("-", "_")}_URL`;
+  const help =
+    `${engine.help}\n` +
+    `  - if it runs elsewhere, set \`url="${engine.defaultUrl.replace(/\/\/[^/:]+/, "//<host>")}"\` on the component or the ${env} environment variable\n` +
+    `  - from WSL2, with ${engine.name} on Windows: turn on mirrored networking (\`networkingMode=mirrored\` in .wslconfig)`;
   const servers = new Map<string, { read: ReturnType<Engine<P>["create"]>; queue: ReturnType<typeof limit> }>();
   const server = (url: string | undefined) => {
     const at = (url ?? process.env[env] ?? engine.defaultUrl).replace(/\/+$/, "");
     let found = servers.get(at);
     if (!found) {
-      found = { read: engine.create(httpClient(at, engine.name, engine.help), at), queue: limit(engine.concurrency) };
+      found = { read: engine.create(httpClient(at, engine.name, help), at), queue: limit(engine.concurrency) };
       servers.set(at, found);
     }
     return found;

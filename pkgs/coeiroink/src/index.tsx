@@ -16,10 +16,7 @@ export const Coeiroink = defineEngine<CoeiroinkProps>({
   kind: "coeiroink",
   name: "COEIROINK",
   defaultUrl: "http://127.0.0.1:50032",
-  help:
-    "  - start COEIROINK v2 (its engine listens on port 50032 once the app has started)\n" +
-    '  - if the engine is elsewhere, set `url="http://<host>:50032"` on `<Coeiroink>` or the MEKURU_COEIROINK_URL environment variable\n' +
-    "  - from WSL2, with COEIROINK on Windows: turn on mirrored networking (`networkingMode=mirrored` in .wslconfig)",
+  help: "  - start COEIROINK v2 (its engine listens on port 50032 once the app has started)",
   concurrency: 1,
   who: (props) => String(props.speaker),
   create: client,

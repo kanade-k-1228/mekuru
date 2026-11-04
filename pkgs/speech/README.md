@@ -107,7 +107,7 @@ export const MySpeech = defineEngine<MySpeechProps>({
 
 - The props extend `EngineProps`, which adds `url` and `max-chars` to `SpeechProps`.
 - The server is the `url` prop, else the environment variable `MEKURU_<KIND>_URL` named after `kind` (`MEKURU_MY_ENGINE_URL` here), else `defaultUrl`. Each server gets its own `create(call, url)` reader and runs `concurrency` lines at a time.
-- `call(path, init)` sends a request to the server with a five-minute timeout. If the server cannot be reached, the error shows `help`; an HTTP error shows `name`, the path and the status.
+- `call(path, init)` sends a request to the server with a five-minute timeout. If the server cannot be reached, the error shows `help`, then how to set `url` or the environment variable and how to reach a server on Windows from WSL2; an HTTP error shows `name`, the path and the status.
 - The reader gets `voice`, the props other than `SpeechProps` and `url`, which is also the cache key, and returns WAV bytes.
 - Lines longer than the `max-chars` prop (default `maxChars`; no limit when neither is set) are split near punctuation, read part by part and joined.
 - `who(props)` is the speaker's name when `name` is not set.

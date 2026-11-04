@@ -177,6 +177,9 @@ test("errors name the engine, and an unreachable server says how to start it", a
   mock.restore();
   spyOn(globalThis, "fetch").mockRejectedValue(new Error("connection refused"));
   await expect(say(<Coeiroink speaker={1}>だめ</Coeiroink>)).rejects.toThrow(
-    "COEIROINK is not reachable at http://coeiroink.test:2 (connection refused).\n  - start COEIROINK v2",
+    "COEIROINK is not reachable at http://coeiroink.test:2 (connection refused).\n" +
+      "  - start COEIROINK v2 (its engine listens on port 50032 once the app has started)\n" +
+      '  - if it runs elsewhere, set `url="http://<host>:50032"` on the component or the MEKURU_COEIROINK_URL environment variable\n' +
+      "  - from WSL2, with COEIROINK on Windows: turn on mirrored networking (`networkingMode=mirrored` in .wslconfig)",
   );
 });
