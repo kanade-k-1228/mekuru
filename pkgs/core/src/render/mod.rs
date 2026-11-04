@@ -2,7 +2,7 @@ pub mod shapes;
 pub mod text;
 pub mod vector;
 
-use crate::ir::{ElemId, ElemKind, ImageSpec, VideoSpec, ViewOp, scaled};
+use crate::ir::{ElemId, ElemKind, ImageSpec, VideoSpec, ViewOp};
 use crate::media::Fps;
 use crate::media::probe::VideoStream;
 use crate::media::video::VideoReader;
@@ -85,6 +85,11 @@ pub(crate) fn transform_paths(paths: Vec<PaintedPath>, t: Transform) -> Vec<Pain
             })
         })
         .collect()
+}
+
+/// `t` in output pixels, for a transform written in canvas coordinates.
+fn scaled(t: Transform, scale: f32) -> Transform {
+    Transform::from_row(t.sx, t.ky, t.kx, t.sy, t.tx * scale, t.ty * scale)
 }
 
 fn transform_sprite(sp: Sprite, t: Transform) -> Option<Sprite> {

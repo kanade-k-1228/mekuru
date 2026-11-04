@@ -47,7 +47,7 @@ fn num(v: &Value) -> Option<f64> {
     }
 }
 
-pub fn parse(v: &Value) -> Result<MediaProbe> {
+fn parse(v: &Value) -> Result<MediaProbe> {
     let streams = v["streams"].as_array().cloned().unwrap_or_default();
     let mut video = None;
     let mut has_audio = false;

@@ -53,7 +53,6 @@ impl RenderOptions {
 #[derive(Clone, Debug, Default)]
 pub struct RenderStats {
     pub frames: u64,
-    pub drawn: u64,
     pub seconds: f64,
     pub elapsed: f64,
     pub warnings: Vec<String>,
@@ -130,7 +129,7 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
     let from = opts.from.clamp(0.0, total);
     let to = opts.to.unwrap_or(total).clamp(from, total);
     let frames = target.fps.frames(to - from).max(1);
-    let seconds = target.fps.time(frames);
+    let seconds = target.fps.secs(frames as f64);
     let step = (doc.num as f64 * target.fps.den as f64) / (doc.den as f64 * target.fps.num as f64);
     let first = doc.of(from);
 
@@ -176,7 +175,6 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
     for k in 0..frames {
         let t = first + k as f64 * step;
         if renderer.render(t)? {
-            stats.drawn += 1;
             enc.push(renderer.canvas().data())?;
         } else {
             enc.repeat()?;

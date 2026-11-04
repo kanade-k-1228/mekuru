@@ -8,13 +8,6 @@ impl Span {
     pub fn new(lo: usize, hi: usize) -> Self {
         Span { lo: lo as u32, hi: hi as u32 }
     }
-
-    pub fn to(self, other: Span) -> Span {
-        Span {
-            lo: self.lo.min(other.lo),
-            hi: self.hi.max(other.hi),
-        }
-    }
 }
 
 #[derive(Clone, Debug)]

@@ -259,7 +259,7 @@ fn compile(app: App, path: PathBuf) {
 }
 
 pub struct Server {
-    pub address: SocketAddr,
+    address: SocketAddr,
     app: App,
     tasks: Vec<JoinHandle<()>>,
 }

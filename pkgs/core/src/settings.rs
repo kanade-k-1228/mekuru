@@ -32,7 +32,6 @@ pub struct Anchor(pub f32, pub f32);
 
 impl Anchor {
     pub const TL: Anchor = Anchor(0.0, 0.0);
-    pub const C: Anchor = Anchor(0.5, 0.5);
 
     pub fn parse(s: &str) -> Option<Anchor> {
         Some(match s {

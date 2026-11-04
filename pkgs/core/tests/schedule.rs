@@ -1,6 +1,6 @@
 use mekuru_compiler::{
     Project,
-    ir::{Elem, ElemKind, Target, ViewOp},
+    ir::{Elem, ElemKind, ViewOp},
     media::probe::MediaProbe,
     prepare::{MediaAsset, Prepared},
     schedule::{ElemTime, Schedule},
@@ -36,9 +36,14 @@ fn codes(p: &Project) -> Vec<&str> {
     p.diags.iter().map(|d| d.code).collect()
 }
 
+fn id(p: &Project, id: &str) -> usize {
+    let found: Vec<_> = p.script.elems.iter().filter(|e| e.source_id.as_deref() == Some(id)).collect();
+    assert_eq!(found.len(), 1, "expected one element {id}");
+    found[0].id
+}
+
 fn elem<'a>(p: &Project, s: &'a Schedule, id: &str) -> &'a ElemTime {
-    let Target::Elem(e) = p.script.ids[id] else { panic!("expected element {id}") };
-    &s.elems[e]
+    &s.elems[self::id(p, id)]
 }
 
 fn marked<'a>(p: &Project, s: &'a Schedule, marker: &str) -> &'a ElemTime {
@@ -574,7 +579,7 @@ fn group_fades_reach_everything_inside_with_audio() {
     );
     clean(&s);
     assert_eq!(elem(&p, &s, "r").envelope(3.0), 0.5);
-    let Target::Elem(r) = p.script.ids["r"] else { panic!() };
+    let r = id(&p, "r");
     assert_eq!(p.script.elems[r].opacity, 0.5);
     let clip = &s.audio[0];
     let gain: f64 = clip.env.iter().map(|f| f.at(3.0)).product();
@@ -806,8 +811,8 @@ fn dur_gives_a_length_to_what_has_none_and_cuts_or_stretches_what_has_one() {
         let m = elem(&p, &s, "m");
         assert_eq!((m.start, m.end, s.total), (0, 6, 6), "{body}");
         assert_eq!(m.src.as_ref().unwrap().freezes().collect::<Vec<_>>(), vec![(1.0, 3.0)], "{body}");
-        if let Some(Target::Elem(r)) = p.script.ids.get("r") {
-            assert_eq!((s.elems[*r].start, s.elems[*r].end), (0, 6));
+        if body.contains("id=\"r\"") {
+            assert_eq!((elem(&p, &s, "r").start, elem(&p, &s, "r").end), (0, 6));
         }
     }
 }
@@ -819,8 +824,7 @@ fn rect_in(p: &Project, e: usize) -> mekuru_compiler::ir::RectSpec {
 }
 
 fn rect_of(p: &Project, id: &str) -> mekuru_compiler::ir::RectSpec {
-    let Target::Elem(e) = p.script.ids[id] else { panic!("expected element {id}") };
-    rect_in(p, e)
+    rect_in(p, self::id(p, id))
 }
 
 fn marked_rect(p: &Project, marker: &str) -> mekuru_compiler::ir::RectSpec {
@@ -884,7 +888,7 @@ fn a_seq_in_a_row_takes_the_space_of_its_widest_child() {
     );
     clean(&s);
     assert_eq!((elem(&p, &s, "s2").start, elem(&p, &s, "s2").end), (1, 2));
-    let Target::Elem(after) = p.script.ids["after"] else { panic!() };
+    let after = id(&p, "after");
     let ElemKind::View(v) = &p.script.elems[after].kind else { panic!() };
     let ViewOp::Rect(r) = &v.ops[0] else { panic!() };
     assert_eq!(r.x, 60.0);
@@ -901,7 +905,7 @@ fn hold_is_drawn_over_the_parent_of_its_media() {
     "##,
     );
     clean(&s);
-    let Target::Elem(note) = p.script.ids["note"] else { panic!() };
+    let note = id(&p, "note");
     let ElemKind::View(v) = &p.script.elems[note].kind else { panic!() };
     let ViewOp::Rect(r) = &v.ops[0] else { panic!() };
     assert_eq!((r.x, r.y), (150.0, 10.0));

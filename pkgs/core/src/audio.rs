@@ -27,7 +27,7 @@ fn envelope(env: &[Fade], t: f64) -> f32 {
     env.iter().map(|f| f.at(t)).product::<f64>() as f32
 }
 
-pub fn write_wav_header(w: &mut impl Write, frames: u64) -> std::io::Result<()> {
+fn write_wav_header(w: &mut impl Write, frames: u64) -> std::io::Result<()> {
     let data = (frames * BYTES_PER_FRAME).min(u32::MAX as u64 - 36) as u32;
     w.write_all(b"RIFF")?;
     w.write_all(&(36 + data).to_le_bytes())?;

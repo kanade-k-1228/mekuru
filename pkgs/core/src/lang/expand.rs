@@ -62,7 +62,6 @@ pub(crate) fn lower(doc: &Document, base_dir: &Path, fonts: &FontBook, diags: &m
     for e in &mut elems {
         check(&mut e.t, e.site, elem_scopes[e.id]);
     }
-    let ids = scopes.remove(&None).unwrap_or_default();
     let mut idx: Vec<usize> = (0..elems.len()).collect();
     idx.sort_by_key(|&i| elems[i].site.lo);
     for (rank, i) in idx.into_iter().enumerate() {
@@ -72,7 +71,6 @@ pub(crate) fn lower(doc: &Document, base_dir: &Path, fonts: &FontBook, diags: &m
         settings: doc.settings.clone(),
         nodes,
         elems,
-        ids,
         base_dir: base_dir.to_path_buf(),
     }
 }
