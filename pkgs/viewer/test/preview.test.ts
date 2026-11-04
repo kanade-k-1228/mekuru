@@ -31,14 +31,14 @@ test("patches atomically, keeping unchanged elements, resources and timeline ref
   expect(again.elements).toBe(third.elements);
 });
 
-test("reordering media retains stable identity even when sequential IR IDs change", () => {
+test("reordering media keeps elements by key", () => {
   const media = { ...element("e1", []), kind: "video" as const, media: { src: "a.mp4", revision: "r", gain: 1, map: { from: 0, end: 1, segments: [] } } };
   const a = sharePreview(compilation(1, [element("e0", ["A"]), media]), null);
   const s1 = applyEvent(empty, snapshot(state(), a));
   const first = present(s1);
-  const b = sharePreview(compilation(2, [{ ...media, id: 2 }, element("e0", ["A"])], {}), a);
+  const b = sharePreview(compilation(2, [media, element("e0", ["A"])], {}), a);
   const second = present(applyEvent(s1, patch(state(2), a, b)));
-  expect(second.elements[0].key).toBe(first.elements[1].key);
+  expect(second.elements[0]).toBe(first.elements[1]);
   expect(second.elements[1]).toBe(first.elements[0]);
 });
 

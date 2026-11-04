@@ -22,10 +22,7 @@ struct Cli {
     run: Option<String>,
     #[arg(short = 'p', long, default_value_t = 3333, requires = "serve")]
     port: u16,
-    #[arg(long, requires = "serve")]
-    title: Option<String>,
-    #[arg(long, requires = "serve", conflicts_with = "no_open")]
-    open: bool,
+    /// Do not open a browser (also when MEKURU_OPEN=0).
     #[arg(long, requires = "serve")]
     no_open: bool,
     #[arg(long)]
@@ -60,31 +57,14 @@ fn main() {
 
 fn run(cli: Cli) -> Result<()> {
     if cli.serve {
-        use mekuru_compiler::server;
         let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
-        let result = runtime.block_on(async {
-            let server = server::start(server::Options {
-                xml: cli.script.clone(),
-                root: cli.root.clone(),
-                run: cli.run.clone(),
-                port: cli.port,
-                title: cli.title.clone(),
-            })
-            .await?;
-            let url = server.url();
-            eprintln!("mekuru viewer: {url}  ({})", cli.title.as_deref().unwrap_or(&cli.script.to_string_lossy()));
-            let open = !matches!(
-                std::env::var("MEKURU_OPEN").unwrap_or_default().to_ascii_lowercase().as_str(),
-                "0" | "false" | "no" | "off"
-            );
-            if cli.open || (!cli.no_open && open) {
-                server::open_browser(&url);
-            }
-            tokio::select! { result = server::shutdown_signal() => result?, _ = server.terminated() => {} }
-            server.close();
-            server.wait().await;
-            Ok(())
-        });
+        let result = runtime.block_on(mekuru_compiler::server::run(mekuru_compiler::server::Options {
+            xml: cli.script,
+            root: cli.root,
+            run: cli.run,
+            port: cli.port,
+            open: !cli.no_open && std::env::var_os("MEKURU_OPEN").is_none_or(|v| v != "0"),
+        }));
         runtime.shutdown_timeout(std::time::Duration::from_secs(2));
         return result;
     }

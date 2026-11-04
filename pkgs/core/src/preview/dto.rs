@@ -13,7 +13,6 @@ pub struct Preview {
 
 #[derive(Clone, PartialEq, Serialize)]
 pub struct Element {
-    pub(super) id: usize,
     pub(super) kind: &'static str,
     pub(super) start: f64,
     pub(super) end: f64,
@@ -95,10 +94,7 @@ pub struct Timeline {
 #[derive(Clone, PartialEq, Serialize)]
 pub struct TimelineNode {
     pub(super) key: String,
-    pub(super) id: usize,
-    pub(super) parent: Option<usize>,
     pub(super) depth: usize,
-    pub(super) kind: &'static str,
     pub(super) tag: &'static str,
     pub(super) label: String,
     pub(super) line: u32,

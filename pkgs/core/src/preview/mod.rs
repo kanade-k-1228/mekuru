@@ -184,7 +184,6 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, session: &
             map: media_map(src, fps),
         });
         elements.push(Element {
-            id: e.id,
             kind: e.kind.name(),
             start: i(et.start),
             end: i(et.end),
@@ -283,19 +282,13 @@ fn timeline(p: &Project, sched: &Schedule, keys: &std::collections::HashMap<usiz
         }
     }
     let top = |id: usize| id == 0 || s.nodes[0].order.first() == Some(&Target::Node(id));
-    for n in s.nodes.iter().filter(|n| !top(n.id)) {
+    // Sequences are drawn as their children only.
+    for n in s.nodes.iter().filter(|n| !top(n.id) && n.kind != NodeKind::Seq) {
         let t = sched.nodes[n.id];
         let line = p.index.line(n.head.lo);
         out.nodes.push(TimelineNode {
             key: format!("{}:node", keys[&(n.head.lo as usize)]),
-            id: n.id,
-            parent: n.parent.filter(|&id| !top(id)),
             depth: depths[n.id] - 1,
-            kind: match n.kind {
-                NodeKind::Seq => "seq",
-                NodeKind::Par => "par",
-                NodeKind::Repeat => "repeat",
-            },
             tag: n.tag,
             label: labels[n.id].clone(),
             line,

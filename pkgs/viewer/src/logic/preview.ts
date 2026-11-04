@@ -1,4 +1,4 @@
-import type { CollectionPatch, Keyed, PatchEvent, PreviewDto, Resources, SnapshotEvent } from "../protocol";
+import type { CollectionPatch, PatchEvent, PreviewDto, Resources, SnapshotEvent } from "../protocol";
 
 export const previewSocketUrl = (href: string): string => {
   const url = new URL("/api/ws", href);
@@ -13,7 +13,7 @@ export interface PreviewState {
 
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
-const applyCollection = <T extends Keyed<unknown>>(before: T[], delta: CollectionPatch<T>): T[] => {
+const applyCollection = <T extends { key: string }>(before: T[], delta: CollectionPatch<T>): T[] => {
   if (!delta.upsert.length && !delta.remove.length && !delta.order) return before;
   const entries = new Map(before.map((entry) => [entry.key, entry]));
   for (const key of delta.remove) entries.delete(key);
@@ -24,7 +24,7 @@ const applyCollection = <T extends Keyed<unknown>>(before: T[], delta: Collectio
   return order.map((key) => entries.get(key) as T);
 };
 
-const reuse = <T extends Keyed<unknown>>(before: T[], incoming: T[]): T[] => {
+const reuse = <T extends { key: string }>(before: T[], incoming: T[]): T[] => {
   const old = new Map(before.map((entry) => [entry.key, entry]));
   const next = incoming.map((entry) => {
     const previous = old.get(entry.key);

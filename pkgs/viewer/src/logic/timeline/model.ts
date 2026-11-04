@@ -47,10 +47,9 @@ export const buildLayout = (tl: TimelineDto): Layout => {
   const clips: PlacedClip[] = [];
   let y = ROW_GAP + 1;
 
-  const barNodes = tl.nodes.filter((n) => n.kind !== "seq");
-  const depths = [...new Set(barNodes.map((n) => n.depth))].sort((a, b) => a - b);
+  const depths = [...new Set(tl.nodes.map((n) => n.depth))].sort((a, b) => a - b);
   for (const [i, d] of depths.entries()) {
-    const bars = barNodes.filter((n) => n.depth === d).sort((a, b) => a.start - b.start || b.end - a.end);
+    const bars = tl.nodes.filter((n) => n.depth === d).sort((a, b) => a.start - b.start || b.end - a.end);
     const packed = pack(bars);
     for (const [k, n] of bars.entries()) {
       nodes.push({ node: n, y: y + packed.rows[k] * (NODE_ROW_H + 1), h: NODE_ROW_H, depth: i });

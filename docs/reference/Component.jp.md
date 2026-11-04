@@ -75,7 +75,7 @@ bun preview   # http://localhost:3333
 - 拡大: 右下のスライダー、Ctrl + ホイール
 - 高さ変更: タイムライン上端をドラッグ。設定はブラウザに保存
 
-`bun preview --no-open` でブラウザの自動起動を抑止します。常に抑止する場合は `MEKURU_OPEN=0`、一時的に開く場合は `--open` を指定します。VS Code では表示された URL を選んで Integrated Browser で開けます。
+`bun preview --no-open` でブラウザの自動起動を抑止します。常に抑止する場合は `MEKURU_OPEN=0` を設定します。VS Code では表示された URL を選んで Integrated Browser で開けます。
 
 時間・配置は書き出しと共通です。文字はブラウザが描画するため、文字幅・改行・縁取りや動画のシーク精度には差が出る場合があります。速度変更は音程を保って再生し、1/16〜16倍を超える部分はシークで追従します。
 

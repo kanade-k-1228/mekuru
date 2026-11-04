@@ -1,10 +1,9 @@
-import type { CollectionPatch, DrawOp, Keyed, PatchEvent, PreviewDto, PreviewEvent, Resources, SceneElement, SnapshotEvent, StateDto } from "../src/protocol";
+import type { CollectionPatch, DrawOp, PatchEvent, PreviewDto, PreviewEvent, Resources, SceneElement, SnapshotEvent, StateDto } from "../src/protocol";
 
 const path = (d: string): DrawOp => ({ kind: "path", d, color: "#000000ff", stroke: null });
 export const resources: Resources = { A: [path("M0 0L1 1")], B: [path("M0 0L2 2")], C: [path("M0 0L3 3")] };
 export const element = (key: string, drawings: string[], start = 0): SceneElement => ({
   key,
-  id: Number(key.replace(/\D/g, "")),
   kind: "view",
   start,
   end: start + 1,
@@ -22,7 +21,7 @@ export const compilation = (version = 1, elements = [element("e0", ["A", "B"]), 
   resources: available,
   preview: { width: 100, height: 100, fps: 30, duration: 2, elements, timeline: { nodes: [], clips: [] } } satisfies Omit<PreviewDto, "version">,
 });
-export const state = (version = 1): StateDto => ({ path: "video.xml", version, previewVersion: version, status: "ready", error: null, diagnostics: [] });
+export const state = (version = 1): StateDto => ({ title: "video.xml", version, previewVersion: version, status: "ready", error: null, diagnostics: [] });
 
 interface SharedPreview {
   preview: PreviewDto;
@@ -40,7 +39,7 @@ export const sharePreview = (result: ReturnType<typeof compilation>, previous: S
   return { preview: { ...result.preview, version: result.version }, resources };
 };
 
-const collectionPatch = <T extends Keyed<unknown>>(before: T[], after: T[]): CollectionPatch<T> => {
+const collectionPatch = <T extends { key: string }>(before: T[], after: T[]): CollectionPatch<T> => {
   const old = new Map(before.map((e) => [e.key, e]));
   const next = new Set(after.map((e) => e.key));
   const order = after.map((e) => e.key);

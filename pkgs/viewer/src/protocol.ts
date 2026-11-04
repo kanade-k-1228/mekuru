@@ -6,7 +6,7 @@ export interface Diagnostic {
 }
 /** Compilation status; it never contains drawing data. */
 export interface StateDto {
-  path: string;
+  title: string;
   version: number;
   previewVersion: number;
   status: "building" | "ready" | "error";
@@ -14,7 +14,6 @@ export interface StateDto {
   diagnostics: Diagnostic[];
 }
 
-export type Keyed<T> = T & { key: string };
 export type Resources = Record<string, DrawOp[]>;
 export interface CollectionPatch<T> {
   upsert: T[];
@@ -38,8 +37,8 @@ export interface PatchEvent {
   version: number;
   scene: Pick<PreviewDto, "width" | "height" | "fps" | "duration">;
   elements: CollectionPatch<SceneElement>;
-  nodes: CollectionPatch<Keyed<TimelineNode>>;
-  clips: CollectionPatch<Keyed<TimelineClip>>;
+  nodes: CollectionPatch<TimelineNode>;
+  clips: CollectionPatch<TimelineClip>;
   resources: Resources;
 }
 export type PreviewEvent = SnapshotEvent | StatusEvent | PatchEvent;
@@ -91,7 +90,6 @@ export interface MediaMap {
 }
 export interface SceneElement {
   key: string;
-  id: number;
   kind: "view" | "video" | "audio";
   start: number;
   end: number;
@@ -104,12 +102,10 @@ export interface SceneElement {
   hidden: [start: number, end: number][];
 }
 
+/** A `<stack>`, `<repeat>` or other parallel node; sequences are not sent. */
 export interface TimelineNode {
   key: string;
-  id: number;
-  parent: number | null;
   depth: number;
-  kind: "seq" | "par" | "repeat";
   tag: string;
   label: string;
   line: number;
