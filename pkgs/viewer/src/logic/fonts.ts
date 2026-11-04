@@ -1,4 +1,4 @@
-import type { TextOp } from "@mekuru/protocol";
+import type { TextOp } from "../protocol";
 
 export const fileUrl = (src: string, revision?: string | null) =>
   `/files/${src.split("/").map(encodeURIComponent).join("/")}${revision ? `?v=${encodeURIComponent(revision)}` : ""}`;

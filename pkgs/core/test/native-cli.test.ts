@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { findCompiler } from "../npm/compiler.js";
-import { startServer } from "../../../scripts/fixtures/native-server.ts";
+import { startServer } from "./fixtures.ts";
 
 test("native serve rejects invalid options and reports a missing XML file", async () => {
   for (const args of [

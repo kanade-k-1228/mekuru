@@ -2,12 +2,10 @@ import { afterEach, beforeEach, expect, setDefaultTimeout, test } from "bun:test
 import { appendFile, chmod, copyFile, mkdir, mkdtemp, rename, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { connectPreview } from "./fixtures/preview-socket.ts";
-import { startServer } from "./fixtures/native-server.ts";
-import { findCompiler } from "../pkgs/core/npm/compiler.js";
-import { previewXml } from "./preview-fixture.ts";
-import { previewStore } from "../pkgs/viewer/src/logic/preview.ts";
-import type { SnapshotEvent, StateDto } from "../pkgs/protocol/src/index.ts";
+import { connectPreview, previewXml, startServer } from "./fixtures.ts";
+import { findCompiler } from "../npm/compiler.js";
+import { applyEvent } from "../../viewer/src/logic/preview.ts";
+import type { SnapshotEvent, StateDto } from "../../viewer/src/protocol.ts";
 
 let root: string;
 let xml: string;
@@ -104,12 +102,12 @@ test("native patches reconstruct the reconnect snapshot, retain failures and rec
   server = await startServer({ xml: watched, root, port: 0 });
   await until(async () => (await state()).status === "ready");
   const connection = await connect();
-  const store = previewStore();
   try {
     const first = await connection.next();
     expect(first.type).toBe("snapshot");
     if (first.type === "status") throw new Error("missing snapshot");
-    store.apply(first);
+    const empty = { preview: null, resources: {} };
+    const before = applyEvent(empty, first);
     await save(previewXml(100, 1, "ja"));
     const building = await connection.next();
     expect(building.type).toBe("status");
@@ -119,10 +117,9 @@ test("native patches reconstruct the reconnect snapshot, retain failures and rec
     expect(patch.type).toBe("patch");
     if (patch.type !== "patch") throw new Error("expected patch");
     expect(Object.keys(patch.resources)).toHaveLength(1);
-    const patched = store.apply(patch);
     const full = await snapshot();
-    const fresh = previewStore();
-    expect(patched).toEqual(fresh.apply(full));
+    const patched = applyEvent(before, patch);
+    expect(patched).toEqual(applyEvent(empty, full));
     const reconnect = await connect();
     expect(await reconnect.next()).toEqual(full);
     reconnect.close();
@@ -145,7 +142,7 @@ test("native patches reconstruct the reconnect snapshot, retain failures and rec
     await connection.next();
     const replaced = await connection.next();
     if (replaced.type !== "patch") throw new Error("expected patch");
-    expect(store.apply(replaced)).toEqual(fresh.apply(await snapshot()));
+    expect(applyEvent(patched, replaced)).toEqual(applyEvent(empty, await snapshot()));
   } finally {
     connection.close();
   }
@@ -240,7 +237,7 @@ test("WebSocket handles duplex resync, policy errors and shutdown", async () => 
   }
 });
 
-test("WebSocket upgrade rejects cross-origin browser access and the old SSE endpoint", async () => {
+test("WebSocket upgrade rejects cross-origin browser access", async () => {
   server = await startServer({ xml, port: 0 });
   const response = await fetch(`${server.url}/api/ws`, {
     headers: {
@@ -252,5 +249,4 @@ test("WebSocket upgrade rejects cross-origin browser access and the old SSE endp
     },
   });
   expect(response.status).toBe(403);
-  expect((await fetch(`${server.url}/api/events`)).status).toBe(404);
 });

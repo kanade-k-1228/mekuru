@@ -1,21 +1,56 @@
-import { atom } from "jotai";
+import { atom, type Store } from "jotai";
 import { atomWithStorage } from "jotai/utils";
+import { timeAtom } from "../playback";
 import { durationAtom, timelineAtom } from "../server";
-import { clamp } from "../math";
-import { buildLayout, RULER_H, SCROLLBAR_SIZE, viewport, type ViewState } from "./model";
+import { clamp, observeSize } from "../util";
+import { buildLayout, RULER_H, SCROLLBAR_SIZE, viewport, zoomAround, zoomAt, type ViewState } from "./model";
 
 export const timelineViewAtom = atom<ViewState>({ zoom: 1, start: 0 });
 export const timelineWidthAtom = atom(800);
 export const timelineMetricsAtom = atom((get) => viewport(get(durationAtom), get(timelineWidthAtom), get(timelineViewAtom)));
 
 export const timelineLayoutAtom = atom((get) => buildLayout(get(timelineAtom)));
-export const hasEstimatedAtom = atom((get) => get(timelineAtom).clips.some((c) => c.estimated));
 
-export const followAtom = atom(null, (get, set, time: number) => {
+const followAtom = atom(null, (get, set, time: number) => {
   const view = get(timelineViewAtom);
   if (view.zoom <= 1) return;
   const m = get(timelineMetricsAtom);
   if (time < m.start || time > m.start + m.visibleSec) set(timelineViewAtom, { ...view, start: time - m.visibleSec * 0.1 });
+});
+/** Scrolls a zoomed timeline to keep the playhead visible; returns the unsubscribe function. */
+export const followPlayhead = (store: Store) => store.sub(timeAtom, () => store.set(followAtom, store.get(timeAtom)));
+
+export const zoomTimelineAtom = atom(null, (get, set, zoom: number) => {
+  set(timelineViewAtom, (v) => zoomAround(v, zoom, get(durationAtom), get(timeAtom)));
+  set(followAtom, get(timeAtom));
+});
+
+const wheelAtom = atom(null, (get, set, e: WheelEvent, x: number) => {
+  const m = get(timelineMetricsAtom);
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    set(timelineViewAtom, (v) => zoomAt(m, v.zoom * Math.exp(-e.deltaY * 0.0025), x));
+    set(followAtom, get(timeAtom));
+    return;
+  }
+  if (m.visibleSec >= m.duration - 1e-6) return;
+  const delta = e.shiftKey ? e.deltaY || e.deltaX : Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+  if (!delta) return;
+  e.preventDefault();
+  set(timelineViewAtom, (v) => ({ ...v, start: m.start + delta / m.pxPerSec }));
+});
+
+export const attachTimelineAtom = atom(null, (_get, set, el: HTMLElement | null) => {
+  if (!el) return;
+  const unobserve = observeSize(el, ({ width }) => {
+    if (width > 0) set(timelineWidthAtom, Math.floor(width));
+  });
+  const onWheel = (e: WheelEvent) => set(wheelAtom, e, e.clientX - el.getBoundingClientRect().left);
+  el.addEventListener("wheel", onWheel, { passive: false });
+  return () => {
+    unobserve();
+    el.removeEventListener("wheel", onWheel);
+  };
 });
 
 export const PREVIEW_MIN_HEIGHT = 64;
@@ -30,12 +65,3 @@ export const timelineHeightAtom = atom(
     set(storedHeightAtom, Math.round(clamp(h, TIMELINE_MIN_HEIGHT, max)));
   },
 );
-
-const resizeFromAtom = atom<{ y: number; height: number } | null>(null);
-export const resizingAtom = atom((get) => get(resizeFromAtom) != null);
-export const startResizeAtom = atom(null, (_get, set, y: number, shownHeight: number) => set(resizeFromAtom, { y, height: shownHeight }));
-export const resizeToAtom = atom(null, (get, set, y: number) => {
-  const from = get(resizeFromAtom);
-  if (from) set(timelineHeightAtom, from.height - (y - from.y));
-});
-export const endResizeAtom = atom(null, (_get, set) => set(resizeFromAtom, null));

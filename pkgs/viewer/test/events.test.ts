@@ -1,73 +1,39 @@
 import { expect, test } from "bun:test";
 import { createStore } from "jotai";
-import type { PreviewEvent } from "@mekuru/protocol";
-import { compilation, state } from "./fixtures/preview.ts";
-import { patch, sharePreview, snapshot } from "./fixtures/sharing.ts";
-import { connectEvents, initialConnection, previewSocketUrl } from "../src/logic/events";
-import { elementsAtom, serverAtom, timelineAtom } from "../src/logic/server";
-import { timeAtom, playingAtom } from "../src/logic/playback/atoms";
+import { compilation, Events, install, patch, sharePreview, snapshot, state } from "./fixtures.ts";
+import { previewSocketUrl } from "../src/logic/preview";
+import { connAtom, elementsAtom, previewErrorAtom, scheduleAtom, serverAtom, timelineAtom } from "../src/logic/server";
+import { timeAtom, playingAtom } from "../src/logic/playback";
 import { timelineLayoutAtom, timelineViewAtom } from "../src/logic/timeline/atoms";
-
-class Events {
-  static all: Events[] = [];
-  onopen: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  onclose: (() => void) | null = null;
-  onmessage: ((e: { data: string }) => void) | null = null;
-  sent: string[] = [];
-  closed = false;
-  constructor() {
-    Events.all.push(this);
-  }
-  send(data: string) {
-    this.sent.push(data);
-  }
-  receive(event: PreviewEvent) {
-    this.onmessage?.({ data: JSON.stringify(event) });
-  }
-  close() {
-    this.closed = true;
-  }
-}
-const install = () => {
-  const previous = globalThis.WebSocket;
-  Events.all = [];
-  globalThis.WebSocket = Events as unknown as typeof WebSocket;
-  return () => {
-    globalThis.WebSocket = previous;
-  };
-};
 
 test("version mismatch requests a snapshot over WebSocket; reconnect and cleanup preserve the last good preview", async () => {
   const restore = install();
-  let connection = initialConnection;
-  const close = connectEvents((update) => {
-    connection = update(connection);
-  });
+  const store = createStore();
+  const close = store.sub(serverAtom, () => {});
   try {
     const a = sharePreview(compilation(), null);
     Events.all[0].receive(snapshot(state(), a));
-    const preview = connection.preview;
+    const preview = store.get(scheduleAtom);
     const b = sharePreview(compilation(2), a);
     Events.all[0].receive({ ...patch(state(2), a, b), baseVersion: 999 });
     expect(Events.all[0].closed).toBe(false);
     expect(Events.all[0].sent).toEqual([JSON.stringify({ type: "resync" })]);
-    expect(connection.preview).toBe(preview);
-    expect(connection.conn).toBe("reconnecting");
+    expect(store.get(scheduleAtom)).toBe(preview);
+    expect(store.get(connAtom)).toBe("reconnecting");
     Events.all[0].receive(patch(state(2), a, b)); // Ignore queued patches until the fresh snapshot.
-    expect(connection.preview).toBe(preview);
+    expect(store.get(scheduleAtom)).toBe(preview);
     Events.all[0].receive(snapshot(state(2), b));
-    expect(connection.preview?.version).toBe(2);
-    expect(connection.previewError).toBeNull();
+    expect(store.get(scheduleAtom)?.version).toBe(2);
+    expect(store.get(previewErrorAtom)).toBeNull();
     Events.all[0].onclose?.();
-    expect(connection.conn).toBe("reconnecting");
+    expect(store.get(connAtom)).toBe("reconnecting");
     Events.all[0].receive(snapshot(state(), a)); // Closed sockets cannot roll state back.
-    expect(connection.preview?.version).toBe(2);
+    expect(store.get(scheduleAtom)?.version).toBe(2);
     await Bun.sleep(1100);
     expect(Events.all).toHaveLength(2);
     Events.all[1].receive(snapshot(state(2), b));
-    expect(connection.preview?.version).toBe(2);
-    expect(connection.previewError).toBeNull();
+    expect(store.get(scheduleAtom)?.version).toBe(2);
+    expect(store.get(previewErrorAtom)).toBeNull();
     Events.all[1].onerror?.();
     close();
     await Bun.sleep(1100);
@@ -100,7 +66,6 @@ test("status keeps scene subscriptions and playback; duration shrink clamps the 
     expect(store.get(timeAtom)).toBe(1.8);
     expect(store.get(playingAtom)).toBe(true);
     const result = compilation(2);
-    if (!result.preview) throw new Error("fixture preview");
     result.preview.duration = 1;
     const b = sharePreview(result, a);
     Events.all[0].receive(patch(state(2), a, b));
@@ -124,20 +89,18 @@ test("WebSocket URLs follow the page's host and TLS", () => {
 
 test("malformed messages request one resync and a missing snapshot causes reconnect", async () => {
   const restore = install();
-  let connection = initialConnection;
-  const close = connectEvents((update) => {
-    connection = update(connection);
-  });
+  const store = createStore();
+  const close = store.sub(serverAtom, () => {});
   try {
     Events.all[0].receive(snapshot(state(), sharePreview(compilation(), null)));
-    const before = connection.preview;
+    const before = store.get(scheduleAtom);
     Events.all[0].onmessage?.({ data: "invalid JSON" });
     Events.all[0].onmessage?.({ data: "invalid JSON again" });
     expect(Events.all[0].sent).toHaveLength(1);
-    expect(connection.preview).toBe(before);
+    expect(store.get(scheduleAtom)).toBe(before);
     await Bun.sleep(3100);
     expect(Events.all[0].closed).toBe(true);
-    expect(connection.previewError).toContain("timed out");
+    expect(store.get(previewErrorAtom)).toContain("timed out");
   } finally {
     close();
     restore();

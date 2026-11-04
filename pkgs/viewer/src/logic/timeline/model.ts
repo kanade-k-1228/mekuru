@@ -1,5 +1,5 @@
-import type { ClipLane, TimelineClip, TimelineDto, TimelineNode } from "@mekuru/protocol";
-import { clamp } from "../math.ts";
+import type { ClipLane, TimelineClip, TimelineDto, TimelineNode } from "../../protocol";
+import { clamp } from "../util";
 
 export const LEFT_PAD = 12;
 const RIGHT_PAD = 12;
@@ -119,10 +119,14 @@ export const zoomAround = (view: ViewState, zoom: number, length: number, anchor
   return { zoom, start: anchor - (f * duration) / zoom };
 };
 
-export const rulerTicks = ({ pxPerSec, start, visibleSec, duration }: Viewport) => {
+export interface Ruler {
+  ticks: { sec: number; major: boolean }[];
+  fine: boolean;
+}
+export const rulerTicks = ({ pxPerSec, start, visibleSec, duration }: Viewport): Ruler => {
   const step = pickTickStep(pxPerSec);
   const minor = step * pxPerSec >= 120 ? step / 5 : step / 2;
-  const ticks: { sec: number; major: boolean }[] = [];
+  const ticks: Ruler["ticks"] = [];
   const first = Math.floor(start / minor) * minor;
   for (let sec = first; sec <= start + visibleSec + minor; sec += minor) {
     const rounded = Math.round(sec / minor) * minor;

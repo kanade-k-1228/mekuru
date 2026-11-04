@@ -1,47 +1,19 @@
 import { expect, test } from "bun:test";
 import { createStore } from "jotai";
-import { playingAtom, stepAtom, timeAtom } from "../src/logic/playback/atoms";
-import { scheduleAtom, serverAtom } from "../src/logic/server";
-import { followAtom, timelineMetricsAtom, timelineViewAtom } from "../src/logic/timeline/atoms";
+import { compilation, Events, install, sharePreview, snapshot, state } from "./fixtures.ts";
+import { playingAtom, stepAtom, timeAtom } from "../src/logic/playback";
+import { serverAtom } from "../src/logic/server";
+import { followPlayhead, timelineMetricsAtom, timelineViewAtom } from "../src/logic/timeline/atoms";
 
-test("seeking and stepping update playback independently of timeline following", async () => {
-  const Original = globalThis.WebSocket;
-  const originalFetch = globalThis.fetch;
-  class Events {
-    onopen = null;
-    onerror = null;
-    onclose = null;
-    send() {}
-    set onmessage(listener: (event: { data: string }) => void) {
-      listener({
-        data: JSON.stringify({
-          type: "snapshot",
-          preview: { version: 1, width: 16, height: 16, fps: 30, duration: 100, elements: [], timeline: { nodes: [], clips: [] } },
-          resources: {},
-          state: {
-            path: "video.xml",
-            version: 1,
-            previewVersion: 1,
-            status: "ready",
-            error: null,
-            diagnostics: [],
-          },
-        }),
-      });
-    }
-    close() {}
-  }
-  globalThis.WebSocket = Events as unknown as typeof WebSocket;
-  globalThis.fetch = (async () =>
-    Response.json({ version: 1, width: 16, height: 16, fps: 30, duration: 100, elements: [], timeline: { nodes: [], clips: [] } })) as unknown as typeof fetch;
+test("seeking and stepping update playback independently of timeline following", () => {
+  const restore = install();
   const store = createStore();
   const disconnect = store.sub(serverAtom, () => {});
-  const unfollow = store.sub(timeAtom, () => store.set(followAtom, store.get(timeAtom)));
+  const unfollow = followPlayhead(store);
   try {
-    for (let i = 0; store.get(scheduleAtom) === null; i++) {
-      if (i > 100) throw new Error("the preview did not load");
-      await Bun.sleep(1);
-    }
+    const result = compilation(1, []);
+    result.preview.duration = 100;
+    Events.all[0].receive(snapshot(state(), sharePreview(result, null)));
     store.set(timelineViewAtom, { start: 0, zoom: 10 });
     store.set(timeAtom, 50);
     const metrics = store.get(timelineMetricsAtom);
@@ -61,7 +33,6 @@ test("seeking and stepping update playback independently of timeline following",
   } finally {
     unfollow();
     disconnect();
-    globalThis.WebSocket = Original;
-    globalThis.fetch = originalFetch;
+    restore();
   }
 });

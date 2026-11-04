@@ -1,8 +1,8 @@
 import { memo, type PointerEvent as ReactPointerEvent } from "react";
-import type { ClipLane } from "@mekuru/protocol";
-import { formatTime } from "../../logic/formatTime";
+import type { ClipLane } from "../../protocol";
+import { formatTime } from "../../logic/util";
 import { clsx } from "clsx";
-import { LEFT_PAD, rulerTicks, xAt, type Layout, type Viewport } from "../../logic/timeline/model";
+import { LEFT_PAD, xAt, type Layout, type Ruler, type Viewport } from "../../logic/timeline/model";
 
 const DEPTH_FILL = ["fill-depth-0", "fill-depth-1", "fill-depth-2", "fill-depth-3", "fill-depth-4", "fill-depth-5"];
 const LANE_CLASS: Record<ClipLane, string> = {
@@ -19,15 +19,15 @@ const Tag = ({ name }: { name: string }) => <tspan className="fill-white/55">{`<
 interface Props {
   layout: Layout;
   metrics: Viewport;
+  ticks: Ruler["ticks"];
   uid: string;
   onSelect(start: number): void;
 }
 
-export const TimelineContent = memo(({ layout, metrics, uid, onSelect }: Props) => {
+export const TimelineContent = memo(({ layout, metrics, ticks, uid, onSelect }: Props) => {
   const { width } = metrics;
   const xOf = (sec: number) => xAt(metrics, sec);
   const inView = (a: number, b: number) => xOf(b) >= LEFT_PAD && xOf(a) <= width;
-  const { ticks } = rulerTicks(metrics);
   const select = (e: ReactPointerEvent, startSec: number) => {
     if (e.button !== 0) return;
     e.stopPropagation();

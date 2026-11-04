@@ -89,7 +89,7 @@ Preview text uses HTML/CSS from compiler-resolved positions, widths and styles; 
 
 Asset-only watching, incremental XML/layout/timing, and playback optimization are outside this path. Asset changes are validated on the next compile; restart the server after installing system fonts.
 
-`bun scripts/preview-latency.ts 500 10 ja` launches the native server and measures atomic file writing through receipt of a ready WebSocket message, including settling and compilation but excluding browser rendering. `MEKURU_COMPILER` selects the executable. Initial loading transfers a full snapshot.
+`bun pkgs/core/test/preview-latency.ts 500 10 ja` launches the native server and measures atomic file writing through receipt of a ready WebSocket message, including settling and compilation but excluding browser rendering. `MEKURU_COMPILER` selects the executable. Initial loading transfers a full snapshot.
 
 Tests cover a relocated binary with no Bun on PATH, embedded UI/assets, range requests, traversal rejection, snapshot/patch reconstruction, invalid XML recovery, chunked/atomic saves, newest-input coalescing, slow-subscriber resynchronization and `--run` shutdown. The CI platform matrix runs the real native server tests after embedding the viewer.
 
@@ -107,10 +107,8 @@ The timing tree, layout, and draw order are resolved at compile time. Times are 
 
 TSX `fps()` is available only while expanding `<mekuru>`. Audio speed changes use `atempo` for export and `playbackRate` for preview.
 
-Viewer state lives in Jotai atoms; `logic/` does not depend on `view/`. Components read and write atoms without custom hooks. Shared DTOs come from `@mekuru/protocol`; React refs handle DOM attachment and cleanup.
+Viewer state lives in Jotai atoms; `logic/` does not depend on `view/`. Components read and write atoms without custom hooks. React refs handle DOM attachment and cleanup.
 
 ## Package boundaries
 
-`core` owns JSX and XML build context. `audio` owns audio resources and WAV processing; `speech` owns synthesis preparation and caches. Engine packages own their HTTP APIs. `narrator` composes portraits and subtitles. `protocol` contains transport types without runtime dependencies. `platform` owns OS integration. The viewer depends on protocol; compiler output and the native server implement that contract in Rust.
-
-Moved APIs: import `AudioSource`, `Audio`, and `readAudio` from `@mekuru/audio`; import `joinWavs` from `@mekuru/audio/wav`; import preview DTOs from `@mekuru/protocol`. No compatibility re-exports remain at the old paths.
+`types` owns JSX and XML build context; `core` is the native compiler and preview server. `audio` owns audio resources and WAV processing; `speech` owns synthesis preparation and caches. Engine packages own their HTTP APIs. `narrator` composes portraits and subtitles. `platform` owns OS integration. The preview contract is typed in [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts); the native server implements it in Rust.

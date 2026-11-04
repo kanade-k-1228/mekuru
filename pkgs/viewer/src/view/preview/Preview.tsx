@@ -1,12 +1,13 @@
-import { useAtomValue, useSetAtom } from "jotai";
-import type { PreviewDto } from "@mekuru/protocol";
-import { attachStageBoxAtom, stageScaleAtom } from "../../logic/stage";
+import { useCallback, useState } from "react";
+import type { PreviewDto } from "../../protocol";
+import { observeSize } from "../../logic/util";
 import { Stage } from "./Stage";
 
 export const Preview = ({ schedule }: { schedule: PreviewDto }) => {
-  const attach = useSetAtom(attachStageBoxAtom);
-  const scale = useAtomValue(stageScaleAtom);
+  const [box, setBox] = useState<{ width: number; height: number } | null>(null);
+  const attach = useCallback((el: HTMLElement | null) => (el ? observeSize(el, setBox) : undefined), []);
   const { width, height } = schedule;
+  const scale = box ? Math.min(box.width / width, box.height / height) : 0.25;
 
   return (
     <section ref={attach} className="grid min-h-0 flex-1 place-items-center overflow-hidden bg-black" aria-label="Preview">

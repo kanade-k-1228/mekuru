@@ -110,7 +110,7 @@ jobs:
           cargo build "${args[@]}"
           compiler="target/${{ matrix.target }}/$build_profile/mekuru-compiler${{ runner.os == 'Windows' && '.exe' || '' }}"
           "$compiler" --version
-          MEKURU_COMPILER="$compiler" bun test scripts/native-server.test.ts pkgs/core/test/native-cli.test.ts
+          MEKURU_COMPILER="$compiler" bun test pkgs/core/test/native-server.test.ts pkgs/core/test/native-cli.test.ts
       - if: env.RELEASE == 'true'
         run: bun scripts/release.ts pack ${{ matrix.platform }} target/${{ matrix.target }}/release npm-out
       - if: env.RELEASE == 'true'

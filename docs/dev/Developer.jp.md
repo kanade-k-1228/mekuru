@@ -89,7 +89,7 @@ git push origin 0.3.0
 
 素材単独の変更監視、XML・配置・時間計算の増分化、再生中の最適化は対象外です。素材は次回コンパイル時に検証し、システムフォントを追加した場合はサーバーを再起動してください。
 
-`bun scripts/preview-latency.ts 500 10 ja` はネイティブサーバーを起動し、原子的なファイル書き込みから ready WebSocket メッセージ受信までを測ります。待機・コンパイルを含み、ブラウザ描画は含みません。`MEKURU_COMPILER` で実行ファイルを指定できます。初回は全体 snapshot を送ります。
+`bun pkgs/core/test/preview-latency.ts 500 10 ja` はネイティブサーバーを起動し、原子的なファイル書き込みから ready WebSocket メッセージ受信までを測ります。待機・コンパイルを含み、ブラウザ描画は含みません。`MEKURU_COMPILER` で実行ファイルを指定できます。初回は全体 snapshot を送ります。
 
 Bun が PATH にない環境へコピーした実行ファイル、埋め込み UI・素材、範囲取得、プロジェクト外パスの拒否、差分からの復元、XML エラー復帰、分割・原子的保存、最新入力への集約、遅い接続の再同期、`--run` の終了をテストしています。CI の各 OS ジョブでも UI 埋め込み後に実サーバーのテストを実行します。
 
@@ -107,10 +107,8 @@ Bun が PATH にない環境へコピーした実行ファイル、埋め込み 
 
 TSX の `fps()` は `<mekuru>` の展開中だけ使えます。音声の速度変更は書き出しで `atempo`、プレビューで `playbackRate` を使います。
 
-ビューアの状態は Jotai の atom に置き、`logic/` は `view/` に依存しません。コンポーネントは atom を読み書きし、カスタムフックは使いません。共通の DTO は `@mekuru/protocol`、DOM の接続と解除は React の ref で扱います。
+ビューアの状態は Jotai の atom に置き、`logic/` は `view/` に依存しません。コンポーネントは atom を読み書きし、カスタムフックは使いません。DOM の接続と解除は React の ref で扱います。
 
 ## パッケージの責務
 
-`core` はJSX・XMLと構築コンテキスト、`audio` は音声素材とWAV処理、`speech` は合成の準備とキャッシュを担当します。各エンジンは固有のHTTP API、`narrator` は立ち絵・字幕、`protocol` は実行時依存のない通信型、`platform` はOS共通処理を担当します。viewer は protocol に依存し、コンパイラとサーバーはその通信契約を Rust で実装します。
-
-API移行: `AudioSource`・`Audio`・`readAudio` は `@mekuru/audio`、`joinWavs` は `@mekuru/audio/wav`、通信型は `@mekuru/protocol` からimportします。旧入口の再exportはありません。
+`types` はJSX・XMLと構築コンテキスト、`core` はネイティブコンパイラとプレビューサーバー、`audio` は音声素材とWAV処理、`speech` は合成の準備とキャッシュを担当します。各エンジンは固有のHTTP API、`narrator` は立ち絵・字幕、`platform` はOS共通処理を担当します。プレビューの通信契約の型は [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts) にあり、ネイティブサーバーがそれを Rust で実装します。
