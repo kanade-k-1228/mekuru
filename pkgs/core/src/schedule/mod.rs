@@ -699,7 +699,7 @@ impl<'a> Solver<'a> {
         let s = self.s;
         for (i, node) in s.nodes.iter().enumerate().skip(1) {
             let empty = nodes[i].end <= nodes[i].start;
-            let tag = node.tag;
+            let tag = node.flow.name();
             if node.t.timed() && !self.targets[i].dropped && empty {
                 self.diags.push(Diag::new(
                     "W551",

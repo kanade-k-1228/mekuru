@@ -290,7 +290,7 @@ fn timeline(p: &Project, sched: &Schedule, keys: &std::collections::HashMap<usiz
         out.nodes.push(TimelineNode {
             key: format!("{}:node", keys[&(n.head.lo as usize)]),
             depth: depths[n.id] - 1,
-            tag: n.tag,
+            tag: n.flow.name(),
             label: labels[n.id].clone(),
             line,
             start: i(t.start),

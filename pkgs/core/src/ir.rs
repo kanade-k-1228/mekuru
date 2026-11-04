@@ -69,7 +69,6 @@ pub struct Node {
     pub id: NodeId,
     pub parent: Option<NodeId>,
     pub flow: Flow,
-    pub tag: &'static str,
     pub t: Time,
     pub head: Span,
     pub order: Vec<Target>,

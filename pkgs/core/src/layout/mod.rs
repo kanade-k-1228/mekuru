@@ -165,7 +165,6 @@ impl Out {
             id,
             parent,
             flow,
-            tag: flow.name(),
             t: n.times.time(n.dur),
             head: n.head,
             order: vec![],
