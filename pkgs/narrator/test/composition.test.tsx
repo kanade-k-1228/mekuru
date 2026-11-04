@@ -40,7 +40,6 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
     await Bun.write(
       join(dir, "actor", "portrait.json"),
       JSON.stringify({
-        version: 2,
         width: 1,
         height: 1,
         layers: [{ name: "mouth", kind: "lip", initial: "normal", options: [{ name: "normal", frames: ["closed.png", "open.png"] }] }],

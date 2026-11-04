@@ -55,7 +55,7 @@ Place `<Tsuzumi>漢字《かんじ》を読みます。</Tsuzumi>` inside `<meku
 
 `portrait<LayerProps>({ src, ...options })` reads exported Mekuru PSD assets. `Stand` supplies idle animation; `Talk` uses the shared audio source for duration and lip sync. PSD groups explicitly declare `[fixed]`, `[toggle]`, `[select]`, `[blink]` or `[lip]`. Part names are unrestricted by body-part conventions, and generated props select expressions.
 
-Use `blink` for the average blinking interval and `x`, `y`, `w`, `h`, `z`, `rotate`, `anchor`, `slot` for placement. See [the PSD convention, converter and migration guide](../../docs/reference/Portrait.md).
+Use `blink` for the average blinking interval and `x`, `y`, `w`, `h`, `z`, `rotate`, `anchor`, `slot` for placement. See [the PSD convention and converter guide](../../docs/reference/Portrait.md).
 
 ## Subtitle / SubtitleProps
 
@@ -83,5 +83,3 @@ bun x mekuru-psd-convert source.psd --map mapping.json --out character.psd
 ```
 
 The converter maps explicitly selected layers into a native PSD, flattening each part/frame. It never changes the source. Export the resulting PSD with `mekuru-psd` and use the same `portrait()` runtime. See the [mapping format](../../docs/reference/Portrait.md#convert-an-existing-psd-including-ymm4-artwork).
-
-`psdPortrait` and the old YMM4 folder-based `portrait` are replaced by the single `portrait<LayerProps>` API. Annotate old PSDs and re-export version 2 assets. Old `Face`, `faces` and INI conventions are removed. Define expression presets in your TSX code. `Audio` and `readAudio` remain in `@mekuru/audio`.

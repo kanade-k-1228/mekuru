@@ -5,7 +5,7 @@ import { animated, assetName, selectable, validateManifest, type PortraitKind, t
 
 /** Validate the convention before rendering or writing anything. */
 export function parsePortrait(psd: Psd) {
-  const manifest: PsdManifest = { version: 2, width: psd.width, height: psd.height, layers: [] };
+  const manifest: PsdManifest = { width: psd.width, height: psd.height, layers: [] };
   const artwork: { src: string; layer: Layer; ancestors: Layer[] }[] = [];
   for (const layer of psd.children ?? []) {
     const match = /^(.*?) \[(fixed|toggle|select|blink|lip)\]$/.exec(layer.name ?? "");

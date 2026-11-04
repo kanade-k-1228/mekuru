@@ -55,7 +55,7 @@ export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
 
 `portrait<LayerProps>({ src, ...options })` は展開済みの独自PSD素材を読みます。`Stand` は待機表示、`Talk` は共有音声素材の長さと音量に合わせた口パクを行います。PSDには `[fixed]`・`[toggle]`・`[select]`・`[blink]`・`[lip]` を明示し、部位名に依存せず生成されたpropsで表情を選びます。
 
-`blink` でまばたきの平均間隔、`x`・`y`・`w`・`h`・`z`・`rotate`・`anchor`・`slot` で配置を指定できます。[PSD規約・変換・移行手順](../../docs/reference/Portrait.jp.md)を参照してください。
+`blink` でまばたきの平均間隔、`x`・`y`・`w`・`h`・`z`・`rotate`・`anchor`・`slot` で配置を指定できます。[PSD規約・変換手順](../../docs/reference/Portrait.jp.md)を参照してください。
 
 ## Subtitle / SubtitleProps
 
@@ -83,5 +83,3 @@ bun x mekuru-psd-convert source.psd --map mapping.json --out character.psd
 ```
 
 変換ツールは指定されたレイヤーをパーツ・差分ごとに合成し、独自規約のPSDを作ります。元PSDは変更しません。変換後も `mekuru-psd` で展開し、同じ `portrait()` で使います。設定の書き方は[立ち絵ガイド](../../docs/reference/Portrait.jp.md)を参照してください。
-
-旧 `psdPortrait` とYMM4フォルダー方式の `portrait` は、単一の `portrait<LayerProps>` APIに置き換えました。旧PSDは種類を名前に付けてversion 2の素材を再出力してください。旧 `Face`・`faces`・INI規約は廃止し、表情プリセットは利用側のTSXで定義します。`Audio`・`readAudio` は引き続き `@mekuru/audio` が提供します。

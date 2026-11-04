@@ -14,7 +14,6 @@ export type ConversionLayer =
       | "lip"];
 /** Layers are listed back to front; frames are listed closed to open. */
 export interface ConversionMap {
-  version: 1;
   layers: ConversionLayer[];
 }
 
@@ -44,7 +43,7 @@ export async function convertPsd(input: string, output: string, mapping: unknown
   if (sourcePath === targetPath || (targetStat?.dev === sourceStat.dev && targetStat?.ino === sourceStat.ino))
     throw new Error("Conversion must not overwrite the source PSD");
   const map = mapping as ConversionMap;
-  if (map?.version !== 1 || !Array.isArray(map.layers) || !map.layers.length) throw new Error("Expected conversion map version 1 with layers");
+  if (!Array.isArray(map?.layers) || !map.layers.length) throw new Error("Expected a conversion map with layers");
   const psd = await readArtwork(input);
   const find = (path: LayerPath): Layer => {
     if (!Array.isArray(path) || !path.length || path.some((p) => typeof p !== "string" || !p)) throw new Error("Expected a non-empty layer path array");

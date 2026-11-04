@@ -28,7 +28,6 @@ const source = (): Layer[] => [
   },
 ];
 const mapping = (): ConversionMap => ({
-  version: 1,
   layers: [
     { name: "body", kind: "fixed", initial: true, source: ["body"] },
     {
@@ -77,7 +76,6 @@ test("inspect exposes exact source paths and conversion preserves flattened pixe
     expect(frames?.every((l) => !l.children)).toBe(true);
     const out = `${output}.assets`;
     const m = await exportPsd(output, out);
-    expect(m.version).toBe(2);
     expect(m.layers[1].initial).toBe("normal");
     const image = await sharp(join(out, "eyes/normal/1.png")).raw().toBuffer({ resolveWithObject: true });
     expect([image.info.width, image.info.height]).toEqual([3, 2]);
@@ -94,7 +92,6 @@ test("inspect exposes exact source paths and conversion preserves flattened pixe
 test("conversion supports toggle/select/lip and an editor composite matching defaults", () =>
   fixture(async (input, output) => {
     await convertPsd(input, output, {
-      version: 1,
       layers: [
         { name: "body", kind: "toggle", source: ["body"], initial: false },
         { name: "face", kind: "select", initial: null, options: [{ name: "one", frames: [["body"]] }] },
@@ -127,14 +124,14 @@ test("missing/ambiguous paths, invalid mappings, parent effects and unsupported 
     if (bad.layers[0].kind === "fixed") bad.layers[0].source = ["absent"];
     await expect(convertPsd(input, output, bad)).rejects.toThrow("Missing or ambiguous");
     await save([pixel("same", [0, 0, 0, 255]), pixel("same", [0, 0, 0, 255])]);
-    const fixed = (source: string[]) => ({ version: 1, layers: [{ name: "body", kind: "fixed", initial: true, source }] });
+    const fixed = (source: string[]) => ({ layers: [{ name: "body", kind: "fixed", initial: true, source }] });
     await expect(convertPsd(input, output, fixed(["same"]))).rejects.toThrow("ambiguous");
     await save([{ name: "parent", opacity: 0.5, children: [pixel("child", [0, 0, 0, 255])] }]);
     await expect(convertPsd(input, output, fixed(["parent", "child"]))).rejects.toThrow("parent effects");
     await save([pixel("body", [0, 0, 0, 255], { blendMode: "multiply" })]);
     await expect(convertPsd(input, output, fixed(["body"]))).rejects.toThrow("Unsupported PSD feature");
     await save(source());
-    for (const map of [null, {}, { version: 1, layers: [] }, { version: 1, layers: [{ name: "x", kind: "select", initial: "missing", options: [] }] }])
+    for (const map of [null, {}, { layers: [] }, { layers: [{ name: "x", kind: "select", initial: "missing", options: [] }] }])
       await expect(convertPsd(input, output, map)).rejects.toThrow();
     await expect(access(output)).rejects.toThrow();
     await convertPsd(input, output, mapping());

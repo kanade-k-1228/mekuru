@@ -7,7 +7,6 @@ export interface PsdLayer {
   initial: string | boolean | null;
 }
 export interface PsdManifest {
-  version: 2;
   width: number;
   height: number;
   layers: PsdLayer[];
@@ -34,16 +33,7 @@ export const safeAssetPath = (value: string): boolean =>
   value.endsWith(".png") && !/[\\:\p{Cc}]/u.test(value) && value.split("/").every((s) => s !== ".." && s !== "." && s !== "");
 export function validateManifest(value: unknown): asserts value is PsdManifest {
   const m = value as PsdManifest;
-  if ((value as { version?: unknown })?.version === 1) throw new Error("Old portrait assets: re-export the PSD with mekuru-psd (version 2)");
-  if (
-    m?.version !== 2 ||
-    !Number.isInteger(m.width) ||
-    m.width <= 0 ||
-    !Number.isInteger(m.height) ||
-    m.height <= 0 ||
-    !Array.isArray(m.layers) ||
-    !m.layers.length
-  )
+  if (!Number.isInteger(m?.width) || m.width <= 0 || !Number.isInteger(m.height) || m.height <= 0 || !Array.isArray(m.layers) || !m.layers.length)
     throw new Error("Invalid PSD portrait manifest");
   const names = new Set<string>();
   const paths = new Set<string>();

@@ -55,7 +55,7 @@ The equivalent API is `exportPsd(input, output)` from `@mekuru/narrator/psd`. PN
 - Fixed/toggle: `body.png`
 - Static option: `clothes/casual.png`
 - Animation: `eyes/normal/0.png`, `eyes/normal/1.png`, etc.
-- `portrait.json`: version 2, back-to-front parts, kinds, defaults and closed-to-open image arrays per option
+- `portrait.json`: back-to-front parts, kinds, defaults and closed-to-open image arrays per option
 - `portrait.d.ts`: generated `LayerProps`
 
 Only renderable parts/options/frames are exported, not individual internal linework layers. Keep the PSD as the editable source. Use a dedicated output folder. Re-export removes obsolete images recorded in the previous manifest and preserves unrelated files.
@@ -97,7 +97,6 @@ Inspection emits JSON with exact layer paths, local visibility (not ancestor vis
 
 ```json
 {
-  "version": 1,
   "layers": [
     { "name": "body", "kind": "fixed", "initial": true, "source": ["体"] },
     {
@@ -118,9 +117,3 @@ Inspection emits JSON with exact layer paths, local visibility (not ancestor vis
 - The same raster subset as native export applies. YMM4 configuration files, inferred body-part naming and PSDTool-specific behavior are not interpreted.
 
 APIs: `inspectPsd(input)` and `convertPsd(input, output, mapping)` from `@mekuru/narrator/psd-convert`.
-
-## Migration
-
-Replace `psdPortrait` with `portrait<LayerProps>`, annotate top-level names and re-export. To preserve the old initially-hidden behavior of a one-child group, label it `[toggle]` and hide it in the PSD.
-
-Version 1 manifests are rejected at runtime; only re-export cleanup reads their generated file lists. YMM4 animated-portrait folders, INI files and the old `Face`/`faces` API are removed. Convert the original PSD, or assemble existing parts into a PSD using the new convention.

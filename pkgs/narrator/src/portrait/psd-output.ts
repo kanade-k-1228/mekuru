@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile, unlink, lstat, rmdir } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { assetFiles, safeAssetPath, validateManifest, type PsdManifest } from "./psd-schema.ts";
+import { assetFiles, validateManifest, type PsdManifest } from "./psd-schema.ts";
 
 export async function writePsdAssets(output: string, manifest: PsdManifest, images: ReadonlyMap<string, Buffer>): Promise<void> {
   const out = resolve(output);
@@ -10,18 +10,10 @@ export async function writePsdAssets(output: string, manifest: PsdManifest, imag
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
   }
-  // Version 1 is understood only here, to remove its generated files on re-export.
   let oldFiles: string[] = [];
   if (previous !== undefined) {
-    if ((previous as { version?: unknown })?.version === 1) {
-      const old = previous as { files?: unknown; layers?: { options: { src: string }[] }[] };
-      const files: unknown = old.files ?? old.layers?.flatMap((l) => l.options.map((o) => o.src));
-      if (!Array.isArray(files) || files.some((p) => typeof p !== "string" || !safeAssetPath(p))) throw new Error("Invalid old PSD generated file list");
-      oldFiles = files;
-    } else {
-      validateManifest(previous);
-      oldFiles = assetFiles(previous);
-    }
+    validateManifest(previous);
+    oldFiles = assetFiles(previous);
   }
   // Do not follow symlinks when updating generated assets.
   const checkPath = async (path: string) => {

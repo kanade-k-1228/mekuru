@@ -166,22 +166,6 @@ test("CLI generates usable TypeScript definitions", () =>
     expect(await compiler.exited, result).toBe(0);
   }));
 
-test("version 1 assets are rejected at runtime and cleaned up only during re-export", () =>
-  fixture(async (input, out) => {
-    const { mkdir } = await import("node:fs/promises");
-    await mkdir(join(out, "parts"), { recursive: true });
-    await writeFile(join(out, "parts/old.png"), "old");
-    await writeFile(join(out, "parts/notes.txt"), "keep");
-    await writeFile(join(out, "portrait.json"), JSON.stringify({ version: 1, files: ["parts/old.png"] }));
-    expect(() => portrait({ src: out })).toThrow("re-export");
-    await exportPsd(input, out);
-    await access(join(out, "body.png"));
-    await expect(access(join(out, "parts/old.png"))).rejects.toThrow();
-    expect(await readFile(join(out, "parts/notes.txt"), "utf8")).toBe("keep");
-    await writeFile(join(out, "portrait.json"), JSON.stringify({ version: 1, files: ["../outside.png"] }));
-    await expect(exportPsd(input, out)).rejects.toThrow("Invalid old PSD");
-  }));
-
 test("asset paths reject escapes and nested filename collisions", async () => {
   const { safeAssetPath } = await import("../src/portrait/psd-schema.ts");
   for (const path of ["/body.png", "../body.png", "face/../body.png", "C:/body.png", "face\\body.png"]) expect(safeAssetPath(path)).toBe(false);
