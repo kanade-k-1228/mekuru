@@ -6,7 +6,7 @@
     "moduleResolution": "Bundler",
     "types": ["bun"],
     "jsx": "react-jsx",
-    "jsxImportSource": "@mekuru/types",
+    "jsxImportSource": "@mekuru/tsx",
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

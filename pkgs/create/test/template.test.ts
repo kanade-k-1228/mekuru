@@ -14,19 +14,19 @@ test("generated projects include the selected engines and upload commands", asyn
       "@mekuru/core",
       "@mekuru/narrator",
       "@mekuru/speech",
-      "@mekuru/types",
+      "@mekuru/tsx",
       "@mekuru/upload",
       "@types/bun",
       "typescript",
     ]);
-    expect(pkg.devDependencies["@mekuru/types"]).toBe(`^${VERSION}`);
+    expect(pkg.devDependencies["@mekuru/tsx"]).toBe(`^${VERSION}`);
     expect(pkg.devDependencies["@mekuru/core"]).toBe(`^${VERSION}`);
     expect(pkg.devDependencies["@mekuru/upload"]).toBe(`^${VERSION}`);
     expect(pkg.scripts["upload:youtube"]).toBe("mekuru-youtube");
     expect(pkg.scripts["upload:niconico"]).toBe("mekuru-niconico");
     expect(await Bun.file(join(dir, "configs/youtube.yaml")).text()).toContain("privacy: private");
     const tsconfig = await Bun.file(join(dir, "tsconfig.json")).json();
-    expect(tsconfig.compilerOptions.jsxImportSource).toBe("@mekuru/types");
+    expect(tsconfig.compilerOptions.jsxImportSource).toBe("@mekuru/tsx");
     const readme = await Bun.file(join(dir, "README.md")).text();
     expect(readme).toStartWith(`# ${pkg.name}\n`);
     expect(readme).not.toContain("#if");

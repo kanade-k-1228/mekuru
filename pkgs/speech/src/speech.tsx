@@ -1,7 +1,7 @@
-/** @jsxImportSource @mekuru/types */
+/** @jsxImportSource @mekuru/tsx */
 import { cacheFile, synthesized } from "./cache.ts";
 import { Audio, frameCount, frames, readAudio, type AudioSource } from "@mekuru/audio";
-import { fps, isDraft, waitFor, type At, type JSX, type Node, type Time } from "@mekuru/types";
+import { fps, isDraft, waitFor, type At, type JSX, type Node, type Time } from "@mekuru/tsx";
 import { speechText } from "./text.tsx";
 
 export interface SpeechProps {

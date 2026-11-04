@@ -1,4 +1,4 @@
-import type { At, Node } from "@mekuru/types";
+import type { At, Node } from "@mekuru/tsx";
 
 export type Children = { children?: Node };
 

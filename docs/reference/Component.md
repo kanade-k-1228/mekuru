@@ -27,13 +27,13 @@ See [@mekuru/create](../../pkgs/create/README.md) for creation options and the [
 
 ## Scripts
 
-`writeXml(path, video)` expands components and saves XML. Speech components emit a draft when audio is missing, then update it after synthesis. See [@mekuru/types](../../pkgs/types/README.md) for usage and JSX configuration, and [tutorial/main.tsx](../../example/tutorial/main.tsx) for a complete script.
+`writeXml(path, video)` expands components and saves XML. Speech components emit a draft when audio is missing, then update it after synthesis. See [@mekuru/tsx](../../pkgs/tsx/README.md) for usage and JSX configuration, and [tutorial/main.tsx](../../example/tutorial/main.tsx) for a complete script.
 
 Attributes accept numbers `{30}`, strings `"100%"`, booleans `closed`, and arrays `{[0, 80]}`. `false`, `null`, and `undefined` are omitted. Values are normalized in [XML](Syntax.md#xml-intermediate-format).
 
 ## Components
 
-A component is a function that takes props and returns elements. It can be `async` and use arrays, conditionals, and fragments. Components have no hooks or state. Type it with `FC<Props>` from `@mekuru/types`.
+A component is a function that takes props and returns elements. It can be `async` and use arrays, conditionals, and fragments. Components have no hooks or state. Type it with `FC<Props>` from `@mekuru/tsx`.
 
 This component combines speech, a portrait, and subtitles into one line. Types and helper components are in [example/src/parts.tsx](../../example/src/parts.tsx).
 

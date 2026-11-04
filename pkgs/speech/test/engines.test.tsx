@@ -1,9 +1,9 @@
-/** @jsxImportSource @mekuru/types */
+/** @jsxImportSource @mekuru/tsx */
 import { afterAll, afterEach, beforeAll, expect, mock, spyOn, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { toXml, type Node } from "@mekuru/types";
+import { toXml, type Node } from "@mekuru/tsx";
 import { wav } from "../../audio/test/fixture.ts";
 import { Coeiroink } from "../src/coeiroink/index.tsx";
 import { StyleBertVits2 } from "../src/style-bert-vits2/index.tsx";

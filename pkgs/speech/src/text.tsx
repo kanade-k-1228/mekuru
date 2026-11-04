@@ -1,4 +1,4 @@
-import { resolveText, type Node } from "@mekuru/types";
+import { resolveText, type Node } from "@mekuru/tsx";
 
 const withReadings = (text: string, words: [string, string][]): string => {
   if (words.length === 0) return text;

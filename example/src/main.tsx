@@ -1,4 +1,4 @@
-import { type FC, writeXml } from "@mekuru/types";
+import { type FC, writeXml } from "@mekuru/tsx";
 import {
   Arrow,
   COLOR,

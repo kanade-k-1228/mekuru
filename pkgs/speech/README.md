@@ -9,17 +9,17 @@ Speech components that read Mekuru Movie Maker dialogue with a speech engine: `V
 Requires Bun 1.4+, ffmpeg with libx264, ffprobe, and fonts (Noto Sans; Noto Sans CJK for Japanese text). Install in the project folder:
 
 ```sh
-bun add -d @mekuru/types @mekuru/core @mekuru/speech
+bun add -d @mekuru/tsx @mekuru/core @mekuru/speech
 ```
 
-In `tsconfig.json`, set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` (already set by `bun create @mekuru`). Set up your engine as described under [Engines](#engines).
+In `tsconfig.json`, set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/tsx"` (already set by `bun create @mekuru`). Set up your engine as described under [Engines](#engines).
 
 ## Quick start
 
 Start VOICEVOX and save as `src/main.tsx`:
 
 ```tsx
-import { writeXml } from "@mekuru/types";
+import { writeXml } from "@mekuru/tsx";
 import { Voicevox } from "@mekuru/speech/voicevox";
 
 const text = "こんにちは。";
@@ -344,6 +344,6 @@ The cache key contains `kind`, `voice`, and processed text. Include all synthesi
 
 ### Custom draft handling
 
-For custom preparation, use `isDraft()` and `waitFor()` from `@mekuru/types`: register the synthesis promise and return `<dur len={estimatedFrames}><audio draft label="..." /></dur>` for the draft, then audio with a completed `src` on the final pass. `label` selects the timeline's speech track. `waitFor()` schedules the final pass only within `writeXml()`.
+For custom preparation, use `isDraft()` and `waitFor()` from `@mekuru/tsx`: register the synthesis promise and return `<dur len={estimatedFrames}><audio draft label="..." /></dur>` for the draft, then audio with a completed `src` on the final pass. `label` selects the timeline's speech track. `waitFor()` schedules the final pass only within `writeXml()`.
 
 `Audio` and `readAudio` are provided by `@mekuru/audio`; `joinWavs(parts)`, which joins a nonempty array of WAV buffers with identical format chunks without resampling or converting them, is provided by `@mekuru/audio/wav`.

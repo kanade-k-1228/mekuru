@@ -4,7 +4,7 @@
 
 The Rust video compiler and preview server for Mekuru Movie Maker. One native executable watches XML, compiles scenes, serves HTTP/WebSocket and media, and contains the browser viewer. It also exports video through ffmpeg.
 
-TSX types, the JSX runtime and XML output are provided by [@mekuru/types](../types/README.md).
+TSX types, the JSX runtime and XML output are provided by [@mekuru/tsx](../tsx/README.md).
 
 ```sh
 bun add -d @mekuru/core

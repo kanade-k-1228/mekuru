@@ -36,7 +36,7 @@ bun run build   # video.mp4
 
 ```tsx
 // src/main.tsx
-import { writeXml } from "@mekuru/types";
+import { writeXml } from "@mekuru/tsx";
 import { Voicevox, zunda } from "@mekuru/speech/voicevox";
 
 const Video = () => (
@@ -58,4 +58,4 @@ await writeXml(".mekuru/main.xml", <Video />);
 
 This uses VOICEVOX: choose it during setup and keep the app running. See the [first-video tutorial](example/README.md) for a complete example.
 
-> [@mekuru/types](pkgs/types/README.md) provides TSX types, the JSX runtime and XML output. [@mekuru/core](pkgs/core/README.md) provides the native compiler and preview server, including the viewer and platform binaries. Generated projects include both packages.
+> [@mekuru/tsx](pkgs/tsx/README.md) provides TSX types, the JSX runtime and XML output. [@mekuru/core](pkgs/core/README.md) provides the native compiler and preview server, including the viewer and platform binaries. Generated projects include both packages.

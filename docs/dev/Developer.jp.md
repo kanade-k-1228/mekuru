@@ -4,7 +4,7 @@
 
 ## リポジトリ構成
 
-- [pkgs/types](../../pkgs/types/README.jp.md): TSX の型・JSX ランタイム・XML 出力
+- [pkgs/tsx](../../pkgs/tsx/README.jp.md): TSX の型・JSX ランタイム・XML 出力
 - [pkgs/core](../../pkgs/core/README.jp.md): Rust の動画コンパイラ、ネイティブのプレビューサーバー、埋め込み UI、npm 用の起動スクリプト
 - [pkgs/viewer](../../pkgs/viewer/README.jp.md): React のビューア。ビルド先は `pkgs/core/viewer/`
 - [pkgs/create](../../pkgs/create/README.jp.md): プロジェクト生成
@@ -95,7 +95,7 @@ CI の各 OS ジョブでも UI 埋め込み後にネイティブサーバーの
 
 ## 内部構造
 
-- TSX → XML: [types/src/xml.ts](../../pkgs/types/src/xml.ts)。部品を展開し、省略・別名を正規化
+- TSX → XML: [tsx/src/xml.ts](../../pkgs/tsx/src/xml.ts)。部品を展開し、省略・別名を正規化
 - XML の解析: [core/src/lang](../../pkgs/core/src/lang)。厳格な属性・参照の検査
 - 配置: [core/src/layout](../../pkgs/core/src/layout)。taffy で文書全体を配置し、時間の木に変換
 - 時間の計算: [core/src/schedule/mod.rs](../../pkgs/core/src/schedule/mod.rs)。依存順に解決。循環は E510、到達できない参照は E504

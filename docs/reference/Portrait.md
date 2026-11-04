@@ -63,7 +63,7 @@ Only renderable parts/options/frames are exported, not individual internal linew
 ## Use a portrait
 
 ```tsx
-import type { FC } from "@mekuru/types";
+import type { FC } from "@mekuru/tsx";
 import { portrait } from "@mekuru/narrator";
 import { Audio, readAudio } from "@mekuru/audio";
 import type { LayerProps } from "./assets/character/portrait";

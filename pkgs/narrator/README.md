@@ -9,17 +9,17 @@ Shared components for building your own narrator from synthesized speech, a port
 Requires Bun 1.4 or later.
 
 ```sh
-bun add -d @mekuru/types @mekuru/narrator
+bun add -d @mekuru/tsx @mekuru/narrator
 ```
 
-Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` in `tsconfig.json`. Install your speech engine separately and provide portrait image assets.
+Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/tsx"` in `tsconfig.json`. Install your speech engine separately and provide portrait image assets.
 
 ## Compose a narrator
 
 This example also uses `@mekuru/speech` and `@mekuru/audio`. First export a PSD containing a `face [select]` group with `mekuru-psd`. Replace `src` with the exported folder.
 
 ```tsx
-import type { At, FC, Node } from "@mekuru/types";
+import type { At, FC, Node } from "@mekuru/tsx";
 import { portrait, Subtitle } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";

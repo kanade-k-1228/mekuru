@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { toXml } from "@mekuru/types";
+import { toXml } from "@mekuru/tsx";
 import { Audio, readAudio } from "../src/index.tsx";
 import { wav } from "./fixture.ts";
 

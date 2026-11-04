@@ -9,17 +9,17 @@
 Bun 1.4 以上が必要です。
 
 ```sh
-bun add -d @mekuru/types @mekuru/narrator
+bun add -d @mekuru/tsx @mekuru/narrator
 ```
 
-`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/types"` を設定します。音声エンジンと立ち絵の画像素材は別途用意します。
+`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/tsx"` を設定します。音声エンジンと立ち絵の画像素材は別途用意します。
 
 ## ナレータを組み立てる
 
 次は `@mekuru/speech`・`@mekuru/audio` を追加したプロジェクトでの例です。先に `face [select]` グループを持つPSDを `mekuru-psd` で展開し、`src` をそのフォルダーに置き換えます。
 
 ```tsx
-import type { At, FC, Node } from "@mekuru/types";
+import type { At, FC, Node } from "@mekuru/tsx";
 import { portrait, Subtitle } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";

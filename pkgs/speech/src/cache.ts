@@ -1,6 +1,6 @@
 import { mkdir, rename, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { buildValue, projectRoot } from "@mekuru/types";
+import { buildValue, projectRoot } from "@mekuru/tsx";
 const CACHE_VERSION = 1;
 
 const canonical = (v: unknown): string => {
