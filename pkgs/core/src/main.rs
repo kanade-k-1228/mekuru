@@ -133,7 +133,7 @@ fn run(cli: Cli) -> Result<()> {
 fn print_diags(p: &Project, diags: &[Diag]) {
     let name = p.path.display().to_string();
     let mut sorted: Vec<&Diag> = diags.iter().collect();
-    sorted.sort_by_key(|d| (d.span.lo, d.sev));
+    sorted.sort_by_key(|d| (d.span.lo, !d.is_error()));
     for d in sorted {
         eprint!("{}", d.render(&name, &p.source, &p.index));
     }

@@ -1,5 +1,5 @@
 use super::Sprite;
-use crate::ir::{CircleSpec, Dash, PolySpec, RectSpec};
+use crate::ir::{CircleSpec, Dash, PolySpec, RectSpec, ViewOp};
 use crate::settings::Rgba;
 use tiny_skia::{FillRule, LineCap, LineJoin, Paint, Path, PathBuilder, Pixmap, Rect, Stroke, Transform};
 
@@ -85,53 +85,55 @@ pub fn rounded_rect(x: f32, y: f32, w: f32, h: f32, r: f32) -> Option<Path> {
     b.finish()
 }
 
-pub fn rect_paths(r: &RectSpec, s: f32) -> Vec<PaintedPath> {
-    let Some(path) = rounded_rect(r.x * s, r.y * s, (r.w * s).max(0.01), (r.h * s).max(0.01), r.radius * s) else {
-        return vec![];
-    };
+/// The paths of a rect, circle or line at scale `s`; other ops draw no shape.
+pub fn paths(op: &ViewOp, s: f32) -> Vec<PaintedPath> {
+    match op {
+        ViewOp::Rect(r) => rect_paths(r, s),
+        ViewOp::Circle(c) => circle_paths(c, s),
+        ViewOp::Poly(l) => poly_paths(l, s),
+        _ => vec![],
+    }
+}
+
+/// `path` filled with `fill`, then outlined with `stroke`.
+fn fill_stroke(path: Path, fill: Option<Rgba>, stroke: Option<Rgba>, st: Stroke) -> Vec<PaintedPath> {
     let mut out = vec![];
-    if let Some(c) = r.fill {
+    if let Some(c) = fill {
         out.push(PaintedPath::fill(path.clone(), c));
     }
-    if let Some(c) = r.stroke.filter(|_| r.stroke_width > 0.0) {
-        out.push(PaintedPath::stroke(
-            path,
-            c,
-            Stroke {
-                width: r.stroke_width * s,
-                line_join: LineJoin::Round,
-                ..Default::default()
-            },
-        ));
+    if let Some(c) = stroke {
+        out.push(PaintedPath::stroke(path, c, st));
     }
     out
 }
 
-pub fn circle_paths(c: &CircleSpec, s: f32) -> Vec<PaintedPath> {
+fn rect_paths(r: &RectSpec, s: f32) -> Vec<PaintedPath> {
+    let Some(path) = rounded_rect(r.x * s, r.y * s, (r.w * s).max(0.01), (r.h * s).max(0.01), r.radius * s) else {
+        return vec![];
+    };
+    let st = Stroke {
+        width: r.stroke_width * s,
+        line_join: LineJoin::Round,
+        ..Default::default()
+    };
+    fill_stroke(path, r.fill, r.stroke.filter(|_| r.stroke_width > 0.0), st)
+}
+
+fn circle_paths(c: &CircleSpec, s: f32) -> Vec<PaintedPath> {
     let mut b = PathBuilder::new();
     let Some(rect) = Rect::from_xywh((c.x - c.rx) * s, (c.y - c.ry) * s, (2.0 * c.rx * s).max(0.01), (2.0 * c.ry * s).max(0.01)) else {
         return vec![];
     };
     b.push_oval(rect);
     let Some(path) = b.finish() else { return vec![] };
-    let mut out = vec![];
-    if let Some(color) = c.fill {
-        out.push(PaintedPath::fill(path.clone(), color));
-    }
-    if let Some(color) = c.stroke.filter(|_| c.stroke_width > 0.0) {
-        out.push(PaintedPath::stroke(
-            path,
-            color,
-            Stroke {
-                width: c.stroke_width * s,
-                ..Default::default()
-            },
-        ));
-    }
-    out
+    let st = Stroke {
+        width: c.stroke_width * s,
+        ..Default::default()
+    };
+    fill_stroke(path, c.fill, c.stroke.filter(|_| c.stroke_width > 0.0), st)
 }
 
-pub fn poly_paths(l: &PolySpec, s: f32) -> Vec<PaintedPath> {
+fn poly_paths(l: &PolySpec, s: f32) -> Vec<PaintedPath> {
     let mut out = vec![];
     let mut pts: Vec<(f32, f32)> = vec![];
     for &(x, y) in &l.pts {

@@ -2,6 +2,7 @@ mod model;
 pub use model::*;
 mod graph;
 use crate::ir::*;
+use crate::lang::ast::Flow;
 use crate::lang::diag::Diag;
 use crate::lang::span::Span;
 use crate::media::Fps;
@@ -271,7 +272,7 @@ impl<'a> Solver<'a> {
             let mut before = None;
             for &c in &n.order {
                 match before {
-                    Some(b) if n.kind.chains() => {
+                    Some(b) if n.flow == Flow::Seq => {
                         g.add(self.var(b, V::Flow), self.var(c, V::Flow), 0, None);
                         if self.timed(b) {
                             g.add(self.var(b, V::End), self.var(c, V::Flow), 0, None);
@@ -368,7 +369,7 @@ impl<'a> Solver<'a> {
         let node = &self.s.nodes[n];
         let (start, end) = self.targets[n].interval;
         let longest = node.order.iter().filter(|&&c| self.timed(c)).map(|&c| self.val[self.var(c, V::End)]).max();
-        let round = longest.map(|l| l - start).filter(|_| node.kind == NodeKind::Repeat);
+        let round = longest.map(|l| l - start).filter(|_| node.flow == Flow::Repeat);
         self.nodes[n].period = round;
         self.nodes[n].inner_end = round.map_or(end, |r| end.min(start + r));
         self.visit(n);
@@ -534,7 +535,7 @@ impl<'a> Solver<'a> {
             if n.t.fade_in + n.t.fade_out <= 0 {
                 continue;
             }
-            let (fade_in, fade_out) = self.fit_fades(n.t.fade_in, n.t.fade_out, nt.end - nt.start, n.head);
+            let (fade_in, fade_out) = fit_fades(n.t.fade_in, n.t.fade_out, nt.end - nt.start, n.head, &mut self.diags);
             fades[n.id] = Some(Fade {
                 start: nt.start as f64,
                 end: nt.end as f64,
@@ -543,22 +544,10 @@ impl<'a> Solver<'a> {
                 level: level(n),
             });
         }
-        let outer = |mut n: Option<NodeId>| {
-            let mut out = vec![];
-            while let Some(i) = n {
-                out.extend(fades[i]);
-                n = s.nodes[i].parent;
-            }
-            out
-        };
         let hidden = self.hidden(&repeats);
         let hidden_in = |e: &Elem| {
             let mut out = hidden.get(&Target::Elem(e.id)).cloned().unwrap_or_default();
-            let mut n = Some(e.node);
-            while let Some(i) = n {
-                out.extend(hidden.get(&Target::Node(i)).into_iter().flatten());
-                n = s.nodes[i].parent;
-            }
+            out.extend(ancestors(&s.nodes, Some(e.node)).filter_map(|i| hidden.get(&Target::Node(i))).flatten());
             merge(out)
         };
         let mut elems = Vec::with_capacity(s.elems.len());
@@ -575,13 +564,13 @@ impl<'a> Solver<'a> {
                     format!("`{}` is never visible (its interval is empty)", e.kind.name()),
                 ));
             }
-            let (fi, fo) = self.fit_fades(e.t.fade_in, e.t.fade_out, end - start, e.site);
+            let (fi, fo) = fit_fades(e.t.fade_in, e.t.fade_out, end - start, e.site, &mut self.diags);
             let mut et = ElemTime {
                 start,
                 end,
                 fade_in: fi,
                 fade_out: fo,
-                outer: outer(Some(e.node)),
+                outer: ancestors(&s.nodes, Some(e.node)).filter_map(|i| fades[i]).collect(),
                 src: None,
                 repeat: repeats[e.node].clone(),
                 hidden: vec![],
@@ -619,7 +608,6 @@ impl<'a> Solver<'a> {
             self.diags.push(Diag::new("W555", Span::default(), "the video is empty (total length is 0)"));
         }
         Schedule {
-            repeats,
             total,
             nodes,
             elems,
@@ -634,7 +622,7 @@ impl<'a> Solver<'a> {
         for x in targets(s) {
             let (start, end) = self.targets[self.ix(x)].interval;
             let (order, chain): (u32, &[Repeat]) = match x {
-                Target::Node(n) => (s.nodes[n].span.lo, s.nodes[n].parent.map_or(&[], |p| repeats[p].as_slice())),
+                Target::Node(n) => (s.nodes[n].head.lo, s.nodes[n].parent.map_or(&[], |p| repeats[p].as_slice())),
                 Target::Elem(e) => (s.elems[e].site.lo, &repeats[s.elems[e].node]),
             };
             if let Some(name) = &self.time(x).slot
@@ -686,20 +674,11 @@ impl<'a> Solver<'a> {
         hidden
     }
 
-    fn fit_fades(&mut self, fade_in: i64, fade_out: i64, len: i64, site: Span) -> (f64, f64) {
-        let (fades, shortened) = fit_fades(fade_in, fade_out, len);
-        if shortened {
-            self.diags
-                .push(Diag::new("W553", site, "fades are longer than the element is shown; they were shortened"));
-        }
-        fades
-    }
-
     fn checks(&mut self, nodes: &[NodeTime]) {
         let s = self.s;
         for (i, node) in s.nodes.iter().enumerate().skip(1) {
             let empty = nodes[i].end <= nodes[i].start;
-            let tag = node.tag;
+            let tag = node.flow.name();
             if node.t.timed() && !self.targets[i].dropped && empty {
                 self.diags.push(Diag::new(
                     "W551",

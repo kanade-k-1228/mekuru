@@ -16,7 +16,7 @@ pub enum Dim {
     Frac(f32),
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, PartialEq)]
 pub struct Times {
     pub id: Option<String>,
     pub at: Option<Ref>,
@@ -30,14 +30,7 @@ pub struct Times {
 
 impl Times {
     pub fn any(&self) -> bool {
-        self.id.is_some()
-            || self.at.is_some()
-            || self.delay.is_some()
-            || self.fadein.is_some()
-            || self.fadeout.is_some()
-            || self.slot.is_some()
-            || self.z.is_some()
-            || self.opacity.is_some()
+        *self != Times::default()
     }
 
     pub fn time(&self, dur: Dur) -> Time {
@@ -172,10 +165,12 @@ impl<'a> Attrs<'a> {
         })
     }
 
-    pub fn word(&self, key: &str, diags: &mut Vec<Diag>, opts: &[&str]) -> Option<String> {
-        self.conv(key, diags, |k| match k {
-            ValKind::Str(s) if opts.is_empty() || opts.contains(&s.as_str()) => Ok(s.clone()),
-            _ => Err(format!("expected one of {}", opts.join(", "))),
+    /// What the word in `key` means, with `options` pairing each word with its meaning.
+    pub fn pick<T: Copy>(&self, key: &str, diags: &mut Vec<Diag>, options: &[(&str, T)]) -> Option<T> {
+        self.conv(key, diags, |k| {
+            let found = options.iter().find(|(w, _)| matches!(k, ValKind::Str(s) if s == w));
+            let words: Vec<&str> = options.iter().map(|(w, _)| *w).collect();
+            found.map(|&(_, v)| v).ok_or_else(|| format!("expected one of {}", words.join(", ")))
         })
     }
 

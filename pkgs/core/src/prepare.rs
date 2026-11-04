@@ -8,25 +8,6 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug)]
-pub struct Cache {
-    pub root: PathBuf,
-}
-
-impl Cache {
-    fn sharded(&self, kind: &str, key: &str, ext: &str) -> PathBuf {
-        self.root.join("cache").join(kind).join(&key[..2.min(key.len())]).join(format!("{key}.{ext}"))
-    }
-
-    pub fn pcm(&self, key: &str) -> PathBuf {
-        self.sharded("pcm", key, "s16")
-    }
-
-    pub fn tmp(&self) -> PathBuf {
-        self.root.join("tmp")
-    }
-}
-
-#[derive(Clone, Debug)]
 pub struct MediaAsset {
     pub probe: MediaProbe,
     pub pcm: Option<Pcm>,
@@ -38,7 +19,12 @@ pub struct Prepared {
     pub diags: Vec<Diag>,
 }
 
-pub fn prepare(script: &Script, cache: &Cache) -> Prepared {
+/// Where the PCM named `key` is kept in the project's `cache` folder.
+pub fn pcm_path(cache: &Path, key: &str) -> PathBuf {
+    cache.join("cache").join("pcm").join(&key[..2.min(key.len())]).join(format!("{key}.s16"))
+}
+
+pub fn prepare(script: &Script, cache: &Path) -> Prepared {
     let mut out = inspect(script);
     let sources: std::collections::HashSet<_> = script
         .elems
@@ -121,12 +107,11 @@ pub fn inspect(script: &Script) -> Prepared {
     out
 }
 
-fn prepare_pcm(p: &Path, cache: &Cache) -> anyhow::Result<Pcm> {
+fn prepare_pcm(p: &Path, cache: &Path) -> anyhow::Result<Pcm> {
     let stamp = file_stamp(p);
     if stamp.1.is_none() {
         anyhow::bail!("file not found: {}", p.display());
     }
     let key = sha256_hex(format!("{stamp:?}").as_bytes());
-    let dst = cache.pcm(&key);
-    if dst.exists() { Pcm::open(&dst) } else { pcm::convert(p, &dst) }
+    pcm::convert(p, &pcm_path(cache, &key))
 }

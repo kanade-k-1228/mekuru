@@ -34,13 +34,16 @@ fn keys(tag: &str) -> Vec<&'static str> {
         "text" => k.extend(BOX.iter().chain(TEXT)),
         "image" => k.extend(BOX.iter().chain(&["src"])),
         "video" => k.extend(BOX.iter().chain(MEDIA)),
-        "audio" => k.extend(MEDIA.iter().chain(&["label"])),
+        "audio" => k.extend(MEDIA),
         "rect" | "circle" => k.extend(BOX.iter().chain(DECO)),
         "line" => k.extend(LINE),
         _ => {}
     }
     k
 }
+
+/// Sets one of a style's sizes or size limits.
+type SetSize = fn(&mut Style, LengthPercentageAuto);
 
 pub(super) struct Ctx<'a> {
     pub(super) settings: &'a Settings,
@@ -50,14 +53,6 @@ pub(super) struct Ctx<'a> {
 }
 
 impl Flow {
-    pub(super) fn kind(self) -> NodeKind {
-        match self {
-            Flow::Seq => NodeKind::Seq,
-            Flow::Repeat => NodeKind::Repeat,
-            _ => NodeKind::Par,
-        }
-    }
-
     pub(super) fn overlays(self) -> bool {
         !matches!(self, Flow::Row | Flow::Column) && !self.transparent()
     }
@@ -186,15 +181,6 @@ pub(super) fn padding(k: &ValKind) -> Result<taffy::Rect<LengthPercentage>, Stri
     Ok(taffy::Rect { left, right, top, bottom })
 }
 
-pub(super) fn alignment(a: &str) -> AlignItems {
-    match a {
-        "start" => AlignItems::START,
-        "center" => AlignItems::CENTER,
-        "end" => AlignItems::END,
-        _ => AlignItems::STRETCH,
-    }
-}
-
 impl Ctx<'_> {
     pub(super) fn node(&self, tag: &Tag, diags: &mut Vec<Diag>) -> Option<VNode> {
         let name = tag.name.as_str();
@@ -302,23 +288,18 @@ impl Ctx<'_> {
                 height: Dimension::percent(1.0),
             };
         }
-        if let Some(w) = at.dim("w", diags) {
-            style.size.width = length_auto(w);
-        }
-        if let Some(h) = at.dim("h", diags) {
-            style.size.height = length_auto(h);
-        }
-        if let Some(v) = at.dim("min-w", diags) {
-            style.min_size.width = length_auto(v);
-        }
-        if let Some(v) = at.dim("max-w", diags) {
-            style.max_size.width = length_auto(v);
-        }
-        if let Some(v) = at.dim("min-h", diags) {
-            style.min_size.height = length_auto(v);
-        }
-        if let Some(v) = at.dim("max-h", diags) {
-            style.max_size.height = length_auto(v);
+        let sizes: [(&str, SetSize); 6] = [
+            ("w", |s, v| s.size.width = v.into()),
+            ("h", |s, v| s.size.height = v.into()),
+            ("min-w", |s, v| s.min_size.width = v),
+            ("max-w", |s, v| s.max_size.width = v),
+            ("min-h", |s, v| s.min_size.height = v),
+            ("max-h", |s, v| s.max_size.height = v),
+        ];
+        for (key, set) in sizes {
+            if let Some(d) = at.dim(key, diags) {
+                set(&mut style, length_auto(d));
+            }
         }
         if let Some(g) = at.num("grow", diags) {
             style.flex_grow = g.max(0.0);
@@ -332,23 +313,30 @@ impl Ctx<'_> {
         if let Some(g) = at.dim("gap", diags) {
             style.gap = Size { width: lp(g), height: lp(g) };
         }
+        let aligns = [
+            ("start", AlignItems::START),
+            ("center", AlignItems::CENTER),
+            ("end", AlignItems::END),
+            ("stretch", AlignItems::STRETCH),
+        ];
         if let Some(f) = flow
-            && let Some(a) = at.word("align", diags, &["start", "center", "end", "stretch"])
+            && let Some(a) = at.pick("align", diags, &aligns)
         {
-            style.align_items = alignment(&a);
+            style.align_items = a;
             if f.overlays() {
-                style.justify_items = alignment(&a);
+                style.justify_items = a;
             }
         }
-        if let Some(j) = at.word("justify", diags, &["start", "center", "end", "between", "around", "evenly"]) {
-            style.justify_content = match j.as_str() {
-                "start" => JustifyContent::START,
-                "center" => JustifyContent::CENTER,
-                "end" => JustifyContent::END,
-                "between" => JustifyContent::SPACE_BETWEEN,
-                "around" => JustifyContent::SPACE_AROUND,
-                _ => JustifyContent::SPACE_EVENLY,
-            };
+        let justifies = [
+            ("start", JustifyContent::START),
+            ("center", JustifyContent::CENTER),
+            ("end", JustifyContent::END),
+            ("between", JustifyContent::SPACE_BETWEEN),
+            ("around", JustifyContent::SPACE_AROUND),
+            ("evenly", JustifyContent::SPACE_EVENLY),
+        ];
+        if let Some(j) = at.pick("justify", diags, &justifies) {
+            style.justify_content = j;
         }
         if at.flag("wrap", diags) == Some(true) {
             style.flex_wrap = FlexWrap::Wrap;
@@ -426,12 +414,10 @@ impl Ctx<'_> {
                         .string("font")
                         .or_else(|| self.settings.fonts.first().cloned())
                         .map(|f| resolve_font(&f, self.base_dir)),
-                    bold: at.word("weight", diags, &["normal", "bold"]).as_deref() == Some("bold"),
-                    align: match at.word("align", diags, &["left", "center", "right"]).as_deref() {
-                        Some("center") => Align::Center,
-                        Some("right") => Align::Right,
-                        _ => Align::Left,
-                    },
+                    bold: at.pick("weight", diags, &[("normal", false), ("bold", true)]).unwrap_or(false),
+                    align: at
+                        .pick("align", diags, &[("left", Align::Left), ("center", Align::Center), ("right", Align::Right)])
+                        .unwrap_or(Align::Left),
                     line_height: at.num("line-height", diags).unwrap_or(1.4),
                 };
                 Leaf::Text(TextSpec {
@@ -479,15 +465,21 @@ impl Ctx<'_> {
                 let stroke = at
                     .color("stroke", diags)
                     .or(if closed && fill.is_some() { None } else { Some([255, 255, 255, 255]) });
-                let head = at.word("head", diags, &["none", "start", "end", "both"]).unwrap_or_else(|| "none".into());
+                let heads = [
+                    ("none", (false, false)),
+                    ("start", (true, false)),
+                    ("end", (false, true)),
+                    ("both", (true, true)),
+                ];
+                let (head_start, head_end) = at.pick("head", diags, &heads).unwrap_or_default();
                 let spec = PolySpec {
                     pts: vec![],
                     closed,
                     fill,
                     stroke,
                     stroke_width: at.num("stroke-width", diags).unwrap_or(4.0),
-                    head_start: head == "start" || head == "both",
-                    head_end: head == "end" || head == "both",
+                    head_start,
+                    head_end,
                     dash: if at.flag("dotted", diags) == Some(true) {
                         Dash::Dotted
                     } else if at.flag("dashed", diags) == Some(true) {

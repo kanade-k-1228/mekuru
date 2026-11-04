@@ -7,6 +7,7 @@ pub use session::{Session, Stats};
 use crate::{
     Project,
     ir::*,
+    lang::ast::Flow,
     media::Fps,
     prepare,
     render::{
@@ -82,9 +83,7 @@ fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &m
     let transform = (!t.is_identity()).then_some([t.sx, t.ky, t.kx, t.sy, t.tx, t.ty]);
     let paths = match op {
         ViewOp::Transformed(m, inner) => return draw_op(inner, t.pre_concat(*m), fonts, base_dir, ops),
-        ViewOp::Rect(r) => shapes::rect_paths(r, 1.0),
-        ViewOp::Circle(c) => shapes::circle_paths(c, 1.0),
-        ViewOp::Poly(l) => shapes::poly_paths(l, 1.0),
+        ViewOp::Rect(_) | ViewOp::Circle(_) | ViewOp::Poly(_) => shapes::paths(op, 1.0),
         ViewOp::Text(text) => {
             let st = &text.style;
             let (font, path) = fonts.preview_font(st.font.as_deref());
@@ -150,9 +149,7 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, session: &
         })
         .collect();
     let mut elements = vec![];
-    let mut order: Vec<_> = script.elems.iter().collect();
-    order.sort_by_key(|e| (e.z, e.order));
-    for e in order {
+    for e in script.stacked() {
         let et = &sched.elems[e.id];
         if !e.kind.is_visual() && !matches!(e.kind, ElemKind::Audio(_)) {
             continue;
@@ -283,13 +280,13 @@ fn timeline(p: &Project, sched: &Schedule, keys: &std::collections::HashMap<usiz
     }
     let top = |id: usize| id == 0 || s.nodes[0].order.first() == Some(&Target::Node(id));
     // Sequences are drawn as their children only.
-    for n in s.nodes.iter().filter(|n| !top(n.id) && n.kind != NodeKind::Seq) {
+    for n in s.nodes.iter().filter(|n| !top(n.id) && n.flow != Flow::Seq) {
         let t = sched.nodes[n.id];
         let line = p.index.line(n.head.lo);
         out.nodes.push(TimelineNode {
             key: format!("{}:node", keys[&(n.head.lo as usize)]),
             depth: depths[n.id] - 1,
-            tag: n.tag,
+            tag: n.flow.name(),
             label: labels[n.id].clone(),
             line,
             start: i(t.start),

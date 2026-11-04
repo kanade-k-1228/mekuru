@@ -1,6 +1,6 @@
 use crate::{
     Project,
-    lang::diag::Diag,
+    lang::diag::{Diag, has_errors},
     prepare::{self, Prepared},
     schedule::Schedule,
 };
@@ -33,23 +33,23 @@ pub struct Compilation {
 
 impl Compilation {
     pub fn inspect(path: &Path, root: Option<&Path>, source: String) -> Self {
-        Self::new(Project::from_source_mode(path, root, source, true), prepare::inspect)
+        Self::new(Project::from_source(path, root, source, true), prepare::inspect)
     }
 
     pub fn new(project: Project, prepare: impl FnOnce(&crate::ir::Script) -> Prepared) -> Self {
         let mut diagnostics = project.diags.clone();
         let resolved = (|| {
-            if diagnostics.iter().any(Diag::is_error) {
+            if has_errors(&diagnostics) {
                 return None;
             }
             let prepared = prepare(&project.script);
             diagnostics.extend(prepared.diags.iter().cloned());
-            if diagnostics.iter().any(Diag::is_error) {
+            if has_errors(&diagnostics) {
                 return None;
             }
             let schedule = project.schedule(&prepared);
             diagnostics.extend(schedule.diags.iter().cloned());
-            if diagnostics.iter().any(Diag::is_error) {
+            if has_errors(&diagnostics) {
                 return None;
             }
             Some(Resolved { prepared, schedule })
@@ -66,7 +66,7 @@ impl Compilation {
             .iter()
             .map(|d| Diagnostic {
                 code: d.code.into(),
-                severity: if d.is_error() { "error" } else { "warning" },
+                severity: d.severity(),
                 line: self.project.index.line(d.span.lo),
                 message: d.msg.clone(),
             })

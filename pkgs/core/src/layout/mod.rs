@@ -1,6 +1,6 @@
 use crate::ir::{
-    AudioSpec, CircleSpec, Dash, Dur, Elem, ElemId, ElemKind, Hold, ImageSpec, MediaSrc, Node, NodeId, NodeKind, PolySpec, RectSpec, Script, Speed, Target,
-    TextSpec, Time, VideoSpec, ViewOp, ViewSpec,
+    AudioSpec, CircleSpec, Dash, Dur, Elem, ElemId, ElemKind, Hold, ImageSpec, MediaSrc, Node, NodeId, PolySpec, RectSpec, Script, Speed, Target, TextSpec,
+    Time, VideoSpec, ViewOp, ViewSpec, ancestors,
 };
 use crate::lang::ast::{Document, Flow, Tag, ValKind};
 use crate::lang::attrs::{Attrs, Dim, MEDIA, TIMES, Times, dim};
@@ -67,11 +67,6 @@ pub fn lower(doc: &Document, base_dir: &Path, fonts: &FontBook, diags: &mut Vec<
         mut nodes, mut elems, names, ..
     } = out;
     resolve_ids(&mut nodes, &mut elems, names, diags);
-    let mut idx: Vec<usize> = (0..elems.len()).collect();
-    idx.sort_by_key(|&i| elems[i].site.lo);
-    for (rank, i) in idx.into_iter().enumerate() {
-        elems[i].order = rank as u32;
-    }
     Script {
         settings: doc.settings.clone(),
         nodes,
@@ -83,15 +78,7 @@ pub fn lower(doc: &Document, base_dir: &Path, fonts: &FontBook, diags: &mut Vec<
 /// Check each `id` and point each `at` at its target.
 fn resolve_ids(nodes: &mut [Node], elems: &mut [Elem], names: Vec<(String, Target, Span)>, diags: &mut Vec<Diag>) {
     // Each repeat body has its own clock. The repeat itself belongs to its parent's clock.
-    let scope = |mut parent: Option<NodeId>| {
-        while let Some(n) = parent {
-            if nodes[n].kind == NodeKind::Repeat {
-                return Some(n);
-            }
-            parent = nodes[n].parent;
-        }
-        None
-    };
+    let scope = |parent: Option<NodeId>| ancestors(nodes, parent).find(|&n| nodes[n].flow == Flow::Repeat);
     let node_scopes: Vec<_> = nodes.iter().map(|n| scope(n.parent)).collect();
     let elem_scopes: Vec<_> = elems.iter().map(|e| scope(Some(e.node))).collect();
     let mut scopes: BTreeMap<Option<NodeId>, BTreeMap<String, Target>> = BTreeMap::new();
@@ -151,6 +138,17 @@ struct Look {
     opacity: f32,
 }
 
+impl Look {
+    /// The look inside `times`: its `z`, else this one, and this opacity times its own.
+    fn inside(self, times: &Times) -> Look {
+        Look {
+            z: times.z.unwrap_or(self.z),
+            opacity: self.opacity * times.opacity.unwrap_or(1.0),
+            ..self
+        }
+    }
+}
+
 struct Out {
     tree: TaffyTree<Measure>,
     nodes: Vec<Node>,
@@ -162,14 +160,11 @@ impl Out {
     fn node(&mut self, n: &VNode, parent: Option<usize>, flow: Flow, hold: Option<Hold>) -> usize {
         let id = self.nodes.len();
         self.nodes.push(Node {
-            source_id: n.times.id.clone(),
             id,
             parent,
-            kind: flow.kind(),
-            tag: flow.name(),
+            flow,
             t: n.times.time(n.dur),
             head: n.head,
-            span: n.span,
             order: vec![],
             hold,
         });
@@ -185,21 +180,7 @@ impl Out {
     }
 
     fn elem(&mut self, n: &VNode, look: Look, kind: ElemKind) -> ElemId {
-        let id = self.elems.len();
-        let z = n.times.z.unwrap_or(look.z);
-        let opacity = look.opacity * n.times.opacity.unwrap_or(1.0);
-        self.elems.push(Elem {
-            source_id: n.times.id.clone(),
-            id,
-            node: look.node,
-            site: n.span,
-            order: 0,
-            z,
-            opacity,
-            t: n.times.time(n.dur),
-            kind,
-        });
-        self.nodes[look.node].order.push(Target::Elem(id));
+        let id = self.add(look.inside(&n.times), n.span, n.times.time(n.dur), n.times.id.clone(), kind);
         if let Some(name) = &n.times.id {
             self.names.push((name.clone(), Target::Elem(id), n.head));
         }
@@ -224,20 +205,24 @@ impl Out {
             v.ops.extend(ops);
             return;
         }
+        self.add(look, site, Time::default(), None, ElemKind::View(ViewSpec { ops }));
+    }
+
+    /// A new element, last in `look.node`.
+    fn add(&mut self, look: Look, site: Span, t: Time, source_id: Option<String>, kind: ElemKind) -> ElemId {
         let id = self.elems.len();
-        let kind = ElemKind::View(ViewSpec { ops });
         self.elems.push(Elem {
-            source_id: None,
+            source_id,
             id,
             node: look.node,
             site,
-            order: 0,
             z: look.z,
             opacity: look.opacity,
-            t: Time::default(),
+            t,
             kind,
         });
         self.nodes[look.node].order.push(Target::Elem(id));
+        id
     }
 
     fn children(&mut self, n: &VNode, ids: &Ids, bx: Bx, xf: Transform, look: Look) {
@@ -263,11 +248,7 @@ impl Out {
         match &n.kind {
             Kind::Group(flow) if n.split => {
                 let node = self.node(n, Some(look.node), *flow, hold);
-                let inner = Look {
-                    node,
-                    z: n.times.z.unwrap_or(look.z),
-                    opacity: look.opacity * n.times.opacity.unwrap_or(1.0),
-                };
+                let inner = Look { node, ..look.inside(&n.times) };
                 if flow.transparent() {
                     self.children(n, ids, bx, xf, inner);
                     return None;

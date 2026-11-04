@@ -1,6 +1,5 @@
 pub mod analysis;
 pub mod audio;
-pub mod encode;
 pub mod ir;
 pub mod lang;
 pub mod layout;
@@ -62,14 +61,11 @@ pub struct Project {
 impl Project {
     pub fn load(path: &Path, root: Option<&Path>) -> Result<Project> {
         let source = std::fs::read_to_string(path).with_context(|| format!("cannot read {}", path.display()))?;
-        Ok(Project::from_source(path, root, source))
+        Ok(Project::from_source(path, root, source, false))
     }
 
-    pub fn from_source(path: &Path, root: Option<&Path>, source: String) -> Project {
-        Self::from_source_mode(path, root, source, false)
-    }
-
-    pub(crate) fn from_source_mode(path: &Path, root: Option<&Path>, source: String, preview: bool) -> Project {
+    /// The project in `source`; `preview` allows speech that is not made yet.
+    pub fn from_source(path: &Path, root: Option<&Path>, source: String, preview: bool) -> Project {
         let (doc, mut diags) = lang::xml::parse(&source);
         let base = project_root(path, root);
         let fonts = typography::font_book(&doc.settings, &base, &doc.root);
@@ -100,9 +96,8 @@ impl Project {
         self.script.base_dir.join(format!("{stem}.mp4"))
     }
 
-    pub fn cache(&self) -> prepare::Cache {
-        prepare::Cache {
-            root: self.script.base_dir.join(".mekuru"),
-        }
+    /// The folder for files made from the project: decoded audio and temporary files.
+    pub fn cache(&self) -> PathBuf {
+        self.script.base_dir.join(".mekuru")
     }
 }

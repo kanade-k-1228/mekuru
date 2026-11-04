@@ -6,7 +6,7 @@ use cosmic_text::skrifa::{
 };
 use cosmic_text::{FontSystem, LayoutGlyph, fontdb};
 use std::collections::HashMap;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use tiny_skia::{Path as SkPath, PathBuilder};
@@ -35,13 +35,13 @@ pub struct FontBook {
     pub(super) system: Mutex<FontSystem>,
     glyphs: Mutex<Lru<GlyphKey, GlyphPath>>,
     pub(crate) measurements: Mutex<Lru<String, Option<(f32, f32)>>>,
-    files: Mutex<HashMap<std::path::PathBuf, FileStamp>>,
+    files: Mutex<HashMap<PathBuf, FileStamp>>,
     pub(crate) generation: u64,
     defaults: Vec<String>,
 }
 
 impl FontBook {
-    pub fn new(defaults: &[String], extra: &[&Path]) -> Self {
+    fn new(defaults: &[String], extra: &[PathBuf]) -> Self {
         let mut db = fontdb::Database::new();
         db.load_system_fonts();
         for path in extra {
@@ -55,15 +55,15 @@ impl FontBook {
         Self {
             generation: GENERATION.fetch_add(1, Ordering::Relaxed),
             measurements: Mutex::new(Lru::new(4 * 1024 * 1024)),
-            files: Mutex::new(extra.iter().map(|p| (p.to_path_buf(), file_stamp(p))).collect()),
+            files: Mutex::new(extra.iter().map(|p| (p.clone(), file_stamp(p))).collect()),
             system: Mutex::new(FontSystem::new_with_locale_and_db("ja-JP".into(), db)),
             glyphs: Mutex::new(Lru::new(16 * 1024 * 1024)),
             defaults: defaults.to_vec(),
         }
     }
 
-    pub fn shared(defaults: &[String], extra: &[std::path::PathBuf]) -> Arc<Self> {
-        type Key = (Vec<String>, Vec<std::path::PathBuf>);
+    pub fn shared(defaults: &[String], extra: &[PathBuf]) -> Arc<Self> {
+        type Key = (Vec<String>, Vec<PathBuf>);
         static CACHE: std::sync::LazyLock<Mutex<Lru<Key, Arc<FontBook>>>> = std::sync::LazyLock::new(|| Mutex::new(Lru::new(4)));
         let key = (defaults.to_vec(), extra.to_vec());
         let mut cache = CACHE.lock().unwrap();
@@ -72,17 +72,16 @@ impl FontBook {
         {
             return book.clone();
         }
-        let refs: Vec<&Path> = extra.iter().map(std::path::PathBuf::as_path).collect();
-        let book = Arc::new(Self::new(defaults, &refs));
+        let book = Arc::new(Self::new(defaults, extra));
         cache.insert(key, book.clone(), 1);
         book
     }
 
     /// Resolve the same requested/default font as layout, preserving its file source.
-    pub(crate) fn preview_font(&self, requested: Option<&str>) -> (String, Option<std::path::PathBuf>) {
+    pub(crate) fn preview_font(&self, requested: Option<&str>) -> (String, Option<PathBuf>) {
         let mut system = self.system.lock().unwrap();
         let selected = self.family(&mut system, requested).unwrap_or_else(|| "sans-serif".into());
-        let path = Path::new(&selected).is_file().then(|| std::path::PathBuf::from(&selected));
+        let path = Path::new(&selected).is_file().then(|| PathBuf::from(&selected));
         let family = path
             .as_ref()
             .and_then(|path| {

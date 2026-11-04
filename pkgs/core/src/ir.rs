@@ -1,3 +1,4 @@
+use crate::lang::ast::Flow;
 use crate::lang::span::Span;
 use crate::settings::{Rgba, Settings, TextStyle};
 use std::path::PathBuf;
@@ -14,16 +15,12 @@ pub struct Script {
     pub base_dir: PathBuf,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum NodeKind {
-    Seq,
-    Par,
-    Repeat,
-}
-
-impl NodeKind {
-    pub fn chains(self) -> bool {
-        self == NodeKind::Seq
+impl Script {
+    /// The elements back to front: by `z`, then in document order.
+    pub fn stacked(&self) -> Vec<&Elem> {
+        let mut out: Vec<&Elem> = self.elems.iter().collect();
+        out.sort_by_key(|e| (e.z, e.site.lo, e.id));
+        out
     }
 }
 
@@ -76,16 +73,18 @@ pub struct Hold {
     pub at: i64,
 }
 
+/// `from` and the nodes it is in, innermost first.
+pub fn ancestors(nodes: &[Node], from: Option<NodeId>) -> impl Iterator<Item = NodeId> + '_ {
+    std::iter::successors(from, |&n| nodes[n].parent)
+}
+
 #[derive(Clone, Debug)]
 pub struct Node {
-    pub source_id: Option<String>,
     pub id: NodeId,
     pub parent: Option<NodeId>,
-    pub kind: NodeKind,
-    pub tag: &'static str,
+    pub flow: Flow,
     pub t: Time,
     pub head: Span,
-    pub span: Span,
     pub order: Vec<Target>,
     pub hold: Option<Hold>,
 }
@@ -96,7 +95,6 @@ pub struct Elem {
     pub id: ElemId,
     pub node: NodeId,
     pub site: Span,
-    pub order: u32,
     pub z: i32,
     pub opacity: f32,
     pub t: Time,
