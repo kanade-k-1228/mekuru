@@ -112,6 +112,7 @@ export const MySpeech = defineEngine<MySpeechProps>({
 - The reader gets `voice`, the props other than `SpeechProps` and `url`, which is also the cache key, and returns WAV bytes.
 - With `maxChars`, lines longer than the `max-chars` prop (default `maxChars`) are split near punctuation, read part by part and joined.
 - `who(props)` is the speaker's name when `name` is not set.
+- `cached(load)` keeps what a reader loads once per server, such as the speaker list. A failed load is retried on the next line, and calling the result with `true` loads it again.
 
 ### Custom draft handling
 

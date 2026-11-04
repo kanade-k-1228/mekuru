@@ -1,4 +1,4 @@
-import type { Engine } from "@mekuru/speech";
+import { cached, type Engine } from "@mekuru/speech";
 import type { VoisonaProps } from "./index.tsx";
 
 const API = "/api/talk/v1";
@@ -37,9 +37,6 @@ const newer = (a: string, b: string): number => {
 };
 
 export const client: Engine<VoisonaProps>["create"] = (raw) => {
-  let voices: Promise<Voice[]> | undefined;
-  const details = new Map<string, Promise<VoiceDetail>>();
-
   const call = async (path: string, init: RequestInit = {}): Promise<Response> => {
     const user = process.env.MEKURU_VOISONA_USER;
     const password = process.env.MEKURU_VOISONA_PASSWORD;
@@ -54,14 +51,11 @@ export const client: Engine<VoisonaProps>["create"] = (raw) => {
     }
   };
 
+  const voices = cached(async () => ((await (await call("/voices")).json()) as { items: Voice[] }).items);
+  const details = new Map<string, () => Promise<VoiceDetail>>();
+
   const find = async (props: { voice: string; version?: string; language?: string }): Promise<{ voice: Voice; language: string }> => {
-    voices ??= call("/voices")
-      .then(async (res) => ((await res.json()) as { items: Voice[] }).items)
-      .catch((e: unknown) => {
-        voices = undefined;
-        throw e;
-      });
-    const all = await voices;
+    const all = await voices();
     const found = all.filter((v) => names(v).includes(props.voice)).sort((a, b) => newer(a.voice_version, b.voice_version));
     if (found.length === 0) {
       const have = [...new Set(all.map((v) => `${v.voice_name} (${names(v).slice(1).join(", ")})`))];
@@ -83,13 +77,11 @@ export const client: Engine<VoisonaProps>["create"] = (raw) => {
     const key = `${voice.voice_name}/${voice.voice_version}`;
     let detail = details.get(key);
     if (!detail) {
-      detail = call(`/voices/${encodeURIComponent(voice.voice_name)}/${encodeURIComponent(voice.voice_version)}`).then(
-        async (res) => (await res.json()) as VoiceDetail,
-      );
-      detail.catch(() => details.delete(key));
+      const path = `/voices/${encodeURIComponent(voice.voice_name)}/${encodeURIComponent(voice.voice_version)}`;
+      detail = cached(async () => (await (await call(path)).json()) as VoiceDetail);
       details.set(key, detail);
     }
-    const { style_names: styles = [], default_style_weights: defaults = [] } = await detail;
+    const { style_names: styles = [], default_style_weights: defaults = [] } = await detail();
     const weights = styles.map((_, i) => defaults[i] ?? 0);
     for (const [name, weight] of Object.entries(style)) {
       const i = styles.indexOf(name);

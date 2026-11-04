@@ -1,18 +1,17 @@
-import type { Engine } from "@mekuru/speech";
+import { cached, type Engine } from "@mekuru/speech";
 import type { VoicevoxProps } from "./index.tsx";
 
 export const client: Engine<VoicevoxProps>["create"] = (call, url) => {
-  let styles: Promise<{ speaker: string; style: string; id: number }[]> | undefined;
+  const styles = cached(async () => {
+    const speakers = (await (await call("/speakers")).json()) as { name: string; styles: { name: string; id: number }[] }[];
+    return speakers.flatMap((s) => s.styles.map((st) => ({ speaker: s.name, style: st.name, id: st.id })));
+  });
 
   const styleId = async (speaker: number | string): Promise<number> => {
     if (typeof speaker === "number") return speaker;
     if (/^\s*\d+\s*$/.test(speaker)) return Number(speaker);
-    styles ??= call("/speakers").then(async (res) => {
-      const speakers = (await res.json()) as { name: string; styles: { name: string; id: number }[] }[];
-      return speakers.flatMap((s) => s.styles.map((st) => ({ speaker: s.name, style: st.name, id: st.id })));
-    });
     const [name, style] = speaker.split("/").map((s) => s.trim());
-    const found = (await styles).find((s) => s.speaker === name && (style === undefined || s.style === style));
+    const found = (await styles()).find((s) => s.speaker === name && (style === undefined || s.style === style));
     if (!found) throw new Error(`VOICEVOX has no speaker \`${speaker}\` (see ${url}/speakers for the list)`);
     return found.id;
   };

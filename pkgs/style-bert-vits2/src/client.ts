@@ -1,4 +1,4 @@
-import type { Engine } from "@mekuru/speech";
+import { cached, type Engine } from "@mekuru/speech";
 import type { StyleBertVits2Props } from "./index.tsx";
 
 interface ModelInfo {
@@ -8,15 +8,7 @@ interface ModelInfo {
 }
 
 export const client: Engine<StyleBertVits2Props>["create"] = (call) => {
-  // Read the model list once per server; a failed read is retried on the next line.
-  let info: Promise<ModelInfo[]> | undefined;
-  const list = () =>
-    (info ??= call("/models/info")
-      .then(async (res) => Object.values((await res.json()) as Record<string, ModelInfo>))
-      .catch((e) => {
-        info = undefined;
-        throw e;
-      }));
+  const list = cached(async () => Object.values((await (await call("/models/info")).json()) as Record<string, ModelInfo>));
   return async (voice, text) => {
     const models = await list();
     const name = (m: ModelInfo) => m.model_path.split(/[\\/]/).at(-2);

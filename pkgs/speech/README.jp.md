@@ -112,6 +112,7 @@ export const MySpeech = defineEngine<MySpeechProps>({
 - 読み上げ関数は `voice`（`SpeechProps` と `url` 以外の属性。キャッシュのキーにもなる）とテキストを受け取り、WAV のバイト列を返します。
 - `maxChars` を指定すると、`max-chars` 属性（既定は `maxChars`）より長いセリフを句読点の近くで分割して順に読み、結合します。
 - `who(props)` は `name` を省略したときの話者名です。
+- `cached(load)` は話者一覧など、読み上げ関数が接続先ごとに一度だけ読むものを保持します。読み込みに失敗したら次のセリフで読み直します。戻り値の関数に `true` を渡すと必ず読み直します。
 
 ### 下書きを独自に扱う場合
 
