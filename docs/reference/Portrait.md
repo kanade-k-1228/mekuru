@@ -50,7 +50,7 @@ Supported artwork: 8-bit RGB raster layers, normal blending, opacity and basic r
 bun x mekuru-psd assets/source/character.psd --out assets/character
 ```
 
-The equivalent API is `exportPsd(input, output)` from `@mekuru/narrator/psd`. PNGs preserve canvas dimensions and coordinates:
+PNGs preserve canvas dimensions and coordinates:
 
 - Fixed/toggle: `body.png`
 - Static option: `clothes/casual.png`
@@ -88,12 +88,12 @@ Placement: `x`, `y`, `anchor`, `w`, `h`, `z`, `rotate`; defaults are bottom cent
 ## Convert an existing PSD, including YMM4 artwork
 
 ```sh
-bun x mekuru-psd-convert source.psd --inspect
-bun x mekuru-psd-convert source.psd --map mapping.json --out character.psd
+bun x mekuru-psd source.psd --inspect
+bun x mekuru-psd source.psd --map mapping.json --out character.psd
 bun x mekuru-psd character.psd --out assets/character
 ```
 
-Inspection emits JSON with exact layer paths, local visibility (not ancestor visibility), group status, blending and opacity, ordered back to front. Mapping is explicit; `!` and `*` below are literal source names, not interpreted syntax.
+With `--map`, `--out` names the converted PSD instead of an asset folder. Inspection emits JSON with exact layer paths, local visibility (not ancestor visibility), group status, blending and opacity, ordered back to front. Mapping is explicit; `!` and `*` below are literal source names, not interpreted syntax.
 
 ```json
 {
@@ -115,5 +115,3 @@ Inspection emits JSON with exact layer paths, local visibility (not ancestor vis
 - Missing or ambiguous paths fail. A referenced node cannot be detached from ancestors with changed opacity, active masks or special blending; merge artwork with those effects first.
 - The source remains untouched. Each output part/frame becomes a composited raster layer in a native PSD, including a composite preview. Edit fine linework in the source and rerun the same mapping. Re-running updates the output file.
 - The same raster subset as native export applies. YMM4 configuration files, inferred body-part naming and PSDTool-specific behavior are not interpreted.
-
-APIs: `inspectPsd(input)` and `convertPsd(input, output, mapping)` from `@mekuru/narrator/psd-convert`.

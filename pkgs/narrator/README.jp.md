@@ -78,8 +78,8 @@ export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
 ```sh
 bun x mekuru-psd assets/source/character.psd --out assets/character
 # 別の規約で作られた既存PSDを変換する場合:
-bun x mekuru-psd-convert source.psd --inspect
-bun x mekuru-psd-convert source.psd --map mapping.json --out character.psd
+bun x mekuru-psd source.psd --inspect
+bun x mekuru-psd source.psd --map mapping.json --out character.psd
 ```
 
-変換ツールは指定されたレイヤーをパーツ・差分ごとに合成し、独自規約のPSDを作ります。元PSDは変更しません。変換後も `mekuru-psd` で展開し、同じ `portrait()` で使います。設定の書き方は[立ち絵ガイド](../../docs/reference/Portrait.jp.md)を参照してください。
+`--map` を付けた `mekuru-psd` は、指定されたレイヤーをパーツ・差分ごとに合成し、独自規約のPSDを作ります。元PSDは変更しません。変換後のPSDも通常どおり `--out` で展開し、同じ `portrait()` で使います。設定の書き方は[立ち絵ガイド](../../docs/reference/Portrait.jp.md)を参照してください。

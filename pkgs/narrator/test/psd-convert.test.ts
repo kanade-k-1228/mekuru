@@ -165,7 +165,7 @@ test("source PSD is protected through direct, hardlink and symlink destinations"
 test("CLI inspects, converts and rejects invalid arguments", () =>
   fixture(async (input, output) => {
     const cli = async (args: string[]) => {
-      const proc = Bun.spawn([process.execPath, new URL("../src/mekuru-psd-convert.ts", import.meta.url).pathname, ...args], {
+      const proc = Bun.spawn([process.execPath, new URL("../src/mekuru-psd.ts", import.meta.url).pathname, ...args], {
         stdout: "pipe",
         stderr: "pipe",
       });
@@ -179,5 +179,9 @@ test("CLI inspects, converts and rejects invalid arguments", () =>
     await writeFile(config, JSON.stringify(mapping()));
     expect((await cli([input, "--map", config, "--out", output])).code).toBe(0);
     expect((await exportPsd(output, `${output}.assets`)).layers).toHaveLength(2);
-    expect((await cli([input, "--unknown"])).code).toBe(1);
+    for (const args of [[input, "--unknown"], [input, "--inspect", "--out", output], [input, "--map", config], [input]]) {
+      const { code, stderr } = await cli(args);
+      expect(code).toBe(1);
+      expect(stderr).toContain("Usage: mekuru-psd");
+    }
   }));

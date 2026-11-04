@@ -65,7 +65,6 @@
       "version": "0.0.0",
       "bin": {
         "mekuru-psd": "./src/mekuru-psd.ts",
-        "mekuru-psd-convert": "./src/mekuru-psd-convert.ts",
       },
       "dependencies": {
         "@mekuru/audio": "workspace:^",

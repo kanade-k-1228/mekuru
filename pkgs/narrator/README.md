@@ -78,8 +78,8 @@ For multiple outlines, layer `Subtitle` components at the same position with dif
 ```sh
 bun x mekuru-psd assets/source/character.psd --out assets/character
 # For an existing PSD with different conventions:
-bun x mekuru-psd-convert source.psd --inspect
-bun x mekuru-psd-convert source.psd --map mapping.json --out character.psd
+bun x mekuru-psd source.psd --inspect
+bun x mekuru-psd source.psd --map mapping.json --out character.psd
 ```
 
-The converter maps explicitly selected layers into a native PSD, flattening each part/frame. It never changes the source. Export the resulting PSD with `mekuru-psd` and use the same `portrait()` runtime. See the [mapping format](../../docs/reference/Portrait.md#convert-an-existing-psd-including-ymm4-artwork).
+With `--map`, `mekuru-psd` copies explicitly selected layers into a native PSD, flattening each part/frame, and never changes the source. Export the resulting PSD with `--out` as usual and use the same `portrait()` runtime. See the [mapping format](../../docs/reference/Portrait.md#convert-an-existing-psd-including-ymm4-artwork).
