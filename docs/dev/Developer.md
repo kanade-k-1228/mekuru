@@ -4,7 +4,7 @@
 
 ## Repository structure
 
-- [pkgs/types](../../pkgs/types/README.md): TSX types, JSX runtime, and XML output
+- [pkgs/tsx](../../pkgs/tsx/README.md): TSX types, JSX runtime, and XML output
 - [pkgs/core](../../pkgs/core/README.md): Rust video compiler, native preview server, embedded UI and npm launchers
 - [pkgs/viewer](../../pkgs/viewer/README.md): React viewer, built into `pkgs/core/viewer/`
 - [pkgs/create](../../pkgs/create/README.md): Project generator
@@ -95,7 +95,7 @@ The CI platform matrix runs the native server tests after embedding the viewer.
 
 ## Internals
 
-- TSX → XML: [types/src/xml.ts](../../pkgs/types/src/xml.ts): expand components and normalize omissions and aliases
+- TSX → XML: [tsx/src/xml.ts](../../pkgs/tsx/src/xml.ts): expand components and normalize omissions and aliases
 - XML parsing: [core/src/lang](../../pkgs/core/src/lang): strict attribute and reference validation
 - Layout: [core/src/layout](../../pkgs/core/src/layout): lay out the document with taffy and convert it to a timing tree
 - Timing: [core/src/schedule/mod.rs](../../pkgs/core/src/schedule/mod.rs): resolve dependencies; cycles are E510, unreachable references are E504

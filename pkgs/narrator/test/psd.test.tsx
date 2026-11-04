@@ -3,7 +3,7 @@ import { writeFile, readFile, access } from "node:fs/promises";
 import { join } from "node:path";
 import type { Layer } from "ag-psd";
 import sharp from "sharp";
-import { toXml } from "@mekuru/types";
+import { toXml } from "@mekuru/tsx";
 import { wav } from "../../audio/test/fixture.ts";
 import { portrait } from "../src/index.tsx";
 import { exportPsd } from "../src/psd.ts";

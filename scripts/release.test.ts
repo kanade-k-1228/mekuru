@@ -19,7 +19,7 @@ beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "mekuru-release-"));
   await Bun.write(join(root, "scripts/release.ts"), Bun.file(new URL("release.ts", import.meta.url)));
   await write("pkgs/core/package.json", { name: "@mekuru/core", version: "0.0.0" });
-  await write("pkgs/types/package.json", { name: "@mekuru/types", version: "0.0.0" });
+  await write("pkgs/tsx/package.json", { name: "@mekuru/tsx", version: "0.0.0" });
   await Bun.write(join(root, "Cargo.toml"), '[workspace.package]\nversion = "0.0.0"\n');
   await Bun.write(
     join(root, "Cargo.lock"),
@@ -34,7 +34,7 @@ afterEach(async () => {
 
 test("stamps package and Cargo versions without changing registry dependencies", async () => {
   await run("stamp", version);
-  expect((await read("pkgs/types/package.json").json()).version).toBe(version);
+  expect((await read("pkgs/tsx/package.json").json()).version).toBe(version);
   expect((await read("pkgs/core/package.json").json()).version).toBe(version);
   expect(await read("Cargo.toml").text()).toContain(`version = "${version}"`);
   expect(await read("Cargo.lock").text()).toContain(`name = "mekuru-compiler"\nversion = "${version}"`);

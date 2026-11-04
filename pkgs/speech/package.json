@@ -21,10 +21,10 @@
   ],
   "sideEffects": false,
   "peerDependencies": {
-    "@mekuru/types": "workspace:^"
+    "@mekuru/tsx": "workspace:^"
   },
   "devDependencies": {
-    "@mekuru/types": "workspace:*"
+    "@mekuru/tsx": "workspace:*"
   },
   "engines": {
     "bun": ">=1.4"

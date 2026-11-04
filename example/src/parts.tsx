@@ -1,4 +1,4 @@
-import type { At, FC, Length, Node } from "@mekuru/types";
+import type { At, FC, Length, Node } from "@mekuru/tsx";
 import { portrait, Subtitle as NarratorSubtitle } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";

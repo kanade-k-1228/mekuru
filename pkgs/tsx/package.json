@@ -1,12 +1,12 @@
 {
-  "name": "@mekuru/types",
+  "name": "@mekuru/tsx",
   "version": "0.0.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kanade-k-1228/mekuru.git",
-    "directory": "pkgs/types"
+    "directory": "pkgs/tsx"
   },
-  "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/types/README.md",
+  "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/tsx/README.md",
   "description": "TSX types, JSX runtime and XML output for Mekuru Movie Maker",
   "type": "module",
   "exports": {

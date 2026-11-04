@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@types/bun": "1.4.2",
-    "@mekuru/types": "workspace:*",
+    "@mekuru/tsx": "workspace:*",
     "@mekuru/core": "workspace:*",
     "@mekuru/upload": "workspace:*",
     "typescript": "7.0.2",

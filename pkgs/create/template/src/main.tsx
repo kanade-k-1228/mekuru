@@ -1,4 +1,4 @@
-import { writeXml } from "@mekuru/types";
+import { writeXml } from "@mekuru/tsx";
 
 const Video = () => <mekuru size="1920x1080" fps={30}></mekuru>;
 

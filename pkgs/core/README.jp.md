@@ -4,7 +4,7 @@
 
 Mekuru Movie Maker の Rust 製動画コンパイラ兼プレビューサーバーです。XML の監視、コンパイル、HTTP/WebSocket・素材の配信、ブラウザ用ビューアを1つの実行ファイルにまとめています。ffmpeg による動画書き出しも行います。
 
-TSX の型・JSX ランタイム・XML 出力は [@mekuru/types](../types/README.jp.md) が提供します。
+TSX の型・JSX ランタイム・XML 出力は [@mekuru/tsx](../tsx/README.jp.md) が提供します。
 
 ```sh
 bun add -d @mekuru/core

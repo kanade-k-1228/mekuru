@@ -1,6 +1,6 @@
-/** @jsxImportSource @mekuru/types */
+/** @jsxImportSource @mekuru/tsx */
 import { relative, resolve, sep } from "node:path";
-import { fps, projectRoot, type At, type Time } from "@mekuru/types";
+import { fps, projectRoot, type At, type Time } from "@mekuru/tsx";
 import { wavSeconds } from "./wav.ts";
 /** A finite audio resource in the current video's frames, including trailing silence. */
 export type AudioSource = Readonly<{

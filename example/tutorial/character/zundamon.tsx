@@ -1,4 +1,4 @@
-import type { FC } from "@mekuru/types";
+import type { FC } from "@mekuru/tsx";
 import { Audio } from "@mekuru/audio";
 import { Voicevox, zunda } from "@mekuru/speech/voicevox";
 import { portrait, type PortraitOptions } from "@mekuru/narrator";

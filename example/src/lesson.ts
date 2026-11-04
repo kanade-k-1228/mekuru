@@ -24,7 +24,7 @@ const indent = (code: string, spaces: number) =>
     .map((line) => " ".repeat(spaces) + line)
     .join("\n");
 
-const script = (body: string) => `import { type FC, writeXml } from "@mekuru/types";
+const script = (body: string) => `import { type FC, writeXml } from "@mekuru/tsx";
 import { Zundamon } from "./character/zundamon";
 
 const Video: FC = () => (

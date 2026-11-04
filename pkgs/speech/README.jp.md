@@ -9,17 +9,17 @@ Mekuru Movie Maker のセリフを音声合成エンジンで読み上げる部�
 Bun 1.4 以上・libx264 付き ffmpeg・ffprobe・フォント（Noto Sans・Noto Sans CJK）を用意し、プロジェクトに追加します。
 
 ```sh
-bun add -d @mekuru/types @mekuru/core @mekuru/speech
+bun add -d @mekuru/tsx @mekuru/core @mekuru/speech
 ```
 
-`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/types"` を設定します。`bun create @mekuru` では設定済みです。使うエンジンは[エンジン](#エンジン)の手順で準備します。
+`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/tsx"` を設定します。`bun create @mekuru` では設定済みです。使うエンジンは[エンジン](#エンジン)の手順で準備します。
 
 ## 簡単な使い方
 
 VOICEVOX を起動し、`src/main.tsx` に保存します。
 
 ```tsx
-import { writeXml } from "@mekuru/types";
+import { writeXml } from "@mekuru/tsx";
 import { Voicevox } from "@mekuru/speech/voicevox";
 
 const text = "こんにちは。";
@@ -344,6 +344,6 @@ export const createSpeech = (synthesize: Synthesize) =>
 
 ### 下書きを独自に扱う場合
 
-`@mekuru/types` の `isDraft()`・`waitFor()` を使い、合成の Promise を登録します。下書きでは `<dur len={estimatedFrames}><audio draft label="..." /></dur>`、完成版では生成済みの `src` を持つ音声を返します。`label` がある音声はタイムラインの読み上げ行に出ます。`waitFor()` が完成版の更新を予約するのは `writeXml()` の中だけです。
+`@mekuru/tsx` の `isDraft()`・`waitFor()` を使い、合成の Promise を登録します。下書きでは `<dur len={estimatedFrames}><audio draft label="..." /></dur>`、完成版では生成済みの `src` を持つ音声を返します。`label` がある音声はタイムラインの読み上げ行に出ます。`waitFor()` が完成版の更新を予約するのは `writeXml()` の中だけです。
 
 `Audio` と `readAudio` は `@mekuru/audio`、`joinWavs(parts)` は `@mekuru/audio/wav` が提供します。`joinWavs` はフォーマットチャンクが同一の WAV バッファの空でない配列を連結します。リサンプリングや音声形式の変換は行いません。

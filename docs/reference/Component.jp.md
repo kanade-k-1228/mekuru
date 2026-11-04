@@ -27,13 +27,13 @@ bun install
 
 ## 台本
 
-`writeXml(path, video)` は部品を展開して XML を保存します。読み上げ部品は、音声がなければ下書きを出し、合成後に更新します。使い方と JSX の設定は [@mekuru/types](../../pkgs/types/README.jp.md)、完成例は [tutorial/main.tsx](../../example/tutorial/main.tsx) にあります。
+`writeXml(path, video)` は部品を展開して XML を保存します。読み上げ部品は、音声がなければ下書きを出し、合成後に更新します。使い方と JSX の設定は [@mekuru/tsx](../../pkgs/tsx/README.jp.md)、完成例は [tutorial/main.tsx](../../example/tutorial/main.tsx) にあります。
 
 属性には数値 `{30}`、文字列 `"100%"`、真偽値 `closed`、配列 `{[0, 80]}` を指定できます。`false`・`null`・`undefined` は出力されません。[XML](Syntax.jp.md#xml中間形式) では値の表記を統一します。
 
 ## 部品
 
-部品は props を受け取り、要素を返す関数です。`async` にでき、配列・条件分岐・フラグメントを使えます。hooks や状態は持ちません。型は `@mekuru/types` の `FC<Props>` で付けます。
+部品は props を受け取り、要素を返す関数です。`async` にでき、配列・条件分岐・フラグメントを使えます。hooks や状態は持ちません。型は `@mekuru/tsx` の `FC<Props>` で付けます。
 
 次は、音声・立ち絵・字幕を一つのセリフとして扱う部品です。型と補助部品は [example/src/parts.tsx](../../example/src/parts.tsx) にあります。
 

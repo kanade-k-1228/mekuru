@@ -17,7 +17,7 @@
         "@mekuru/core": "workspace:*",
         "@mekuru/narrator": "workspace:*",
         "@mekuru/speech": "workspace:*",
-        "@mekuru/types": "workspace:*",
+        "@mekuru/tsx": "workspace:*",
         "@mekuru/upload": "workspace:*",
         "@types/bun": "1.4.2",
         "ag-psd": "^31.0.3",
@@ -29,10 +29,10 @@
       "name": "@mekuru/audio",
       "version": "0.0.0",
       "devDependencies": {
-        "@mekuru/types": "workspace:*",
+        "@mekuru/tsx": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/types": "workspace:^",
+        "@mekuru/tsx": "workspace:^",
       },
     },
     "pkgs/core": {
@@ -66,10 +66,10 @@
       },
       "devDependencies": {
         "@mekuru/speech": "workspace:*",
-        "@mekuru/types": "workspace:*",
+        "@mekuru/tsx": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/types": "workspace:^",
+        "@mekuru/tsx": "workspace:^",
       },
     },
     "pkgs/speech": {
@@ -79,14 +79,14 @@
         "@mekuru/audio": "workspace:^",
       },
       "devDependencies": {
-        "@mekuru/types": "workspace:*",
+        "@mekuru/tsx": "workspace:*",
       },
       "peerDependencies": {
-        "@mekuru/types": "workspace:^",
+        "@mekuru/tsx": "workspace:^",
       },
     },
-    "pkgs/types": {
-      "name": "@mekuru/types",
+    "pkgs/tsx": {
+      "name": "@mekuru/tsx",
       "version": "0.0.0",
       "dependencies": {
         "hono": "^4.13.0",
@@ -223,7 +223,7 @@
 
     "@mekuru/speech": ["@mekuru/speech@workspace:pkgs/speech"],
 
-    "@mekuru/types": ["@mekuru/types@workspace:pkgs/types"],
+    "@mekuru/tsx": ["@mekuru/tsx@workspace:pkgs/tsx"],
 
     "@mekuru/upload": ["@mekuru/upload@workspace:pkgs/upload"],
 
