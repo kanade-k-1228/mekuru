@@ -4,24 +4,25 @@
 
 Create explainer videos by writing scripts in text. Scenes adapt to speech duration; images, subtitles, and recorded footage share the same timeline. Footage supports cuts, speed changes, and pauses.
 
-## Requirements
+## Quick Start
 
-Check Bun and ffmpeg, and install them if missing:
+### 1. Install requirements
+
+Just run this to install requirements:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.sh | bash
 ```
 
-- [Bun](https://bun.sh/) 1.4 or later; packages run directly from TypeScript source.
-- [ffmpeg / ffprobe](https://ffmpeg.org/) with libx264, and fonts (default: Noto Sans; add Noto Sans CJK for Chinese, Japanese or Korean).
-- A speech engine for the selected voice.
-- On Windows, run Mekuru in WSL.
+- [Bun](https://bun.sh/) 1.4 or later
+- [ffmpeg / ffprobe](https://ffmpeg.org/) with libx264
+- Noto Sans font (the default font)
 
-Automatic installation supports apt on Ubuntu/Debian (including WSL) and [Homebrew](https://brew.sh/) on macOS. apt requires administrator privileges. If Bun is missing, it is installed with its official installer. Noto Sans is installed if missing. Set up a speech engine, and Noto Sans CJK for Chinese, Japanese or Korean, separately.
+> Automatic installation supports apt on Ubuntu/Debian (including WSL) and [Homebrew](https://brew.sh/) on macOS. apt requires administrator privileges. If Bun is missing, it is installed with its official installer.
 
-Compatible existing tools are reused. An outdated Bun or ffmpeg without libx264 produces an error with update instructions. `MEKURU_FFMPEG` and `MEKURU_FFPROBE` overrides are respected.
+> Compatible existing tools are reused. An outdated Bun or ffmpeg without libx264 produces an error with update instructions. `MEKURU_FFMPEG` and `MEKURU_FFPROBE` overrides are respected.
 
-## Quick start
+### 2. Create project
 
 ```sh
 bun create @mekuru my-video
@@ -31,19 +32,30 @@ bun preview     # http://localhost:3333
 bun run build   # video.mp4
 ```
 
-Choose speech engines during setup, then edit `src/main.tsx`. `<seq>` plays elements in order; `<stack>` plays them together. See the [first-video tutorial](example/README.md) for a complete example.
+### 3. Edit video
 
-[@mekuru/types](pkgs/types/README.md) provides TSX types, the JSX runtime and XML output. [@mekuru/core](pkgs/core/README.md) provides the native compiler and preview server, including the viewer and platform binaries. Generated projects include both packages.
+```tsx
+// src/main.tsx
+import { writeXml } from "@mekuru/types";
+import { Voicevox, zunda } from "@mekuru/speech/voicevox";
 
-## Speech engines
+const Video = () => (
+  <mekuru size="1920x1080" fps={30}>
+    <rect w="100%" h="100%" fill="#141C26" />
+    {/* <stack> plays its children together; <seq> plays them in order. */}
+    <stack>
+      <text x="50%" y="40%" anchor="center" size={90} text="My first video" />
+      <seq>
+        <Voicevox {...zunda} text="Hello! This is my first video." />
+        <Voicevox {...zunda} text="The title stays until both lines end." />
+      </seq>
+    </stack>
+  </mekuru>
+);
 
-[@mekuru/speech](pkgs/speech/README.md) has a component for each engine, imported from the engine's path:
+await writeXml(".mekuru/main.xml", <Video />);
+```
 
-| Import                                                                      | Component        | Engines                         |
-| --------------------------------------------------------------------------- | ---------------- | ------------------------------- |
-| [`@mekuru/speech/voicevox`](pkgs/speech/README.md#voicevox)                 | `Voicevox`       | VOICEVOX, AivisSpeech, SHAREVOX |
-| [`@mekuru/speech/voisona`](pkgs/speech/README.md#voisona-talk)              | `Voisona`        | VoiSona Talk                    |
-| [`@mekuru/speech/coeiroink`](pkgs/speech/README.md#coeiroink)               | `Coeiroink`      | COEIROINK                       |
-| [`@mekuru/speech/style-bert-vits2`](pkgs/speech/README.md#style-bert-vits2) | `StyleBertVits2` | Style-Bert-VITS2                |
+This uses VOICEVOX: choose it during setup and keep the app running. See the [first-video tutorial](example/README.md) for a complete example.
 
-See [@mekuru/narrator](pkgs/narrator/README.md) to compose your own narrator from speech, a portrait, and subtitles.
+> [@mekuru/types](pkgs/types/README.md) provides TSX types, the JSX runtime and XML output. [@mekuru/core](pkgs/core/README.md) provides the native compiler and preview server, including the viewer and platform binaries. Generated projects include both packages.
