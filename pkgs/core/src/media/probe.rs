@@ -35,7 +35,7 @@ pub fn probe_cached(src: &Path) -> Result<MediaProbe> {
 }
 
 pub fn probe(src: &Path) -> Result<MediaProbe> {
-    let out = run_checked(&args::probe(src))?;
+    let out = run_checked(args::probe(src))?;
     let v: Value = serde_json::from_slice(&out.stdout).context("ffprobe returned invalid JSON")?;
     parse(&v).with_context(|| format!("cannot read media info of {}", src.display()))
 }

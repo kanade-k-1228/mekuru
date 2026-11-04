@@ -1,8 +1,8 @@
 use crate::media::args::{self, EncodeArgs};
-use crate::util::proc::{ChildGuard, StderrTail, command, tail};
+use crate::util::proc::{ChildGuard, tail};
 use crate::util::temp::TempFile;
 use anyhow::{Context, Result, bail};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::process::Stdio;
 use std::sync::mpsc::{Receiver, SyncSender, sync_channel};
@@ -18,7 +18,7 @@ pub struct Encoder {
     tx: Option<SyncSender<Msg>>,
     pool: Receiver<Vec<u8>>,
     writer: Option<JoinHandle<std::io::Result<()>>>,
-    stderr: StderrTail,
+    stderr: Option<JoinHandle<String>>,
     part: TempFile,
     out: PathBuf,
 }
@@ -34,15 +34,20 @@ impl Encoder {
         let mut part = out.clone().into_os_string();
         part.push(".part");
         let part = TempFile(PathBuf::from(part));
-        let argv = args::encode(&EncodeArgs { out: part.as_ref(), ..*e });
-        let mut child = command(&argv)
+        let mut child = args::encode(&EncodeArgs { out: part.as_ref(), ..*e })
             .stdin(Stdio::piped())
             .stdout(Stdio::null())
             .stderr(Stdio::piped())
             .spawn()
             .context("failed to start ffmpeg (is it installed and on PATH?)")?;
         let mut stdin = child.stdin.take().unwrap();
-        let stderr = StderrTail::spawn(child.stderr.take().unwrap());
+        // At `-loglevel error` ffmpeg writes only its errors here, so keep them all.
+        let mut err = child.stderr.take().unwrap();
+        let stderr = std::thread::spawn(move || {
+            let mut bytes = vec![];
+            let _ = err.read_to_end(&mut bytes);
+            String::from_utf8_lossy(&bytes).into_owned()
+        });
         let (tx, rx) = sync_channel::<Msg>(3);
         let (pool_tx, pool) = sync_channel::<Vec<u8>>(4);
         let writer = std::thread::spawn(move || -> std::io::Result<()> {
@@ -69,7 +74,7 @@ impl Encoder {
             tx: Some(tx),
             pool,
             writer: Some(writer),
-            stderr,
+            stderr: Some(stderr),
             part,
             out,
         })
@@ -99,7 +104,12 @@ impl Encoder {
             let _ = w.join();
         }
         let _ = self.child.child().wait();
-        anyhow::anyhow!("{what}:\n{}", tail(&self.stderr.text(), 20))
+        anyhow::anyhow!("{what}:\n{}", self.stderr())
+    }
+
+    fn stderr(&mut self) -> String {
+        let text = self.stderr.take().map(|h| h.join().unwrap_or_default()).unwrap_or_default();
+        tail(&text, 20)
     }
 
     pub fn finish(mut self) -> Result<()> {
@@ -108,7 +118,7 @@ impl Encoder {
         let status = self.child.child().wait()?;
         self.child.0 = None;
         if !status.success() || !matches!(wres, Ok(Ok(()))) {
-            bail!("ffmpeg failed ({status}):\n{}", tail(&self.stderr.text(), 20));
+            bail!("ffmpeg failed ({status}):\n{}", self.stderr());
         }
         std::fs::rename(self.part.as_ref(), &self.out)?;
         Ok(())

@@ -1,4 +1,4 @@
-use crate::media::pcm::{CHANNELS, Pcm, PcmReader, RATE};
+use crate::media::pcm::{BYTES_PER_FRAME, CHANNELS, Pcm, PcmReader, RATE};
 use crate::schedule::Fade;
 use anyhow::Result;
 use std::collections::HashMap;
@@ -28,7 +28,7 @@ fn envelope(env: &[Fade], t: f64) -> f32 {
 }
 
 pub fn write_wav_header(w: &mut impl Write, frames: u64) -> std::io::Result<()> {
-    let data = (frames * 4).min(u32::MAX as u64 - 36) as u32;
+    let data = (frames * BYTES_PER_FRAME).min(u32::MAX as u64 - 36) as u32;
     w.write_all(b"RIFF")?;
     w.write_all(&(36 + data).to_le_bytes())?;
     w.write_all(b"WAVEfmt ")?;
@@ -36,8 +36,8 @@ pub fn write_wav_header(w: &mut impl Write, frames: u64) -> std::io::Result<()> 
     w.write_all(&1u16.to_le_bytes())?;
     w.write_all(&(CHANNELS as u16).to_le_bytes())?;
     w.write_all(&RATE.to_le_bytes())?;
-    w.write_all(&(RATE * 4).to_le_bytes())?;
-    w.write_all(&4u16.to_le_bytes())?;
+    w.write_all(&(RATE * BYTES_PER_FRAME as u32).to_le_bytes())?;
+    w.write_all(&(BYTES_PER_FRAME as u16).to_le_bytes())?;
     w.write_all(&16u16.to_le_bytes())?;
     w.write_all(b"data")?;
     w.write_all(&data.to_le_bytes())
@@ -80,7 +80,7 @@ pub fn mix_wav(tracks: &[Track], from: f64, frames: u64, out: &Path) -> Result<M
                 acc[oi * 2 + 1] += tmp[j * 2 + 1] * g;
             }
         }
-        let mut bytes = Vec::with_capacity(n * 4);
+        let mut bytes = Vec::with_capacity(n * BYTES_PER_FRAME as usize);
         for &v in &acc[..n * CHANNELS] {
             stats.peak = stats.peak.max(v.abs());
             if v.abs() > 1.0 {

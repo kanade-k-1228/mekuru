@@ -1,5 +1,5 @@
 use super::{Fps, args};
-use crate::util::proc::{ChildGuard, command};
+use crate::util::proc::ChildGuard;
 use anyhow::{Context, Result};
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
@@ -41,8 +41,7 @@ impl VideoReader {
 
     fn spawn(&mut self, c: f64) -> Result<()> {
         self.child = None;
-        let argv = args::video_frames(&self.src, c, self.fps, self.w, self.h);
-        let mut child = command(&argv)
+        let mut child = args::video_frames(&self.src, c, self.fps, self.w, self.h)
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
