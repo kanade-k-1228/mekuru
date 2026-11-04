@@ -1,8 +1,7 @@
 import { packageName, keepLines } from "./template.ts";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { ENGINE_NAMES, ENGINES, type Engine } from "./engine.ts";
-import { SITE_NAMES, SITES, type Site } from "./site.ts";
+import { ENGINE_NAMES, ENGINES, SITE_NAMES, SITES, type Engine, type Site } from "./choices.ts";
 
 const pkgDir = join(import.meta.dir, "..");
 const TEMPLATE = join(pkgDir, "template");

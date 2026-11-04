@@ -2,8 +2,7 @@
 import { Command, InvalidArgumentError } from "commander";
 import { VERSION } from "./create.ts";
 import { run, type Args } from "./prompts.ts";
-import { ENGINE_NAMES, type Engine } from "./engine.ts";
-import { SITE_NAMES } from "./site.ts";
+import { ENGINE_NAMES, SITE_NAMES, type Engine } from "./choices.ts";
 const parseList =
   <T extends string>(what: string, all: readonly T[]) =>
   (value: string, previous: T[] = []): T[] => {

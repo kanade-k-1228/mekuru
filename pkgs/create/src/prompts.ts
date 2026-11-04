@@ -2,8 +2,7 @@ import * as p from "@clack/prompts";
 import { relative, resolve } from "node:path";
 import { checkFfmpeg } from "./check.ts";
 import { create, isEmptyDir, type CreateOptions } from "./create.ts";
-import { ENGINE_NAMES, ENGINES, type Engine } from "./engine.ts";
-import { SITE_NAMES, SITES, type Site } from "./site.ts";
+import { ENGINE_NAMES, ENGINES, SITE_NAMES, SITES, type Engine, type Site } from "./choices.ts";
 
 export interface Args extends CreateOptions {
   dir?: string;
