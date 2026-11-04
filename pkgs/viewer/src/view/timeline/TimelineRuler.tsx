@@ -1,15 +1,15 @@
 import { memo } from "react";
-import { formatClock } from "../../logic/formatTime";
-import { LEFT_PAD, RULER_H, rulerTicks, xAt, type Viewport } from "../../logic/timeline/model";
+import { formatClock } from "../../logic/util";
+import { LEFT_PAD, RULER_H, xAt, type Ruler, type Viewport } from "../../logic/timeline/model";
 
 interface Props {
   metrics: Viewport;
+  ruler: Ruler;
   uid: string;
 }
 
-export const TimelineRuler = memo(({ metrics, uid }: Props) => {
+export const TimelineRuler = memo(({ metrics, ruler: { ticks, fine }, uid }: Props) => {
   const { width } = metrics;
-  const { ticks, fine } = rulerTicks(metrics);
 
   return (
     <>

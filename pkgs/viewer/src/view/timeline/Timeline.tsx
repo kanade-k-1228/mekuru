@@ -1,10 +1,10 @@
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useId, type PointerEvent } from "react";
-import { timeAtom } from "../../logic/playback/atoms";
-import { attachTimelineAtom, seekTimelineAtom } from "../../logic/timeline/actions";
-import { hasEstimatedAtom, timelineLayoutAtom, timelineMetricsAtom, timelineWidthAtom } from "../../logic/timeline/atoms";
-import { LEFT_PAD, RULER_H, xAt } from "../../logic/timeline/model";
-import { formatTime } from "../../logic/formatTime";
+import { useId, useMemo, type PointerEvent } from "react";
+import { timeAtom } from "../../logic/playback";
+import { timelineAtom } from "../../logic/server";
+import { attachTimelineAtom, timelineLayoutAtom, timelineMetricsAtom, timelineWidthAtom } from "../../logic/timeline/atoms";
+import { LEFT_PAD, RULER_H, rulerTicks, timeAt, xAt } from "../../logic/timeline/model";
+import { formatTime } from "../../logic/util";
 import { TimelineContent } from "./TimelineContent";
 import { TimelineRuler } from "./TimelineRuler";
 import { TimelineScrollbar } from "./TimelineScrollbar";
@@ -13,16 +13,15 @@ import { clsx } from "clsx";
 const CONTAINER = "always-scrollbar relative flex h-full flex-col overflow-x-hidden overflow-y-scroll border-t border-line bg-source select-none";
 const BADGE = "rounded-full border px-[7px] text-[11px]/4";
 
-const xIn = (e: PointerEvent<HTMLElement>) => e.clientX - e.currentTarget.getBoundingClientRect().left;
-
 export const Timeline = () => {
   const attach = useSetAtom(attachTimelineAtom);
   const width = useAtomValue(timelineWidthAtom);
   const metrics = useAtomValue(timelineMetricsAtom);
   const layout = useAtomValue(timelineLayoutAtom);
-  const estimated = useAtomValue(hasEstimatedAtom);
+  const estimated = useAtomValue(timelineAtom).clips.some((c) => c.estimated);
+  const ruler = useMemo(() => rulerTicks(metrics), [metrics]);
   const [time, seek] = useAtom(timeAtom);
-  const seekAt = useSetAtom(seekTimelineAtom);
+  const seekAt = (e: PointerEvent<HTMLElement>) => seek(timeAt(metrics, e.clientX - e.currentTarget.getBoundingClientRect().left));
   const uid = useId().replace(/:/g, "");
   const px = xAt(metrics, time);
 
@@ -47,10 +46,10 @@ export const Timeline = () => {
         onPointerDown={(e) => {
           if (e.button !== 0) return;
           e.currentTarget.setPointerCapture(e.pointerId);
-          seekAt(xIn(e));
+          seekAt(e);
         }}
         onPointerMove={(e) => {
-          if (e.currentTarget.hasPointerCapture(e.pointerId)) seekAt(xIn(e));
+          if (e.currentTarget.hasPointerCapture(e.pointerId)) seekAt(e);
         }}
         role="slider"
         aria-label="Timeline"
@@ -60,7 +59,7 @@ export const Timeline = () => {
         aria-valuetext={formatTime(time)}
       >
         <svg className="sticky top-0 z-1 block bg-source" width={width} height={RULER_H + 1}>
-          <TimelineRuler metrics={metrics} uid={uid} />
+          <TimelineRuler metrics={metrics} ruler={ruler} uid={uid} />
           {showHead && (
             <g pointerEvents="none">
               <line className="stroke-playhead stroke-[1.5]" x1={px} x2={px} y1={0} y2={RULER_H + 1} />
@@ -69,7 +68,7 @@ export const Timeline = () => {
           )}
         </svg>
         <svg className="block" width={width} height={layout.height}>
-          <TimelineContent layout={layout} metrics={metrics} uid={uid} onSelect={seek} />
+          <TimelineContent layout={layout} metrics={metrics} ticks={ruler.ticks} uid={uid} onSelect={seek} />
           {showHead && <line className="pointer-events-none stroke-playhead stroke-[1.5]" x1={px} x2={px} y1={0} y2={layout.height} />}
         </svg>
       </div>

@@ -1,7 +1,7 @@
 import { useAtomValue } from "jotai";
 import { RefreshCw } from "lucide-react";
 import type { StateDto } from "../protocol";
-import { keysAtom } from "../logic/playback/atoms";
+import { keysAtom } from "../logic/playback";
 import { connAtom, previewErrorAtom, previewLoadingAtom, scheduleAtom, serverAtom } from "../logic/server";
 import { PREVIEW_MIN_HEIGHT, TIMELINE_MIN_HEIGHT, timelineHeightAtom } from "../logic/timeline/atoms";
 import { Preview } from "./preview/Preview";

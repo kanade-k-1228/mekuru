@@ -1,7 +1,7 @@
 import { useAtomValue } from "jotai";
-import { timeAtom } from "../../logic/playback/atoms";
+import { timeAtom } from "../../logic/playback";
 import { connAtom, scheduleAtom, type ConnState } from "../../logic/server";
-import { formatTime } from "../../logic/formatTime";
+import { formatTime } from "../../logic/util";
 import { Transport } from "./Transport";
 import { clsx } from "clsx";
 import { ZoomSlider } from "./ZoomSlider";

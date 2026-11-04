@@ -1,8 +1,8 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Pause, Play, type LucideIcon } from "lucide-react";
-import { playingAtom, stepAtom, togglePlayAtom } from "../../logic/playback/atoms";
+import { playingAtom, stepAtom, togglePlayAtom } from "../../logic/playback";
 import { scheduleAtom } from "../../logic/server";
-import { Tooltip } from "../components/Tooltip";
+import { Tooltip } from "./Tooltip";
 import { clsx } from "clsx";
 
 const ICON_BUTTON =

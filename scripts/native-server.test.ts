@@ -6,7 +6,7 @@ import { connectPreview } from "./fixtures/preview-socket.ts";
 import { startServer } from "./fixtures/native-server.ts";
 import { findCompiler } from "../pkgs/core/npm/compiler.js";
 import { previewXml } from "./preview-fixture.ts";
-import { previewStore } from "../pkgs/viewer/src/logic/preview.ts";
+import { applyEvent } from "../pkgs/viewer/src/logic/preview.ts";
 import type { SnapshotEvent, StateDto } from "../pkgs/viewer/src/protocol.ts";
 
 let root: string;
@@ -104,12 +104,12 @@ test("native patches reconstruct the reconnect snapshot, retain failures and rec
   server = await startServer({ xml: watched, root, port: 0 });
   await until(async () => (await state()).status === "ready");
   const connection = await connect();
-  const store = previewStore();
   try {
     const first = await connection.next();
     expect(first.type).toBe("snapshot");
     if (first.type === "status") throw new Error("missing snapshot");
-    store.apply(first);
+    const empty = { preview: null, resources: {} };
+    const before = applyEvent(empty, first);
     await save(previewXml(100, 1, "ja"));
     const building = await connection.next();
     expect(building.type).toBe("status");
@@ -119,10 +119,8 @@ test("native patches reconstruct the reconnect snapshot, retain failures and rec
     expect(patch.type).toBe("patch");
     if (patch.type !== "patch") throw new Error("expected patch");
     expect(Object.keys(patch.resources)).toHaveLength(1);
-    const patched = store.apply(patch);
     const full = await snapshot();
-    const fresh = previewStore();
-    expect(patched).toEqual(fresh.apply(full));
+    expect(applyEvent(before, patch)).toEqual(applyEvent(empty, full));
     const reconnect = await connect();
     expect(await reconnect.next()).toEqual(full);
     reconnect.close();

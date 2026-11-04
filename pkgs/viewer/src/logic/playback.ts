@@ -1,8 +1,7 @@
 import { atom } from "jotai";
-import { durationAtom, fpsAtom, scheduleAtom } from "../server";
-import { clamp } from "../math";
+import { durationAtom, fpsAtom, scheduleAtom, seekTimeAtom } from "./server";
+import { clamp } from "./util";
 
-import { seekTimeAtom } from "./position";
 export const timeAtom = atom(
   (get) => clamp(get(seekTimeAtom), 0, get(durationAtom)),
   (get, set, t: number) => {

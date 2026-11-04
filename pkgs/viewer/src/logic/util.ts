@@ -1,3 +1,11 @@
+export const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+export const observeSize = (el: Element, onSize: (size: { width: number; height: number }) => void): (() => void) => {
+  const ro = new ResizeObserver(([e]) => onSize({ width: e.contentRect.width, height: e.contentRect.height }));
+  ro.observe(el);
+  return () => ro.disconnect();
+};
+
 const pad = (n: number, w = 2) => String(n).padStart(w, "0");
 
 export const formatTime = (sec: number): string => {

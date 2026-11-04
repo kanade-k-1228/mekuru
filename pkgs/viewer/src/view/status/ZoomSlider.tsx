@@ -1,10 +1,9 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { ZoomIn } from "lucide-react";
 import { scheduleAtom } from "../../logic/server";
-import { zoomTimelineAtom } from "../../logic/timeline/actions";
-import { timelineViewAtom } from "../../logic/timeline/atoms";
+import { timelineViewAtom, zoomTimelineAtom } from "../../logic/timeline/atoms";
 import { ZOOM_MAX } from "../../logic/timeline/model";
-import { Tooltip } from "../components/Tooltip";
+import { Tooltip } from "./Tooltip";
 
 const MAX = Math.log(ZOOM_MAX);
 
