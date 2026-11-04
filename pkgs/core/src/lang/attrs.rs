@@ -172,10 +172,12 @@ impl<'a> Attrs<'a> {
         })
     }
 
-    pub fn word(&self, key: &str, diags: &mut Vec<Diag>, opts: &[&str]) -> Option<String> {
-        self.conv(key, diags, |k| match k {
-            ValKind::Str(s) if opts.is_empty() || opts.contains(&s.as_str()) => Ok(s.clone()),
-            _ => Err(format!("expected one of {}", opts.join(", "))),
+    /// What the word in `key` means, with `options` pairing each word with its meaning.
+    pub fn pick<T: Copy>(&self, key: &str, diags: &mut Vec<Diag>, options: &[(&str, T)]) -> Option<T> {
+        self.conv(key, diags, |k| {
+            let found = options.iter().find(|(w, _)| matches!(k, ValKind::Str(s) if s == w));
+            let words: Vec<&str> = options.iter().map(|(w, _)| *w).collect();
+            found.map(|&(_, v)| v).ok_or_else(|| format!("expected one of {}", words.join(", ")))
         })
     }
 
