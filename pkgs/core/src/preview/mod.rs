@@ -83,9 +83,7 @@ fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &m
     let transform = (!t.is_identity()).then_some([t.sx, t.ky, t.kx, t.sy, t.tx, t.ty]);
     let paths = match op {
         ViewOp::Transformed(m, inner) => return draw_op(inner, t.pre_concat(*m), fonts, base_dir, ops),
-        ViewOp::Rect(r) => shapes::rect_paths(r, 1.0),
-        ViewOp::Circle(c) => shapes::circle_paths(c, 1.0),
-        ViewOp::Poly(l) => shapes::poly_paths(l, 1.0),
+        ViewOp::Rect(_) | ViewOp::Circle(_) | ViewOp::Poly(_) => shapes::paths(op, 1.0),
         ViewOp::Text(text) => {
             let st = &text.style;
             let (font, path) = fonts.preview_font(st.font.as_deref());

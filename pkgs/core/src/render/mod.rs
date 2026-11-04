@@ -213,9 +213,7 @@ impl<'a> FrameRenderer<'a> {
                     }
                 };
             }
-            ViewOp::Rect(r) => shapes::rect_paths(r, s),
-            ViewOp::Circle(c) => shapes::circle_paths(c, s),
-            ViewOp::Poly(l) => shapes::poly_paths(l, s),
+            ViewOp::Rect(_) | ViewOp::Circle(_) | ViewOp::Poly(_) => shapes::paths(op, s),
             ViewOp::Text(text) => {
                 let paths = text::text_paths(&self.ctx.project.fonts, text, s);
                 if paths.is_none() && !text.text.trim().is_empty() {
