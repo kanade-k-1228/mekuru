@@ -83,18 +83,18 @@ eventsAtom.onMount = connect;
 
 export const connAtom = atom((get) => get(eventsAtom).conn);
 export const serverAtom = atom((get) => get(eventsAtom).server);
-export const scheduleAtom = atom((get) => get(eventsAtom).preview);
+export const previewAtom = atom((get) => get(eventsAtom).preview);
 export const previewLoadingAtom = atom((get) => {
   const { server, preview, previewError } = get(eventsAtom);
   return !!server && !previewError && server.previewVersion !== 0 && server.previewVersion !== (preview?.version ?? 0);
 });
 export const previewErrorAtom = atom((get) => get(eventsAtom).previewError);
-export const durationAtom = atom((get) => get(scheduleAtom)?.duration ?? 0);
-export const fpsAtom = atom((get) => get(scheduleAtom)?.fps ?? 30);
+export const durationAtom = atom((get) => get(previewAtom)?.duration ?? 0);
+export const fpsAtom = atom((get) => get(previewAtom)?.fps ?? 30);
 
 const EMPTY_ELEMENTS: SceneElement[] = [];
 const EMPTY_TIMELINE: TimelineDto = { nodes: [], clips: [] };
-export const elementsAtom = atom((get) => get(scheduleAtom)?.elements ?? EMPTY_ELEMENTS);
-export const timelineAtom = atom((get) => get(scheduleAtom)?.timeline ?? EMPTY_TIMELINE);
+export const elementsAtom = atom((get) => get(previewAtom)?.elements ?? EMPTY_ELEMENTS);
+export const timelineAtom = atom((get) => get(previewAtom)?.timeline ?? EMPTY_TIMELINE);
 
 export const resourcesAtom = atom((get) => get(eventsAtom).resources);

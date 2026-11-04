@@ -1,9 +1,9 @@
 import { atom } from "jotai";
-import { durationAtom, fpsAtom, scheduleAtom, seekTimeAtom } from "./server";
+import { durationAtom, fpsAtom, previewAtom, seekTimeAtom } from "./server";
 import { clamp } from "./util";
 
 export const timeAtom = atom(
-  (get) => clamp(get(seekTimeAtom), 0, get(durationAtom)),
+  (get) => get(seekTimeAtom),
   (get, set, t: number) => {
     set(seekTimeAtom, clamp(t, 0, get(durationAtom)));
   },
@@ -47,7 +47,7 @@ export const stepAtom = atom(null, (get, set, step: { frames: number } | { secon
 });
 
 export const keysAtom = atom(null, (get, set, e: KeyboardEvent) => {
-  if (get(scheduleAtom) == null || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (get(previewAtom) == null || e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.target instanceof Element && e.target.closest("button, input, textarea, select, [contenteditable]")) return;
   if (e.key === " ") {
     e.preventDefault();

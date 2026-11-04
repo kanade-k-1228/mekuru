@@ -1,6 +1,6 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { ZoomIn } from "lucide-react";
-import { scheduleAtom } from "../../logic/server";
+import { previewAtom } from "../../logic/server";
 import { timelineViewAtom, zoomTimelineAtom } from "../../logic/timeline/atoms";
 import { ZOOM_MAX } from "../../logic/timeline/model";
 import { Tooltip } from "./Tooltip";
@@ -10,7 +10,7 @@ const MAX = Math.log(ZOOM_MAX);
 export const ZoomSlider = () => {
   const { zoom } = useAtomValue(timelineViewAtom);
   const setZoom = useSetAtom(zoomTimelineAtom);
-  const disabled = useAtomValue(scheduleAtom) == null;
+  const disabled = useAtomValue(previewAtom) == null;
   const label = `×${zoom < 10 ? zoom.toFixed(1) : Math.round(zoom)}`;
 
   return (
