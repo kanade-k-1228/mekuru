@@ -354,8 +354,8 @@ fn text_run(run: &[Piece], pre: bool) -> String {
         let raw: String = run
             .iter()
             .map(|p| match p {
-                Piece::Text(t) => *t,
-                Piece::Br => "\n",
+                Piece::Text(t) => lex::strip_ruby(t),
+                Piece::Br => "\n".into(),
             })
             .collect();
         return dedent(&raw);
@@ -388,4 +388,23 @@ fn offset_of(src: &str, row: u32, col: u32) -> usize {
         lo += line.len();
     }
     src.len()
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn text_shows_the_base_of_ruby_with_or_without_pre() {
+        let (doc, diags) = super::parse(
+            "<mekuru><stack><text>｜表示《よみ》と漢字《かんじ》</text><text pre=\"true\">  ｜表示《よみ》<br/>  漢字《かんじ》</text></stack></mekuru>",
+        );
+        assert!(diags.is_empty(), "{diags:?}");
+        let texts: Vec<&str> = doc
+            .root
+            .descendants()
+            .into_iter()
+            .filter(|t| t.name == "text")
+            .map(|t| t.text.as_str())
+            .collect();
+        assert_eq!(texts, ["表示と漢字", "表示\n漢字"]);
+    }
 }
