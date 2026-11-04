@@ -1,9 +1,8 @@
 use super::args;
-use crate::util::{FileStamp, file_stamp, lru::Lru, proc::run_checked};
+use crate::util::{FileMemo, proc::run_checked};
 use anyhow::{Context, Result, bail};
 use serde_json::Value;
 use std::path::Path;
-use std::sync::{Mutex, OnceLock};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct VideoStream {
@@ -19,18 +18,11 @@ pub struct MediaProbe {
 }
 
 pub fn probe_cached(src: &Path) -> Result<MediaProbe> {
-    static MEMO: OnceLock<Mutex<Lru<FileStamp, MediaProbe>>> = OnceLock::new();
-    let key = file_stamp(src);
-    if key.1.is_none() {
+    static MEMO: FileMemo<MediaProbe> = FileMemo::new();
+    if !src.exists() {
         bail!("file not found: {}", src.display());
     }
-    let memo = MEMO.get_or_init(|| Mutex::new(Lru::new(1024 * 1024)));
-    if let Some(p) = memo.lock().unwrap_or_else(|e| e.into_inner()).get(&key) {
-        return Ok(*p);
-    }
-    let p = probe(src)?;
-    memo.lock().unwrap_or_else(|e| e.into_inner()).insert(key, p, src.as_os_str().len() + 128);
-    Ok(p)
+    MEMO.get(src, || probe(src))
 }
 
 pub fn probe(src: &Path) -> Result<MediaProbe> {
