@@ -69,22 +69,7 @@ Defaults: `x="50%"`, `y="95%"`, `anchor="b"`, `max-w="90%"`, `align="center"`, `
 </Subtitle>
 ```
 
-`Subtitle` expands children exactly like `<text>`. It does not trim whitespace or transform ruby notation; `pre` is passed through. For speech, pass `line.display`. For a standalone conversion, pass `await subtitleText(children)`.
-
-## subtitleText(children): Promise<Node>
-
-Converts ruby notation to display text while retaining `<br />`. Use it to build custom subtitles. This is a re-export of the same function from `@mekuru/speech/text`.
-
-```tsx
-import type { FC, Node } from "@mekuru/types";
-import { subtitleText } from "@mekuru/narrator";
-
-const MySubtitle: FC<{ children?: Node }> = async ({ children }) => (
-  <text x="50%" y="95%" anchor="b" size={48}>
-    {await subtitleText(children)}
-  </text>
-);
-```
+`Subtitle` expands children exactly like `<text>`. It does not trim whitespace, and `<br />` and `pre` are passed through. Ruby notation stays in the XML as written; as in every `<text>`, the compiler shows only the base text (`漢字《かんじ》` appears as “漢字”). For speech, pass `line.display`.
 
 For multiple outlines, layer `Subtitle` components at the same position with different `stroke` and `stroke-width` values.
 

@@ -22,13 +22,13 @@
     "@mekuru/types": "workspace:^"
   },
   "devDependencies": {
+    "@mekuru/speech": "workspace:*",
     "@mekuru/types": "workspace:*"
   },
   "engines": {
     "bun": ">=1.4"
   },
   "dependencies": {
-    "@mekuru/speech": "workspace:^",
     "ag-psd": "^31.0.3",
     "sharp": "^0.35.5",
     "@mekuru/audio": "workspace:^"

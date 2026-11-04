@@ -69,11 +69,11 @@
       },
       "dependencies": {
         "@mekuru/audio": "workspace:^",
-        "@mekuru/speech": "workspace:^",
         "ag-psd": "^31.0.3",
         "sharp": "^0.35.5",
       },
       "devDependencies": {
+        "@mekuru/speech": "workspace:*",
         "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {

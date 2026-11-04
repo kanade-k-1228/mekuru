@@ -85,7 +85,6 @@ export const createSpeech = (synthesize: Synthesize) =>
 
 ### その他のエクスポート
 
-- `await subtitleText(children)`: ルビを表示文字に変換し、空白と `<br />` を保持した Node を返します。純粋な文字処理の入口 `@mekuru/speech/text` からも使えます。読み上げと同じ入力形式を使います。字幕の配置・装飾には [@mekuru/narrator](../narrator/README.jp.md) の `Subtitle` を使えます。
 
 ### defineEngine(engine)
 

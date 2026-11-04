@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
 import { toXml, type Node } from "@mekuru/types";
-import { speechText, subtitleText } from "../src/text.tsx";
+import { speechText } from "../src/text.tsx";
 
 const display = async (children: Node) => {
   const xml = await toXml(
     <mekuru>
-      <text>{await subtitleText(children)}</text>
+      <text>{(await speechText(children)).display}</text>
     </mekuru>,
   );
   return `${xml.split("\n")[2].trim()}\n`;
@@ -94,6 +94,5 @@ test("non-text output is rejected after ordinary component expansion", async () 
   const Custom = () => <image src="a.png" />;
   for (const node of [<image src="a.png" />, <Custom />]) {
     await expect(speechText(node)).rejects.toThrow("a line of speech is text");
-    await expect(subtitleText(node)).rejects.toThrow("a line of speech is text");
   }
 });

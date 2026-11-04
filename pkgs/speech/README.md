@@ -85,7 +85,6 @@ Draft preparation returns an estimated source and queues synthesis; the final pa
 
 ### Other exports
 
-- `await subtitleText(children)`: Converts ruby notation to display text and preserves whitespace and `<br />`. Also available from the text-only entry point `@mekuru/speech/text`, using the same input format as speech. For subtitle placement and styling, use `Subtitle` from [@mekuru/narrator](../narrator/README.md).
 
 ### defineEngine(engine)
 

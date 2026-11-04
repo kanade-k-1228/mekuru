@@ -69,22 +69,7 @@ export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
 </Subtitle>
 ```
 
-`Subtitle` は通常の `<text>` と同じように子を展開します。空白や改行を独自に変更せず、`pre` もそのまま渡します。ルビは自動変換しません。音声と組み合わせる場合は `line.display`、表示だけ変換する場合は `await subtitleText(children)` を渡します。
-
-## subtitleText(children): Promise<Node>
-
-ルビを表示文字に変換し、`<br />` を保持したNodeを返します。独自の字幕に使えます。`@mekuru/speech/text` が提供する同じ非同期関数の再エクスポートです。
-
-```tsx
-import type { FC, Node } from "@mekuru/types";
-import { subtitleText } from "@mekuru/narrator";
-
-const MySubtitle: FC<{ children?: Node }> = async ({ children }) => (
-  <text x="50%" y="95%" anchor="b" size={48}>
-    {await subtitleText(children)}
-  </text>
-);
-```
+`Subtitle` は通常の `<text>` と同じように子を展開します。空白や改行を独自に変更せず、`pre` もそのまま渡します。ルビ記法はXMLにそのまま残り、ほかの `<text>` と同じくコンパイラが親文字だけを表示します（`漢字《かんじ》` は「漢字」と表示）。音声と組み合わせる場合は `line.display` を渡します。
 
 二重の縁取りなどは、異なる `stroke` と `stroke-width` の `Subtitle` を同じ位置に重ねて実装できます。
 
