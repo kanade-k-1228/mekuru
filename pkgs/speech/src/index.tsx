@@ -4,10 +4,11 @@ import { Audio, frameCount, frames, readAudio, type AudioSource } from "@mekuru/
 import { fps, isDraft, waitFor, type At, type JSX, type Node, type Time } from "@mekuru/types";
 import { speechText } from "./text.tsx";
 
+export { subtitleText } from "./text.tsx";
 export { cached, defineEngine, type Engine, type EngineProps } from "./engine.ts";
 
 export interface SpeechProps {
-  children?: Node;
+  text: Node;
   name?: string;
   reading?: Readonly<Record<string, string>>;
   gap?: number;
@@ -24,7 +25,7 @@ const GAP_SECONDS = 0.3;
 
 export interface PreparedLine {
   readonly audio: AudioSource;
-  readonly display: Node;
+  readonly display: string;
 }
 
 export const prepare = async (
@@ -34,7 +35,8 @@ export const prepare = async (
   voice: object,
   synthesize: (say: string, out: string) => Promise<void>,
 ): Promise<PreparedLine> => {
-  const { say, show, display } = await speechText(props.children, props.reading);
+  if ((props as { children?: unknown }).children !== undefined) throw new Error('a line goes in `text` (`<Voicevox text="…" />`), not in children');
+  const { say, show, display } = await speechText(props.text, props.reading);
   if (!say) throw new Error("there is nothing to say (the text is empty)");
   const db = props["gain-db"];
   const volume = db === undefined ? undefined : round(10 ** (db / 20));

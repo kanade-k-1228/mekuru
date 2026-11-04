@@ -59,7 +59,8 @@ pub struct Tag {
     pub name_span: Span,
     pub head: Span,
     pub attrs: Vec<Attr>,
-    /// The text of a `<text>`, with `<br/>` as a line break; other tags have none.
+    /// The string a `<text>` shows: its `text` attribute as written, with `\n` breaking the line; other tags
+    /// have none.
     pub text: String,
     pub children: Vec<Tag>,
     pub span: Span,

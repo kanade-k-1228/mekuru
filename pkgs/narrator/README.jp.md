@@ -28,24 +28,24 @@ import { Voisona } from "@mekuru/voisona";
 import type { LayerProps } from "./assets/character/tsuzumi/portrait";
 
 const actor = portrait<LayerProps>({ src: "assets/character/tsuzumi" });
-type TsuzumiProps = { children?: Node; face?: LayerProps["face"]; id?: string; at?: At };
+type TsuzumiProps = { text: Node; face?: LayerProps["face"]; id?: string; at?: At };
 
 export const TsuzumiStand = actor.Stand;
-export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
-  const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", children });
+export const Tsuzumi: FC<TsuzumiProps> = async ({ text, face, id, at }) => {
+  const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", text });
   return (
     <dur len={line.audio.len} id={id} at={at}>
       <stack>
         <Audio source={line.audio} />
         <actor.Talk source={line.audio} face={face} />
-        <Subtitle color="#E0161E">{line.display}</Subtitle>
+        <Subtitle color="#E0161E" text={line.display} />
       </stack>
     </dur>
   );
 };
 ```
 
-台本の `<mekuru>` 内に `<Tsuzumi>漢字《かんじ》を読みます。</Tsuzumi>` と置きます。音声は「かんじ」、字幕は「漢字」を使います。待機中の立ち絵を表示する場合は、場面の `<stack>` に `<TsuzumiStand />` を置きます。
+台本の `<mekuru>` 内に `<Tsuzumi text="こんにちは。" />` と置きます。同じセリフを読み上げ、字幕にも表示します。待機中の立ち絵を表示する場合は、場面の `<stack>` に `<TsuzumiStand />` を置きます。
 
 - 音声生成・キャッシュ・長さは音声コンポーネントが担当します。
 - 表情・口パク・待機中の表示は同じパッケージの `portrait()` が担当します。静止画には `<image>` も使えます。
@@ -64,12 +64,10 @@ export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
 既定値は `x="50%"`、`y="95%"`、`anchor="b"`、`max-w="90%"`、`align="center"`、`size={54}`、白文字、黒縁7、`z={100}`。propsで上書きできます。
 
 ```tsx
-<Subtitle y="90%" size={48} stroke="#2E5E8C">
-  Mekuru の字幕です。<br />明示した改行を保ちます。
-</Subtitle>
+<Subtitle y="90%" size={48} stroke="#2E5E8C" text={"Mekuru の字幕です。\n明示した改行を保ちます。"} />
 ```
 
-`Subtitle` は通常の `<text>` と同じように子を展開します。空白や改行を独自に変更せず、`pre` もそのまま渡します。ルビ記法はXMLにそのまま残り、ほかの `<text>` と同じくコンパイラが親文字だけを表示します（`漢字《かんじ》` は「漢字」と表示）。音声と組み合わせる場合は `line.display` を渡します。
+`Subtitle` は通常の `<text>` と同じく `text` を受け取り、すべての props をそのまま渡します。文字列は書いたとおりに表示し、`\n` で改行し、空白も除きません。音声と組み合わせる場合は `line.display`、文字を返す部品を含むセリフを表示だけする場合は `@mekuru/speech` の `await subtitleText(text)` を渡します。
 
 二重の縁取りなどは、異なる `stroke` と `stroke-width` の `Subtitle` を同じ位置に重ねて実装できます。
 

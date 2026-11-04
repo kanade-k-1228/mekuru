@@ -34,12 +34,7 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
     let expansions = 0;
     const Words = () => {
       expansions++;
-      return (
-        <>
-          漢字《かんじ》
-          <br /> 次
-        </>
-      );
+      return <>{"漢字\n 次"}</>;
     };
     const synthesize = async (say: string, out: string) => {
       syntheses++;
@@ -49,7 +44,7 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
     };
     const Narrator = async () => {
       roots.push(projectRoot());
-      const line = await prepare("fixture", { children: <Words />, gap: 3 }, "actor", {}, synthesize);
+      const line = await prepare("fixture", { text: <Words />, reading: { 漢字: "かんじ" }, gap: 3 }, "actor", {}, synthesize);
       sources.push(line.audio);
       expect(Object.isFrozen(line)).toBe(true);
       expect(Object.isFrozen(line.audio)).toBe(true);
@@ -61,7 +56,7 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
               <Audio source={line.audio} />
             </>
             <actor.Talk source={line.audio} />
-            <Subtitle pre>{line.display}</Subtitle>
+            <Subtitle text={line.display} />
           </stack>
         </dur>
       );
@@ -76,7 +71,7 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
     for (let i = 0; i < 200 && !(await Bun.file(file).exists()); i++) await Bun.sleep(5);
     const draft = await Bun.file(file).text();
     expect(draft).toContain('draft="true"');
-    expect(draft).toContain('pre="true">漢字<br/> 次</text>');
+    expect(draft).toContain('text="漢字&#10;次"/>');
     process.chdir(other);
     ready.resolve();
     await writing;
@@ -85,7 +80,7 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
     expect(final).toContain('<dur len="18">');
     expect(final).toContain('src=".mekuru/cache/tts/');
     expect(final.match(/<audio\b/g)).toHaveLength(1);
-    expect(final).toContain('pre="true">漢字<br/> 次</text>');
+    expect(final).toContain('text="漢字&#10;次"/>');
     expect(sources.map((s) => s.status)).toEqual(["draft", "ready"]);
     expect(roots).toEqual([dir, dir]);
     expect(expansions).toBe(2); // once per pass, shared by all three consumers

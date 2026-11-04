@@ -16,6 +16,7 @@
         "@mekuru/audio": "workspace:*",
         "@mekuru/core": "workspace:*",
         "@mekuru/narrator": "workspace:*",
+        "@mekuru/speech": "workspace:*",
         "@mekuru/types": "workspace:*",
         "@mekuru/upload": "workspace:*",
         "@mekuru/voicevox": "workspace:*",

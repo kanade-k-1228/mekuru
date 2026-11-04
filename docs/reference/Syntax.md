@@ -2,7 +2,7 @@
 
 [日本語](Syntax.jp.md)
 
-- Express videos with 18 tags, written as lowercase elements in a [TSX script](Component.md).
+- Express videos with 17 tags, written as lowercase elements in a [TSX script](Component.md).
 - `writeXml` expands components into XML containing only built-in elements (the [intermediate format](#xml-intermediate-format)).
 - Relative media paths are resolved from the project folder ([commands](Component.md#commands)).
 - Examples are TSX fragments placed inside `<mekuru>`. See the [tutorial](../../example/tutorial/main.tsx) and [explainer video](../../example/src/main.tsx) for complete scripts.
@@ -12,7 +12,7 @@ Tags:
 - Root: `<mekuru>`
 - Containers: `<seq>`, `<row>`, `<column>`, `<stack>`
 - Timing: `<dur>` (set duration), `<repeat>` (repeat). Neither affects spatial layout
-- Visuals: `<text>` (with `<br/>`), `<image>`, `<video>`, `<rect>`, `<circle>`, `<line>`
+- Visuals: `<text>` (string in the `text` attribute), `<image>`, `<video>`, `<rect>`, `<circle>`, `<line>`
 - Sound: `<audio>`
 - Media playback: `<hold>` (pause), `<speed>` (change speed), `<cut>` (skip). All go inside `<video>` or `<audio>`
 
@@ -61,12 +61,10 @@ Wrap scenes containing only text or shapes in `<dur>`. An empty `<dur len={9} />
 ```tsx
 // Excerpt from example/tutorial/main.tsx
 <stack>
-  <text x="50%" y="35%" anchor="center" size={90}>
-    はじめての動画
-  </text>
+  <text x="50%" y="35%" anchor="center" size={90} text="はじめての動画" />
   <seq>
-    <Zunda>こんにちは、ずんだもんなのだ。</Zunda>
-    <Metan>今日は Mekuru で動画を作るわ。</Metan>
+    <Zundamon text="こんにちは、ずんだもんなのだ。" />
+    <Zundamon text="今日は Mekuru で動画を作るのだ。" />
   </seq>
 </stack>
 ```
@@ -136,7 +134,7 @@ Paths are relative to the project folder. This example pauses for 60 frames at s
 ```tsx
 <video id="life" src="assets/life.mp4">
   <hold at={150}>
-    <dur len={60}><text>一時停止中</text></dur>
+    <dur len={60}><text text="一時停止中" /></dur>
   </hold>
 </video>
 ```
@@ -192,12 +190,13 @@ Paths are relative to the project folder. This example pauses for 60 frames at s
 
 ### Visual elements
 
-- `<text>`: text.
-  - Place text inside `<text>`. Escape `<` and `&` as `&lt;` and `&amp;`.
-  - Use `<br/>` for a line break.
+- `<text text>`: text.
+  - Always write the string in the `text` attribute. No element, `<text>` included, can contain text.
+  - The string is shown as written. Spaces, indentation, and leading or trailing line breaks are neither collapsed nor removed.
+  - `\n` breaks a line: `text={"一行目\n二行目"}`. Inside a quoted attribute, `text="…"`, `\n` stays literal.
   - `w` and `max-w` set wrapping width. `align="center"` centers text.
   - `color`: text color. `stroke` and `stroke-width`: text outline. `background`, `radius`, and `padding`: text background.
-  - `pre`: preserve source line breaks.
+  - E302: missing `text`. E107: text or tags inside.
 - `<image src>`: image. Setting only `w` or `h` preserves aspect ratio; setting both fits the image inside that box.
 - `<rect>`: rectangle.
 - `<circle>`: circle, or an ellipse when `w` and `h` differ.
@@ -254,6 +253,7 @@ Paths are relative to the project folder. This example pauses for 60 frames at s
 - `writeXml` writes `.mekuru/main.xml`; `mekuru-compiler` reads it. It is not intended for manual authoring.
 - XML fills in TSX omissions and uses one canonical form for values. Other forms are errors, without silent correction.
 - Attribute names match TSX, including `stroke-width`.
+- Elements contain only elements, never character data. Text goes in the `text` attribute of `<text>`, with `&#10;` for a line break: `<text text="一行目&#10;二行目"/>`.
 
 TSX → XML:
 

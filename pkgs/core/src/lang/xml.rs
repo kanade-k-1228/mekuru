@@ -8,7 +8,7 @@ use roxmltree::{Node, NodeType};
 const SETTING_ATTRS: &[&str] = &["size", "fps", "font", "preset", "crf", "audio-bitrate"];
 
 fn known_names() -> impl Iterator<Item = &'static str> {
-    ["mekuru", "br", "hold", "cut", "speed"]
+    ["mekuru", "hold", "cut", "speed"]
         .into_iter()
         .chain(Flow::groups())
         .chain(LEAVES.iter().copied())
@@ -109,12 +109,7 @@ impl Builder<'_> {
 
     fn tag(&mut self, n: Node) -> Tag {
         let name = n.tag_name().name();
-        let mut text = String::new();
         let children = match name {
-            "text" => {
-                text = self.content(n, n.attribute("pre") == Some("true"));
-                vec![]
-            }
             "mekuru" => self.screen(n),
             "video" | "audio" => self.holds(n),
             _ if Flow::of(name).is_some() => self.children(n),
@@ -123,12 +118,15 @@ impl Builder<'_> {
                 vec![]
             }
         };
-        let attrs = self.attrs(n);
+        let text = match (name, n.attribute("text")) {
+            ("text", Some(t)) => t.to_string(),
+            _ => String::new(),
+        };
         Tag {
             name: name.to_string(),
             name_span: self.name_span(n),
             head: self.start_tag(n),
-            attrs,
+            attrs: self.attrs(n),
             text,
             children,
             span: self.span(n),
@@ -183,7 +181,7 @@ impl Builder<'_> {
             match c.node_type() {
                 NodeType::Element => out.extend(self.element(c, parent)),
                 NodeType::Text if !c.text().unwrap_or("").trim().is_empty() => {
-                    let msg = format!("text cannot be in `<{}>`: put it in `<text>`", parent.tag_name().name());
+                    let msg = format!("text cannot be in `<{}>`: write it in `<text text=\"…\"/>`", parent.tag_name().name());
                     self.diags.push(Diag::new("E107", self.trimmed(c), msg));
                 }
                 _ => {}
@@ -199,7 +197,6 @@ impl Builder<'_> {
         }
         let parent = parent.tag_name().name();
         let (code, msg) = match name {
-            "br" => ("E107", format!("`<br/>` breaks a line in `<text>`; it cannot be in `<{parent}>`")),
             "hold" => (
                 "E107",
                 format!("`<hold>` goes in the `<video>` or `<audio>` it stops; it cannot be in `<{parent}>`"),
@@ -226,6 +223,8 @@ impl Builder<'_> {
     }
 
     fn leaf(&mut self, n: Node) {
+        let name = n.tag_name().name();
+        let hint = if name == "text" { ": write the string in `text`" } else { "" };
         for c in n.children() {
             let span = match c.node_type() {
                 NodeType::Element => self.span(c),
@@ -233,23 +232,8 @@ impl Builder<'_> {
                 _ => continue,
             };
             self.diags
-                .push(Diag::new("E107", span, format!("`<{}>` cannot contain text or tags", n.tag_name().name())));
+                .push(Diag::new("E107", span, format!("`<{name}>` cannot contain text or tags{hint}")));
         }
-    }
-
-    fn content(&mut self, n: Node, pre: bool) -> String {
-        let mut run = vec![];
-        for c in n.children() {
-            match c.node_type() {
-                NodeType::Text => run.push(Piece::Text(c.text().unwrap_or(""))),
-                NodeType::Element if c.tag_name().name() == "br" => run.push(Piece::Br),
-                NodeType::Element => self
-                    .diags
-                    .push(Diag::new("E107", self.name_span(c), "`<text>` can only contain text and `<br/>`")),
-                _ => {}
-            }
-        }
-        text_run(&run, pre)
     }
 
     fn settings(&mut self, n: Node) {
@@ -293,92 +277,6 @@ impl Builder<'_> {
     }
 }
 
-enum Piece<'a> {
-    Text(&'a str),
-    Br,
-}
-
-fn is_cjk(c: char) -> bool {
-    matches!(c,
-        '\u{2E80}'..='\u{2FFF}' | '\u{3000}'..='\u{30FF}' | '\u{31F0}'..='\u{31FF}' | '\u{3400}'..='\u{4DBF}'
-        | '\u{4E00}'..='\u{9FFF}' | '\u{F900}'..='\u{FAFF}' | '\u{FE30}'..='\u{FE4F}' | '\u{FF00}'..='\u{FFEF}')
-}
-
-fn collapse(text: &str) -> String {
-    let mut out = String::new();
-    let lines: Vec<&str> = text.split('\n').collect();
-    let n = lines.len();
-    for (i, line) in lines.iter().enumerate() {
-        let mut l = *line;
-        if i > 0 {
-            l = l.trim_start();
-        }
-        if i + 1 < n {
-            l = l.trim_end();
-        }
-        if l.is_empty() {
-            continue;
-        }
-        if i > 0 && !out.is_empty() {
-            let a = out.chars().last();
-            let b = l.chars().next();
-            let cjk_pair = a.is_some_and(is_cjk) && b.is_some_and(is_cjk);
-            if !cjk_pair && !a.is_some_and(char::is_whitespace) {
-                out.push(' ');
-            }
-        }
-        out.push_str(l);
-    }
-    out
-}
-
-fn dedent(raw: &str) -> String {
-    let mut lines: Vec<&str> = raw.lines().collect();
-    while lines.first().is_some_and(|l| l.trim().is_empty()) {
-        lines.remove(0);
-    }
-    while lines.last().is_some_and(|l| l.trim().is_empty()) {
-        lines.pop();
-    }
-    let indent = lines
-        .iter()
-        .filter(|l| !l.trim().is_empty())
-        .map(|l| l.len() - l.trim_start_matches(' ').len())
-        .min()
-        .unwrap_or(0);
-    lines.iter().map(|l| l.get(indent..).unwrap_or("").trim_end()).collect::<Vec<_>>().join("\n")
-}
-
-fn text_run(run: &[Piece], pre: bool) -> String {
-    if pre {
-        let raw: String = run
-            .iter()
-            .map(|p| match p {
-                Piece::Text(t) => lex::strip_ruby(t),
-                Piece::Br => "\n".into(),
-            })
-            .collect();
-        return dedent(&raw);
-    }
-    let mut out = String::new();
-    for (i, p) in run.iter().enumerate() {
-        match p {
-            Piece::Text(t) => {
-                let mut c = collapse(t);
-                if i == 0 || matches!(run[i - 1], Piece::Br) {
-                    c = c.trim_start().to_string();
-                }
-                if i + 1 == run.len() || matches!(run[i + 1], Piece::Br) {
-                    c = c.trim_end().to_string();
-                }
-                out.push_str(&lex::strip_ruby(&c));
-            }
-            Piece::Br => out.push('\n'),
-        }
-    }
-    out
-}
-
 fn offset_of(src: &str, row: u32, col: u32) -> usize {
     let mut lo = 0;
     for (i, line) in src.split_inclusive('\n').enumerate() {
@@ -392,19 +290,37 @@ fn offset_of(src: &str, row: u32, col: u32) -> usize {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn text_shows_the_base_of_ruby_with_or_without_pre() {
-        let (doc, diags) = super::parse(
-            "<mekuru><stack><text>｜表示《よみ》と漢字《かんじ》</text><text pre=\"true\">  ｜表示《よみ》<br/>  漢字《かんじ》</text></stack></mekuru>",
-        );
-        assert!(diags.is_empty(), "{diags:?}");
-        let texts: Vec<&str> = doc
+    use super::super::diag::Diag;
+
+    fn texts(src: &str) -> (Vec<String>, Vec<Diag>) {
+        let (doc, diags) = super::parse(&format!("<mekuru><stack>{src}</stack></mekuru>"));
+        let texts = doc
             .root
             .descendants()
             .into_iter()
             .filter(|t| t.name == "text")
-            .map(|t| t.text.as_str())
+            .map(|t| t.text.clone())
             .collect();
-        assert_eq!(texts, ["表示と漢字", "表示\n漢字"]);
+        (texts, diags)
+    }
+
+    #[test]
+    fn text_is_its_attribute_as_written() {
+        let (texts, diags) = texts(r#"<text text="｜表示《よみ》と漢字《かんじ》"/><text text="  一行目&#10;  二行目 "/>"#);
+        assert!(diags.is_empty(), "{diags:?}");
+        assert_eq!(texts, ["｜表示《よみ》と漢字《かんじ》", "  一行目\n  二行目 "]);
+    }
+
+    #[test]
+    fn text_cannot_contain_text_or_tags() {
+        for src in [r#"<text text="a">b</text>"#, r#"<text text="a"><br/></text>"#, r#"<text>a</text>"#] {
+            let (_, diags) = texts(src);
+            assert!(
+                diags.iter().any(|d| d.code == "E107" && d.msg.contains("write the string in `text`")),
+                "{src}: {diags:?}"
+            );
+        }
+        let (_, diags) = texts("<text text=\"a\">\n  </text>");
+        assert!(diags.is_empty(), "{diags:?}");
     }
 }

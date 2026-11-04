@@ -177,7 +177,7 @@ fn assert_success(r: &Value) {
 fn edits_match_a_fresh_session_and_only_changed_viewops_are_sent() {
     let mut session = Viewer::new();
     let root = Path::new(".");
-    let base = document(r#"<dur len="30"><stack><text x="10" y="10">Alpha</text><text x="10" y="80">Bravo</text></stack></dur>"#);
+    let base = document(r#"<dur len="30"><stack><text x="10" y="10" text="Alpha"/><text x="10" y="80" text="Bravo"/></stack></dur>"#);
     let a = session.compile(root, &base);
     assert_success(&a);
     assert_eq!(a["stats"]["drawMisses"], 2);
@@ -215,7 +215,7 @@ fn insertion_deletion_reordering_duplicate_elements_repeats_references_and_draft
         assert_success(&session.compile(root, &document(&body)));
     }
     let repeated = document(
-        r#"<dur len="120"><stack><repeat><seq><dur id="a" len="30"><text>A</text></dur><dur len="20" at="a:10"><text>B</text></dur></seq></repeat><seq><dur len="60"><audio draft="true" label="Speech"/><text>Caption</text></dur></seq></stack></dur>"#,
+        r#"<dur len="120"><stack><repeat><seq><dur id="a" len="30"><text text="A"/></dur><dur len="20" at="a:10"><text text="B"/></dur></seq></repeat><seq><dur len="60"><audio draft="true" label="Speech"/><text text="Caption"/></dur></seq></stack></dur>"#,
     );
     assert_success(&session.compile(root, &repeated));
     let edited = session.compile(root, &repeated.replace("len=\"60\"", "len=\"90\""));
@@ -226,7 +226,7 @@ fn insertion_deletion_reordering_duplicate_elements_repeats_references_and_draft
 #[test]
 fn evicted_cache_entries_never_lose_resources() {
     let mut session = Session::new(1); // Every drawing exceeds this cache budget.
-    let xml = document(r#"<dur len="30"><text>Cache</text></dur>"#);
+    let xml = document(r#"<dur len="30"><text text="Cache"/></dur>"#);
     let (_, a) = session.compile(Path::new("-"), None, xml.clone(), 1);
     let (_, b) = session.compile(Path::new("-"), None, xml, 2);
     assert_eq!(session.stats.draw_misses, 1);
@@ -277,8 +277,8 @@ fn file_metadata_invalidates_image_and_font_caches() {
     }
     let font = dir.0.join("custom.ttf");
     for xml in [
-        document(r#"<dur len="30"><text font="custom.ttf">Font test</text></dur>"#),
-        document(r#"<dur len="30"><text>Font test</text></dur>"#).replace("fps=\"30\"", "fps=\"30\" font=\"custom.ttf\""),
+        document(r#"<dur len="30"><text font="custom.ttf" text="Font test"/></dur>"#),
+        document(r#"<dur len="30"><text text="Font test"/></dur>"#).replace("fps=\"30\"", "fps=\"30\" font=\"custom.ttf\""),
     ] {
         std::fs::copy(&files[0], &font).unwrap();
         let first = session.compile(&dir.0, &xml);
@@ -298,7 +298,7 @@ fn file_metadata_invalidates_image_and_font_caches() {
         assert_ne!(first["preview"]["elements"][0]["drawings"], changed["preview"]["elements"][0]["drawings"]);
     }
     // An external font may inform layout but is not published through /files/.
-    let xml = document(&format!(r#"<dur len="30"><text font="{}">External</text></dur>"#, files[0].to_string_lossy()));
+    let xml = document(&format!(r#"<dur len="30"><text font="{}" text="External"/></dur>"#, files[0].to_string_lossy()));
     let external = session.compile(&dir.0, &xml);
     assert_success(&external);
     let ops = external["resources"].as_object().unwrap().values().next().unwrap();
@@ -319,7 +319,7 @@ fn media_probe_changes_and_hold_edits_match_a_fresh_session() {
     }
     let mut session = Viewer::new();
     let xml = document(
-        r#"<stack><video id="v" src="a.mp4"><hold at="10"><dur len="20"><text>Wait</text></dur></hold></video><dur len="10" at="v:20"><text>After</text></dur></stack>"#,
+        r#"<stack><video id="v" src="a.mp4"><hold at="10"><dur len="20"><text text="Wait"/></dur></hold></video><dur len="10" at="v:20"><text text="After"/></dur></stack>"#,
     );
     let a = session.compile(&dir.0, &xml);
     assert_success(&a);
@@ -342,7 +342,7 @@ fn media_probe_changes_and_hold_edits_match_a_fresh_session() {
 #[test]
 fn cached_drawings_keep_analysis_warnings_on_current_source_lines() {
     let mut session = Viewer::new();
-    let xml = document(r#"<dur len="30"><text anchor="c">Warning</text></dur>"#);
+    let xml = document(r#"<dur len="30"><text anchor="c" text="Warning"/></dur>"#);
     let first = session.compile(Path::new("."), &xml);
     let next = session.compile(Path::new("."), &xml.replace("<dur", "<!-- new source line -->\n<dur"));
     assert_success(&first);
@@ -357,9 +357,13 @@ fn cached_drawings_keep_analysis_warnings_on_current_source_lines() {
 fn patches_carry_only_what_changed_since_the_shown_scene() {
     let mut viewer = Viewer::new();
     let root = Path::new(".");
-    let xml = document(&(0..100).map(|i| format!(r#"<dur len="30"><text>Caption {i}</text></dur>"#)).collect::<String>());
+    let xml = document(
+        &(0..100)
+            .map(|i| format!(r#"<dur len="30"><text text="Caption {i}"/></dur>"#))
+            .collect::<String>(),
+    );
     assert_eq!(viewer.compile(root, &xml)["update"]["type"], "snapshot");
-    let edited = xml.replace("Caption 50<", "Edited<");
+    let edited = xml.replace("Caption 50\"", "Edited\"");
     let patch = viewer.compile(root, &edited)["update"].clone();
     assert_eq!(patch["type"], "patch");
     assert_eq!(patch["baseVersion"], 1);
@@ -377,7 +381,7 @@ fn patches_carry_only_what_changed_since_the_shown_scene() {
     assert_eq!(restarted["baseVersion"], 2);
     assert_eq!(restarted["elements"]["remove"].as_array().unwrap().len(), 100);
     assert_eq!(restarted["resources"], json!({}));
-    let replaced = viewer.compile(root, &document(r#"<dur len="30"><text>Only one</text></dur>"#))["update"].clone();
+    let replaced = viewer.compile(root, &document(r#"<dur len="30"><text text="Only one"/></dur>"#))["update"].clone();
     assert_eq!(replaced["type"], "patch");
 }
 
@@ -413,7 +417,7 @@ fn preview_and_renderer_agree_on_a_static_scene() {
 
 #[test]
 fn preview_emits_text_styles_and_transform_without_glyph_paths() {
-    let xml = r##"<mekuru><dur len="30"><text x="20" y="30" w="200" size="32" color="#123456" stroke="#ffffff" stroke-width="3" weight="bold" align="right" line-height="1.5" rotate="15">日本語&lt;b&gt;<br/>次の行</text></dur></mekuru>"##;
+    let xml = r##"<mekuru><dur len="30"><text x="20" y="30" w="200" size="32" color="#123456" stroke="#ffffff" stroke-width="3" weight="bold" align="right" line-height="1.5" rotate="15" text="日本語&lt;b&gt;&#10;次の行"/></dur></mekuru>"##;
     let result = single(Path::new("fixture.xml"), None, xml);
     assert_eq!(result["diagnostics"], json!([]));
     let ops: Vec<_> = result["preview"]["elements"]

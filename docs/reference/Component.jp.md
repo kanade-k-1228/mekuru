@@ -39,26 +39,33 @@ bun install
 
 ```tsx
 // example/src/parts.tsx（抜粋）
-export const Zundamon: FC<Line> = async ({ children, face, show, ...time }) => {
-  const line = await Voicevox.prepare({ ...voice, children });
+export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time }) => {
+  const line = await Voicevox.prepare({ ...voice, text: say ?? text });
   return (
     <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
         <zundamon.Talk source={line.audio} {...(face ? FACES[face] : { face: "normal" })} />
-        <Subtitle>{line.display}</Subtitle>
-        {show}
+        <Subtitle text={say === undefined ? line.display : await subtitleText(text)} />
+        {children}
       </stack>
     </dur>
   );
 };
 ```
 
-`Voicevox.prepare` で一度準備した音声素材を `Audio` と `Talk` に渡します（`Audio` は `@mekuru/audio` から import）。`line.display` はルビの表記部分と改行を保持した字幕です。`Subtitle` は装飾だけを加える通常の `text` です。外側の `<dur>` でセリフの長さを決めるので、`show` に追加した素材もその区間に収まります。詳しくは [ナレータの組み立て](../../pkgs/narrator/README.jp.md) を参照してください。
+```tsx
+<Zundamon face="指差し" text="長さは、セリフに合わせて決まります。">
+  <Label x={708} y={650} text="長さは自動！" />
+</Zundamon>
+<Zundamon text="今日の天気" say="きょうのてんき" />
+```
+
+`Voicevox.prepare` で一度準備した音声素材を `Audio` と `Talk` に渡します（`Audio` は `@mekuru/audio` から import）。`line.display` は字幕の文字列で、`\n` で改行します。`Subtitle` は装飾だけを加える通常の `text` です。`text` は字幕、`say` は読み上げる文で、`say` を省くと `text` を読み上げます。外側の `<dur>` でセリフの長さを決めるので、子要素はそのセリフの間だけ表示されます。詳しくは [ナレータの組み立て](../../pkgs/narrator/README.jp.md) を参照してください。
 
 ### コードを表示する
 
-`<text pre>` は改行と空白を保持し、共通のインデントと前後の空行を除きます。行番号や強調枠の実装例は [parts.tsx の Code・CodeMark](../../example/src/parts.tsx) にあります。行の高さは `size × line-height` です。
+`<text>` は `text` の文字列を改行・空白・字下げも含めてそのまま表示します。コードは文字列のまま `text` に渡します。行番号や強調枠の実装例は [parts.tsx の Code・CodeMark](../../example/src/parts.tsx) にあります。行の高さは `size × line-height` です。
 
 ## プレビュー
 

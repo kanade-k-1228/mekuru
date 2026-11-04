@@ -159,23 +159,23 @@ mod tests {
     #[test]
     fn edit_insert_reorder_and_ambiguous_duplicates() {
         let mut i = Identity::default();
-        let a = keys(&mut i, "<seq><text>A</text><text>B</text></seq>");
-        let b = keys(&mut i, "<seq><text>A</text><text>C</text></seq>");
+        let a = keys(&mut i, "<seq><text text='A'/><text text='B'/></seq>");
+        let b = keys(&mut i, "<seq><text text='A'/><text text='C'/></seq>");
         assert_eq!(a, b);
-        let c = keys(&mut i, "<seq><text>X</text><text>A</text><text>C</text></seq>");
+        let c = keys(&mut i, "<seq><text text='X'/><text text='A'/><text text='C'/></seq>");
         assert_eq!(b, c[1..]);
-        let d = keys(&mut i, "<seq><text>C</text><text>A</text><text>X</text></seq>");
+        let d = keys(&mut i, "<seq><text text='C'/><text text='A'/><text text='X'/></seq>");
         assert_eq!(d, c.into_iter().rev().collect::<Vec<_>>());
         let mut i = Identity::default();
-        let a = keys(&mut i, "<seq><text>A</text><text>A</text></seq>");
-        let b = keys(&mut i, "<seq><text>A</text></seq>");
+        let a = keys(&mut i, "<seq><text text='A'/><text text='A'/></seq>");
+        let b = keys(&mut i, "<seq><text text='A'/></seq>");
         assert!(!a.contains(&b[0]));
     }
     #[test]
     fn named_elements_use_repeat_clock_scope() {
         let mut i = Identity::default();
-        let a = keys(&mut i, "<seq><repeat id='r'><text id='x'>A</text></repeat><text id='x'>B</text></seq>");
-        let b = keys(&mut i, "<seq><text id='x'>C</text><repeat id='r'><text id='x'>D</text></repeat></seq>");
+        let a = keys(&mut i, "<seq><repeat id='r'><text id='x' text='A'/></repeat><text id='x' text='B'/></seq>");
+        let b = keys(&mut i, "<seq><text id='x' text='C'/><repeat id='r'><text id='x' text='D'/></repeat></seq>");
         assert_eq!(a[0], b[1]);
         assert_eq!(a[1], b[0]);
     }

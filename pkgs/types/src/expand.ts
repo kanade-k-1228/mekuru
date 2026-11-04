@@ -60,6 +60,10 @@ export const expand = async (node: unknown, out: Item[]): Promise<void> => {
         for (const c of children) await expand(c, el.children);
       };
       await (tag === "mekuru" ? rate.run(frameRate(props.fps), inside) : inside());
+      if (tag === "text" && el.children.length) throw new Error('`<text>` takes its string in `text` (`<text text="…" />`), not as children');
+      const words = el.children.find((c) => typeof c === "string" && c.trim());
+      if (words !== undefined) throw new Error(`text cannot be in \`<${tag}>\`: write it in \`<text text="…" />\` (found ${JSON.stringify(words)})`);
+      el.children = el.children.filter((c) => typeof c !== "string");
       out.push(el);
       return;
     }
@@ -67,20 +71,14 @@ export const expand = async (node: unknown, out: Item[]): Promise<void> => {
   throw new Error(`a video is made of elements and text, not ${describe(node)}`);
 };
 
-type TextRun = string | null;
-
-/** Expand text components using the same rules as the rest of the video. Null is a line break. */
-export const resolveText = async (children: unknown): Promise<TextRun[]> => {
+/** Expand text components using the same rules as the rest of the video into one string. */
+export const resolveText = async (children: unknown): Promise<string> => {
   const items: Item[] = [];
   await expand(children, items);
-  const runs: TextRun[] = [];
-  for (const item of items) {
-    if (typeof item === "string") {
-      const last = runs[runs.length - 1];
-      if (typeof last === "string") runs[runs.length - 1] = last + item;
-      else runs.push(item);
-    } else if (item.tag === "br" && item.children.length === 0) runs.push(null);
-    else throw new Error(`a line of speech is text (and \`<br />\`), not <${item.tag}>`);
-  }
-  return runs;
+  return items
+    .map((item) => {
+      if (typeof item === "string") return item;
+      throw new Error(`a line of speech is text, not <${item.tag}>: break a line with "\\n"`);
+    })
+    .join("");
 };

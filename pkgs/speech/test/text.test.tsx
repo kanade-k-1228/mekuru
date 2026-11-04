@@ -1,93 +1,55 @@
 import { expect, test } from "bun:test";
 import { toXml, type Node } from "@mekuru/types";
-import { speechText } from "../src/text.tsx";
+import { speechText, subtitleText } from "../src/text.tsx";
 
-const display = async (children: Node) => {
+const display = async (text: Node) => {
   const xml = await toXml(
     <mekuru>
-      <text>{(await speechText(children)).display}</text>
+      <text text={await subtitleText(text)} />
     </mekuru>,
   );
   return `${xml.split("\n")[2].trim()}\n`;
 };
 
-test("ruby and dictionaries keep existing spoken text and labels", async () => {
-  const children = (
-    <>
-      {" "}
-      ｜Mekuru《めくる》と漢字《かんじ》、|Bun《バン》
-      <br />
-      APIです。{" "}
-    </>
-  );
-  expect(await speechText(children, { API: "エーピーアイ", A: "エー", Mekuru: "別の読み" })).toMatchObject({
-    say: "めくるとかんじ、バン エーピーアイです。",
+test("dictionaries change only the spoken text, and lines break on \\n", async () => {
+  const text = " Mekuruと漢字、Bun\nAPIです。 ";
+  expect(await speechText(text, { API: "エーピーアイ", A: "エー", Mekuru: "めくる", Bun: "バン" })).toMatchObject({
+    say: "めくると漢字、バン エーピーアイです。",
     show: "Mekuruと漢字、Bun APIです。",
   });
-  expect(await display(children)).toBe("<text> Mekuruと漢字、Bun<br/>APIです。 </text>\n");
+  expect(await display(text)).toBe('<text text="Mekuruと漢字、Bun&#10;APIです。"/>\n');
 });
 
-test("arrays, fragments, numbers and ruby spanning adjacent text nodes", async () => {
-  const children = (
-    <>
-      {[null, false, <> 漢{"字《かんじ》"}</>, 123]}
-      <br />
-      <br /> 次{" "}
-    </>
-  );
-  expect(await speechText(children)).toMatchObject({ say: "かんじ123  次", show: "漢字123  次" });
-  expect(await display(children)).toBe("<text> 漢字123<br/><br/> 次 </text>\n");
-  expect(
-    await display(
-      <>
-        <br />a<br />
-      </>,
-    ),
-  ).toBe("<text><br/>a<br/></text>\n");
+test("arrays, fragments and numbers make one string", async () => {
+  const text = <>{[null, false, <> 漢{"字"}</>, 123, "\n\n 次 "]}</>;
+  expect(await speechText(text)).toMatchObject({ say: "漢字123  次", show: "漢字123  次" });
+  expect(await display(text)).toBe('<text text="漢字123&#10;&#10;次"/>\n');
+  expect(await display("\na\n")).toBe('<text text="&#10;a&#10;"/>\n');
 });
 
-test("longest dictionary match wins and unmatched ruby stays literal", async () => {
-  expect(await speechText("API A |broken《text", { A: "短", API: "長", "": "ignored" })).toMatchObject({
-    say: "長 短 |broken《text",
-    show: "API A |broken《text",
+test("longest dictionary match wins, and ruby-like marks are plain text", async () => {
+  expect(await speechText("API A 漢字《かんじ》", { A: "短", API: "長", "": "ignored" })).toMatchObject({
+    say: "長 短 漢字《かんじ》",
+    show: "API A 漢字《かんじ》",
   });
   expect(await speechText([null, undefined, false, "  "])).toMatchObject({ say: "", show: "" });
 });
 
-test("text components expand once and fragments preserve ruby parsing", async () => {
+test("text components expand once", async () => {
   let calls = 0;
   const Custom = async () => {
     calls++;
-    return (
-      <>
-        漢{"字《かんじ》"}
-        <br /> 次
-      </>
-    );
+    return <>漢{"字\n 次"}</>;
   };
   const result = await speechText(
     // biome-ignore lint/complexity/noUselessFragments: verify transparent wrappers
     <>
       <Custom />
     </>,
+    { 漢字: "かんじ" },
   );
-  expect(result.say).toBe("かんじ 次");
+  expect(result).toMatchObject({ say: "かんじ 次", show: "漢字 次", display: "漢字\n次" });
   expect(calls).toBe(1);
-  const xml = await toXml(
-    <mekuru>
-      <text pre>{result.display}</text>
-    </mekuru>,
-  );
-  expect(xml).toContain('pre="true">漢字<br/> 次</text>');
-  expect(calls).toBe(1);
-  expect(
-    await speechText(
-      <>
-        漢字《かんじ》
-        <br /> 次
-      </>,
-    ),
-  ).toMatchObject({ say: result.say, show: result.show });
 });
 
 test("non-text output is rejected after ordinary component expansion", async () => {

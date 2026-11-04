@@ -30,8 +30,8 @@ await writeXml(
   ".mekuru/main.xml",
   <mekuru size="1280x720" fps={30}>
     <stack>
-      <Coeiroink speaker="つくよみちゃん/れいせい">{text}</Coeiroink>
-      <text x="50%" y="50%" anchor="center" size={60} color="#FFFFFF">{text}</text>
+      <Coeiroink speaker="つくよみちゃん/れいせい" text={text} />
+      <text x="50%" y="50%" anchor="center" size={60} color="#FFFFFF" text={text} />
     </stack>
   </mekuru>,
 );
@@ -51,7 +51,7 @@ bunx mekuru-compiler .mekuru/main.xml --serve
 ```tsx
 import { Coeiroink, tsukuyomi } from "@mekuru/coeiroink";
 
-<Coeiroink {...tsukuyomi}>こんにちは。</Coeiroink>;
+<Coeiroink {...tsukuyomi} text="こんにちは。" />;
 ```
 
 | エクスポート | 名前 | `speaker` |
@@ -101,4 +101,4 @@ curl http://127.0.0.1:50032/v1/speakers
 
 接続できない場合は起動状態とポートを確認します。Windows のエンジンには [WSL の mirrored ネットワーク](https://learn.microsoft.com/en-us/windows/wsl/networking#mirrored-mode-networking)で `127.0.0.1` から接続できます。
 
-独自のナレータでは `await Coeiroink.prepare({ ...声の設定, children })` で音声素材・表示文字・長さをまとめて取得できます。`id`・`at` は配置する部品に付けます。[共有する音声素材](../speech/README.jp.md#共有する音声素材)と[ナレータの組み立て](../narrator/README.jp.md)を参照してください。
+独自のナレータでは `await Coeiroink.prepare({ ...声の設定, text })` で音声素材・表示文字・長さをまとめて取得できます。`id`・`at` は配置する部品に付けます。[共有する音声素材](../speech/README.jp.md#共有する音声素材)と[ナレータの組み立て](../narrator/README.jp.md)を参照してください。

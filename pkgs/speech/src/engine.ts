@@ -105,7 +105,7 @@ export const defineEngine = <P extends EngineProps>(engine: Engine<P>) => {
   };
   return defineSpeech<P>((props) => {
     // The component passes `id` and `at` too.
-    const { children, name, reading, gap, "gain-db": db, id, at, len, url, ...voice } = props as P;
+    const { text, name, reading, gap, "gain-db": db, id, at, len, url, ...voice } = props as P;
     const max = (props as EngineProps)["max-chars"] ?? engine.maxChars;
     return prepare(engine.kind, props, engine.who(props), voice, (say, out) => {
       const { read, queue } = server(url);

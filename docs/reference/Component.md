@@ -39,26 +39,33 @@ This component combines speech, a portrait, and subtitles into one line. Types a
 
 ```tsx
 // Excerpt from example/src/parts.tsx
-export const Zundamon: FC<Line> = async ({ children, face, show, ...time }) => {
-  const line = await Voicevox.prepare({ ...voice, children });
+export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time }) => {
+  const line = await Voicevox.prepare({ ...voice, text: say ?? text });
   return (
     <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
         <zundamon.Talk source={line.audio} {...(face ? FACES[face] : { face: "normal" })} />
-        <Subtitle>{line.display}</Subtitle>
-        {show}
+        <Subtitle text={say === undefined ? line.display : await subtitleText(text)} />
+        {children}
       </stack>
     </dur>
   );
 };
 ```
 
-`Voicevox.prepare` prepares one shared audio source for `Audio` and `Talk` (`Audio` is imported from `@mekuru/audio`). `line.display` preserves ruby base text and line breaks. `Subtitle` only adds styles to ordinary `text`. The outer `<dur>` bounds the whole line, including anything passed as `show`. See [composing narrators](../../pkgs/narrator/README.md).
+```tsx
+<Zundamon face="指差し" text="長さは、セリフに合わせて決まります。">
+  <Label x={708} y={650} text="長さは自動！" />
+</Zundamon>
+<Zundamon text="今日の天気" say="きょうのてんき" />
+```
+
+`Voicevox.prepare` prepares one shared audio source for `Audio` and `Talk` (`Audio` is imported from `@mekuru/audio`). `line.display` is the subtitle string, with `\n` line breaks. `Subtitle` only adds styles to ordinary `text`. `text` is the subtitle and `say` is what is spoken; without `say`, `text` is spoken. The outer `<dur>` bounds the whole line, so the children appear only while it is spoken. See [composing narrators](../../pkgs/narrator/README.md).
 
 ### Displaying code
 
-`<text pre>` preserves line breaks and spaces, removing common indentation and leading or trailing blank lines. See [Code and CodeMark in parts.tsx](../../example/src/parts.tsx) for line numbers and highlight frames. Line height is `size × line-height`.
+`<text>` shows its `text` string as written, including line breaks, spaces, and indentation. Pass code to `text` as a plain string. See [Code and CodeMark in parts.tsx](../../example/src/parts.tsx) for line numbers and highlight frames. Line height is `size × line-height`.
 
 ## Preview
 

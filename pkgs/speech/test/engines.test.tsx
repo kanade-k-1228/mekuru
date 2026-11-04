@@ -53,11 +53,7 @@ const SBV2 =
 const cases: { name: string; line: Node; json?: Record<string, unknown>; label: string; sent: unknown[][] }[] = [
   {
     name: "VOICEVOX sets the options on the audio query, at its default server",
-    line: (
-      <Voicevox speaker={3} speed={1.2} pitch={0.1} intonation={1.1} volume={0.9} pre={0.2} post={0.3} pause-scale={0.5}>
-        こんにちは
-      </Voicevox>
-    ),
+    line: <Voicevox speaker={3} speed={1.2} pitch={0.1} intonation={1.1} volume={0.9} pre={0.2} post={0.3} pause-scale={0.5} text="こんにちは" />,
     json: { "/audio_query": { accent_phrases: [], speedScale: 1 } },
     label: "3: こんにちは",
     sent: [
@@ -81,11 +77,7 @@ const cases: { name: string; line: Node; json?: Record<string, unknown>; label: 
   },
   {
     name: "VOICEVOX finds a speaker by name, at the server of `url`",
-    line: (
-      <Voicevox speaker="四国めたん/ノーマル" name="めたん" url="http://voicevox.test:1/">
-        やあ
-      </Voicevox>
-    ),
+    line: <Voicevox speaker="四国めたん/ノーマル" name="めたん" url="http://voicevox.test:1/" text="やあ" />,
     json: { "/speakers": [{ name: "四国めたん", styles: [{ name: "ノーマル", id: 2 }] }], "/audio_query": {} },
     label: "めたん: やあ",
     sent: [
@@ -96,11 +88,7 @@ const cases: { name: string; line: Node; json?: Record<string, unknown>; label: 
   },
   {
     name: "COEIROINK fills in the options that are not set, at the server of its environment variable",
-    line: (
-      <Coeiroink speaker="Test/normal" speed={1.5} pause={0.2}>
-        こんにちは
-      </Coeiroink>
-    ),
+    line: <Coeiroink speaker="Test/normal" speed={1.5} pause={0.2} text="こんにちは" />,
     json: { "/v1/speakers": [{ speakerName: "Test", speakerUuid: "uuid-1", styles: [{ styleName: "normal", styleId: 7 }] }] },
     label: "Test/normal: こんにちは",
     sent: [
@@ -139,9 +127,8 @@ const cases: { name: string; line: Node; json?: Record<string, unknown>; label: 
         assist-text="楽しい"
         assist-text-weight={0.5}
         max-chars={4}
-      >
-        あいう。えおか。
-      </StyleBertVits2>
+        text="あいう。えおか。"
+      />
     ),
     json: { "/models/info": { 0: { model_path: "model_assets/amitaro/amitaro.safetensors", spk2id: { あみたろ: 0 }, style2id: { Neutral: 0, Happy: 1 } } } },
     label: "あみたろ: あいう。えおか。",
@@ -158,11 +145,7 @@ for (const { name, line, json, label, sent } of cases) {
 }
 
 test("a speaker list that failed to load is loaded again for the next line", async () => {
-  const line = (
-    <Voicevox speaker="四国めたん" url="http://voicevox.test:3">
-      まだ
-    </Voicevox>
-  );
+  const line = <Voicevox speaker="四国めたん" url="http://voicevox.test:3" text="まだ" />;
   spyOn(globalThis, "fetch").mockRejectedValue(new Error("connection refused"));
   await expect(say(line)).rejects.toThrow("VOICEVOX is not reachable at http://voicevox.test:3");
   mock.restore();
@@ -173,10 +156,10 @@ test("a speaker list that failed to load is loaded again for the next line", asy
 
 test("errors name the engine, and an unreachable server says how to start it", async () => {
   spyOn(globalThis, "fetch").mockResolvedValue(new Response("x".repeat(400), { status: 422 }));
-  await expect(say(<Voicevox speaker={1}>だめ</Voicevox>)).rejects.toThrow(/^VOICEVOX \/audio_query: HTTP 422 x{300}$/);
+  await expect(say(<Voicevox speaker={1} text="だめ" />)).rejects.toThrow(/^VOICEVOX \/audio_query: HTTP 422 x{300}$/);
   mock.restore();
   spyOn(globalThis, "fetch").mockRejectedValue(new Error("connection refused"));
-  await expect(say(<Coeiroink speaker={1}>だめ</Coeiroink>)).rejects.toThrow(
+  await expect(say(<Coeiroink speaker={1} text="だめ" />)).rejects.toThrow(
     "COEIROINK is not reachable at http://coeiroink.test:2 (connection refused).\n" +
       "  - start COEIROINK v2 (its engine listens on port 50032 once the app has started)\n" +
       '  - if it runs elsewhere, set `url="http://<host>:50032"` on the component or the MEKURU_COEIROINK_URL environment variable\n' +

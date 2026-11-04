@@ -993,3 +993,19 @@ fn rotate_cannot_turn_a_video() {
     let p = stacked(r#"<column rotate="5"><video src="movie.mp4" w="10"/></column>"#);
     assert!(p.diags.iter().any(|d| d.code == "E322"), "{:?}", p.diags);
 }
+
+#[test]
+fn text_is_written_in_its_text_attribute() {
+    assert!(!project(r#"<dur len="1"><text text="a&#10;b"/></dur>"#).has_errors());
+    for (body, code) in [
+        (r#"<dur len="1"><text/></dur>"#, "E302"),
+        (r#"<dur len="1"><text text="a">b</text></dur>"#, "E107"),
+        (r#"<dur len="1"><text text="a"><rect w="1" h="1"/></text></dur>"#, "E107"),
+        (r#"<dur len="1">a</dur>"#, "E107"),
+        (r#"<dur len="1"><text text="a" pre="true"/></dur>"#, "E301"),
+        (r#"<dur len="1"><text text="a"/><br/></dur>"#, "E300"),
+    ] {
+        let p = project(body);
+        assert!(codes(&p).contains(&code), "{body}: {:?}", p.diags);
+    }
+}
