@@ -116,7 +116,7 @@ const zundamon = portrait<LayerProps>({ src: SRC, x: 1560, y: 1000, h: 960, z: 1
 const big = portrait<LayerProps>({ src: SRC, x: 1510, y: 1140, h: 1150, z: 30, slot: "portrait:big" });
 export const ZundamonStand = zundamon.Stand;
 
-const voice = { ...zunda, name: "ずんだもん", gap: 6, reading: READING };
+const voice = { ...zunda, gap: 6, reading: READING };
 
 type Line = Children & { id?: string; at?: At; face?: FaceName; show?: Node };
 

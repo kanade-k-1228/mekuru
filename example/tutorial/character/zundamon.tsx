@@ -6,7 +6,7 @@ import { READING, Subtitle, type Line } from "../parts";
 import type { LayerProps } from "../../assets/character/zundamon/portrait";
 
 export const Zundamon: FC<Line> = async ({ children, ...time }) => {
-  const line = await Voicevox.prepare({ ...zunda, name: "ずんだもん", gap: 6, reading: READING, children });
+  const line = await Voicevox.prepare({ ...zunda, gap: 6, reading: READING, children });
   return (
     <dur len={line.audio.len} {...time}>
       <stack>
