@@ -37,6 +37,7 @@ pub enum Op {
         font: String,
         font_src: Option<String>,
         font_revision: Option<String>,
+        lang: String,
         size: f32,
         color: String,
         bold: bool,

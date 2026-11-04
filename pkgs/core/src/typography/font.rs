@@ -1,3 +1,4 @@
+use crate::settings::parse_lang;
 use crate::util::{FileStamp, file_stamp, lru::Lru};
 use cosmic_text::skrifa::{
     FontRef, GlyphId, MetadataProvider,
@@ -11,22 +12,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use tiny_skia::{Path as SkPath, PathBuilder};
 
-const DEFAULT_FAMILIES: &[&str] = &[
-    "Rounded Mplus 1c",
-    "M PLUS Rounded 1c",
-    "Noto Sans CJK JP",
-    "Noto Sans JP",
-    "Source Han Sans JP",
-    "IPAexGothic",
-    "IPAGothic",
-    "TakaoGothic",
-    "VL Gothic",
-    "Yu Gothic",
-    "Meiryo",
-    "MS Gothic",
-    "DejaVu Sans",
-    "Liberation Sans",
-];
+/// Characters missing from the chosen family fall back to a font for their
+/// script; `FontBook::lang` picks the Chinese, Japanese or Korean glyph forms.
+const DEFAULT_FAMILIES: &[&str] = &["Noto Sans", "DejaVu Sans", "Liberation Sans", "Arial", "Helvetica"];
 
 type GlyphKey = (fontdb::ID, fontdb::Weight, u16);
 type GlyphPath = Option<Arc<SkPath>>;
@@ -37,11 +25,13 @@ pub struct FontBook {
     pub(crate) measurements: Mutex<Lru<String, Option<(f32, f32)>>>,
     files: Mutex<HashMap<PathBuf, FileStamp>>,
     pub(crate) generation: u64,
+    /// BCP 47 tag for the preview's `lang`.
+    pub(crate) lang: String,
     defaults: Vec<String>,
 }
 
 impl FontBook {
-    fn new(defaults: &[String], extra: &[PathBuf]) -> Self {
+    fn new(lang: &str, defaults: &[String], extra: &[PathBuf]) -> Self {
         let mut db = fontdb::Database::new();
         db.load_system_fonts();
         for path in extra {
@@ -56,23 +46,24 @@ impl FontBook {
             generation: GENERATION.fetch_add(1, Ordering::Relaxed),
             measurements: Mutex::new(Lru::new(4 * 1024 * 1024)),
             files: Mutex::new(extra.iter().map(|p| (p.clone(), file_stamp(p))).collect()),
-            system: Mutex::new(FontSystem::new_with_locale_and_db("ja-JP".into(), db)),
+            system: Mutex::new(FontSystem::new_with_locale_and_db(fallback_locale(lang), db)),
             glyphs: Mutex::new(Lru::new(16 * 1024 * 1024)),
+            lang: lang.to_owned(),
             defaults: defaults.to_vec(),
         }
     }
 
-    pub fn shared(defaults: &[String], extra: &[PathBuf]) -> Arc<Self> {
-        type Key = (Vec<String>, Vec<PathBuf>);
+    pub fn shared(lang: &str, defaults: &[String], extra: &[PathBuf]) -> Arc<Self> {
+        type Key = (String, Vec<String>, Vec<PathBuf>);
         static CACHE: std::sync::LazyLock<Mutex<Lru<Key, Arc<FontBook>>>> = std::sync::LazyLock::new(|| Mutex::new(Lru::new(4)));
-        let key = (defaults.to_vec(), extra.to_vec());
+        let key = (lang.to_owned(), defaults.to_vec(), extra.to_vec());
         let mut cache = CACHE.lock().unwrap();
         if let Some(book) = cache.get(&key)
             && book.files.lock().unwrap().iter().all(|(p, stamp)| file_stamp(p) == *stamp)
         {
             return book.clone();
         }
-        let book = Arc::new(Self::new(defaults, extra));
+        let book = Arc::new(Self::new(lang, defaults, extra));
         cache.insert(key, book.clone(), 1);
         book
     }
@@ -144,6 +135,25 @@ impl FontBook {
     }
 }
 
+/// The OS locale as a BCP 47 tag; `en` when unset or `C`/`POSIX`.
+pub(crate) fn system_lang() -> String {
+    sys_locale::get_locale().filter(|l| parse_lang(l)).unwrap_or_else(|| "en".into())
+}
+
+/// cosmic-text keys Han fallback on exactly `ja`, `ko`, `zh-HK` and `zh-TW`
+/// (anything else gets Simplified Chinese), so reduce the tag to those keys.
+fn fallback_locale(lang: &str) -> String {
+    let lower = lang.to_ascii_lowercase();
+    let (primary, rest) = lower.split_once('-').unwrap_or((&lower, ""));
+    let has = |codes: &[&str]| rest.split('-').any(|p| codes.contains(&p));
+    match primary {
+        "ja" | "ko" => primary.to_owned(),
+        "zh" if has(&["hk", "mo"]) => "zh-HK".into(),
+        "zh" if has(&["tw", "hant"]) => "zh-TW".into(),
+        _ => lang.to_owned(),
+    }
+}
+
 fn resolve_family(system: &mut FontSystem, name: &str) -> Option<String> {
     if let Some(face) = system.db().faces().find(|f| f.families.iter().any(|(n, _)| n.eq_ignore_ascii_case(name))) {
         return face.families.iter().find(|(n, _)| n.eq_ignore_ascii_case(name)).map(|(n, _)| n.clone());
@@ -186,5 +196,25 @@ impl OutlinePen for Builder {
     }
     fn close(&mut self) {
         self.0.close();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn fallback_locale_matches_cosmic_text_han_keys() {
+        for (lang, key) in [
+            ("ja", "ja"),
+            ("ja-JP", "ja"),
+            ("ko-KR", "ko"),
+            ("zh-TW", "zh-TW"),
+            ("zh-Hant", "zh-TW"),
+            ("zh-Hant-HK", "zh-HK"),
+            ("zh-MO", "zh-HK"),
+            ("zh-CN", "zh-CN"),
+            ("en-US", "en-US"),
+        ] {
+            assert_eq!(super::fallback_locale(lang), key, "{lang}");
+        }
     }
 }

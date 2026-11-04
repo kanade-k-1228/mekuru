@@ -13,11 +13,11 @@ curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.s
 ```
 
 - [Bun](https://bun.sh/) 1.4 以上。パッケージは TypeScript ソースを直接実行します。
-- libx264 付き [ffmpeg・ffprobe](https://ffmpeg.org/) と日本語フォント（既定: Rounded Mplus 1c）。
+- libx264 付き [ffmpeg・ffprobe](https://ffmpeg.org/) とフォント（既定: Noto Sans。中国語・日本語・韓国語には Noto Sans CJK も）。
 - 使用する声の音声合成エンジン。
 - Windows では WSL で実行します。
 
-自動導入はUbuntu/Debian（WSLを含む）のaptと、macOSの [Homebrew](https://brew.sh/) に対応します。aptには管理者権限が必要です。Bunがなければ公式インストーラで導入します。音声エンジンと日本語フォントは別途用意してください。
+自動導入はUbuntu/Debian（WSLを含む）のaptと、macOSの [Homebrew](https://brew.sh/) に対応します。aptには管理者権限が必要です。Bunがなければ公式インストーラで導入します。Noto Sans もなければ導入します。音声エンジンと、中国語・日本語・韓国語用の Noto Sans CJK は別途用意してください。
 
 条件を満たす既存ツールは再利用し、古いBunやlibx264のないffmpegは更新方法を案内して停止します。`MEKURU_FFMPEG`・`MEKURU_FFPROBE` による指定も利用できます。
 

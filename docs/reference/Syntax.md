@@ -39,7 +39,8 @@ Containers arrange children along one axis and overlap them along the others.
 - Wraps the whole video. Acts as a screen-sized `<seq>`; XML output wraps its children in one `<seq>`.
 - `size`: screen dimensions, such as `"1920x1080"`.
 - `fps`: frame rate, default 30. All times use frames at this rate.
-- `font`: font name or font file path.
+- `font`: font name or font file path. Default: Noto Sans. Characters the font lacks use a system font for their script.
+- `lang`: language tag such as `"ja"` or `"zh-TW"`. Picks the glyph forms for Chinese, Japanese and Korean characters. Default: the OS locale.
 - For a background, place a full-screen `<rect>` first. Empty areas are black.
 
 ## Timing

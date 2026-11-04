@@ -199,6 +199,7 @@ fn edits_match_a_fresh_session_and_only_changed_viewops_are_sent() {
         base.replace("<stack>", "<column w=\"120\"> ").replace("</stack>", "</column>"),
         base.replace("<stack>", "<column w=\"260\" rotate=\"20\"> ").replace("</stack>", "</column>"),
         base.replace("fps=\"30\"", "fps=\"30\" font=\"DejaVu Serif\""),
+        base.replace("fps=\"30\"", "fps=\"30\" lang=\"zh-TW\""),
         base.replace("<text x=", "<text size=\"28\" weight=\"bold\" align=\"center\" stroke=\"#000\" x="),
     ] {
         assert_success(&session.compile(root, &xml));
@@ -417,7 +418,7 @@ fn preview_and_renderer_agree_on_a_static_scene() {
 
 #[test]
 fn preview_emits_text_styles_and_transform_without_glyph_paths() {
-    let xml = r##"<mekuru><dur len="30"><text x="20" y="30" w="200" size="32" color="#123456" stroke="#ffffff" stroke-width="3" weight="bold" align="right" line-height="1.5" rotate="15" text="日本語&lt;b&gt;&#10;次の行"/></dur></mekuru>"##;
+    let xml = r##"<mekuru lang="ja"><dur len="30"><text x="20" y="30" w="200" size="32" color="#123456" stroke="#ffffff" stroke-width="3" weight="bold" align="right" line-height="1.5" rotate="15" text="日本語&lt;b&gt;&#10;次の行"/></dur></mekuru>"##;
     let result = single(Path::new("fixture.xml"), None, xml);
     assert_eq!(result["diagnostics"], json!([]));
     let ops: Vec<_> = result["preview"]["elements"]
@@ -444,4 +445,10 @@ fn preview_emits_text_styles_and_transform_without_glyph_paths() {
     assert_eq!(text["transform"].as_array().unwrap().len(), 6);
     assert!(text["d"].is_null());
     assert!(!text["font"].as_str().unwrap().is_empty());
+    assert_eq!(text["lang"], "ja");
+
+    // Without `lang`, the OS locale is used; the preview always gets a tag.
+    let result = single(Path::new("fixture.xml"), None, &xml.replace(r#" lang="ja""#, ""));
+    let id = result["preview"]["elements"][0]["drawings"][0].as_str().unwrap();
+    assert!(!result["resources"][id][0]["lang"].as_str().unwrap().is_empty());
 }

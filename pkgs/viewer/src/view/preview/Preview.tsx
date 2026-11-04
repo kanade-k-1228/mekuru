@@ -50,6 +50,7 @@ const Text = ({ op }: { op: TextOp }) => {
     <div style={{ position: "absolute", inset: 0, transform: op.transform ? `matrix(${op.transform.join(",")})` : undefined, transformOrigin: "0 0" }}>
       <div
         ref={ref}
+        lang={op.lang}
         style={{
           position: "absolute",
           left: op.x,

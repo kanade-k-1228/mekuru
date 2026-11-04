@@ -5,7 +5,7 @@ use super::span::Span;
 use crate::settings::{self, Settings};
 use roxmltree::{Node, NodeType};
 
-const SETTING_ATTRS: &[&str] = &["size", "fps", "font", "preset", "crf", "audio-bitrate"];
+const SETTING_ATTRS: &[&str] = &["size", "fps", "font", "lang", "preset", "crf", "audio-bitrate"];
 
 fn known_names() -> impl Iterator<Item = &'static str> {
     ["mekuru", "hold", "cut", "speed"]
@@ -251,6 +251,10 @@ impl Builder<'_> {
                     _ => self.diags.push(Diag::new("E200", value_span, "`fps` must be a number between 0 and 240")),
                 },
                 "font" => self.settings.fonts = v.split(',').map(|f| f.trim().to_string()).filter(|f| !f.is_empty()).collect(),
+                "lang" if settings::parse_lang(&v) => self.settings.lang = Some(v),
+                "lang" => self
+                    .diags
+                    .push(Diag::new("E200", value_span, "`lang` must be a language tag such as ja or en-US")),
                 "preset" => self.settings.encode.preset = v,
                 "crf" => match v.parse() {
                     Ok(crf) => self.settings.encode.crf = crf,
@@ -322,5 +326,22 @@ mod tests {
         }
         let (_, diags) = texts("<text text=\"a\">\n  </text>");
         assert!(diags.is_empty(), "{diags:?}");
+    }
+
+    #[test]
+    fn lang_takes_a_language_tag() {
+        for (lang, ok) in [
+            ("ja", true),
+            ("en-US", true),
+            ("zh-Hant-TW", true),
+            ("japanese", true),
+            ("ja_JP", false),
+            ("", false),
+            ("日本", false),
+        ] {
+            let (doc, diags) = super::parse(&format!(r#"<mekuru lang="{lang}"/>"#));
+            assert_eq!(doc.settings.lang.is_some(), ok, "{lang}");
+            assert_eq!(diags.iter().any(|d| d.code == "E200"), !ok, "{lang}: {diags:?}");
+        }
     }
 }

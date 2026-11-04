@@ -6,7 +6,7 @@ Mekuru Movie Maker のセリフを音声合成エンジンで読み上げる部�
 
 ## セットアップ
 
-Bun 1.4 以上・libx264 付き ffmpeg・ffprobe・日本語フォントを用意し、プロジェクトに追加します。
+Bun 1.4 以上・libx264 付き ffmpeg・ffprobe・フォント（Noto Sans・Noto Sans CJK）を用意し、プロジェクトに追加します。
 
 ```sh
 bun add -d @mekuru/types @mekuru/core @mekuru/speech

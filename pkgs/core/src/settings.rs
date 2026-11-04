@@ -69,6 +69,8 @@ pub struct Settings {
     pub height: u32,
     pub fps: f64,
     pub fonts: Vec<String>,
+    /// BCP 47 tag from `<mekuru lang>`; the OS locale when unset.
+    pub lang: Option<String>,
     pub encode: EncodeSettings,
 }
 
@@ -85,6 +87,7 @@ impl Default for Settings {
             height: 1080,
             fps: 30.0,
             fonts: vec![],
+            lang: None,
             encode: EncodeSettings::default(),
         }
     }
@@ -97,6 +100,15 @@ pub fn resolve_font(f: &str, base: &Path) -> String {
     } else {
         f.to_string()
     }
+}
+
+/// Accepts BCP 47-shaped tags such as `ja`, `en-US` or `zh-Hant-TW`.
+pub fn parse_lang(s: &str) -> bool {
+    let mut parts = s.split('-');
+    let primary = parts.next().unwrap_or("");
+    (2..=8).contains(&primary.len())
+        && primary.chars().all(|c| c.is_ascii_alphabetic())
+        && parts.all(|p| (1..=8).contains(&p.len()) && p.chars().all(|c| c.is_ascii_alphanumeric()))
 }
 
 pub fn parse_size(s: &str) -> Option<(u32, u32)> {

@@ -35,6 +35,15 @@ check_ffprobe() {
   log "${probe%%$'\n'*} ($ffprobe_cmd)"
 }
 
+# Noto Sans is the default font; other fonts cover the characters it lacks.
+has_noto_sans() {
+  if command -v fc-list >/dev/null 2>&1; then
+    fc-list : family | tr ',' '\n' | grep -qx 'Noto Sans'
+  else
+    compgen -G "$HOME/Library/Fonts/NotoSans[[-]*" >/dev/null || compgen -G "/Library/Fonts/NotoSans[[-]*" >/dev/null
+  fi
+}
+
 install_packages() {
   (( $# > 0 )) || return 0
   case "$os" in
@@ -62,7 +71,7 @@ main() {
     '') ;;
     --help|-h)
       log 'Usage: bash install.sh'
-      log "Prepare Bun >= $MIN_BUN_VERSION and ffmpeg/ffprobe with libx264 for Mekuru."
+      log "Prepare Bun >= $MIN_BUN_VERSION, ffmpeg/ffprobe with libx264 and the Noto Sans font for Mekuru."
       log 'Missing tools: install on Debian/Ubuntu/WSL or macOS with Homebrew.'
       log 'Existing incompatible tools: report the problem without replacing them.'
       return ;;
@@ -102,6 +111,14 @@ main() {
     command -v unzip >/dev/null 2>&1 || packages+=(unzip)
   fi
   if [[ "$need_ffmpeg" == true ]]; then packages+=(ffmpeg); fi
+  if has_noto_sans; then
+    log 'Noto Sans: available'
+  else
+    case "$os" in
+      Linux) packages+=(fonts-noto-core) ;;
+      Darwin) packages+=(font-noto-sans) ;;
+    esac
+  fi
   # Bash 3.2 (macOS) treats an empty array as unset under nounset.
   if (( ${#packages[@]} > 0 )); then install_packages "${packages[@]}"; fi
   if [[ -z "$bun_cmd" ]]; then
@@ -120,7 +137,7 @@ main() {
   fi
   log 'Next: bun create @mekuru my-video'
   log 'Then: cd my-video && bun install && bun preview'
-  log 'Also prepare a speech engine and Japanese fonts (default: Rounded Mplus 1c).'
+  log 'Also prepare a speech engine, and Noto Sans CJK for Chinese, Japanese or Korean text.'
 }
 
 main "$@"

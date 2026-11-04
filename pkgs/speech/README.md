@@ -6,7 +6,7 @@ Speech components that read Mekuru Movie Maker dialogue with a speech engine: `V
 
 ## Setup
 
-Requires Bun 1.4+, ffmpeg with libx264, ffprobe, and Japanese fonts. Install in the project folder:
+Requires Bun 1.4+, ffmpeg with libx264, ffprobe, and fonts (Noto Sans; Noto Sans CJK for Japanese text). Install in the project folder:
 
 ```sh
 bun add -d @mekuru/types @mekuru/core @mekuru/speech
