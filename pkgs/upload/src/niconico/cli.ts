@@ -4,7 +4,6 @@ import { login, upload, UPLOAD_URL } from "./browser.ts";
 
 const NICONICO: Site = {
   config: "configs/niconico.yaml",
-  what: "the video, its title, description and tags to post",
   keys: ["video", "title", "description", "tags", "thumbnail"],
 };
 

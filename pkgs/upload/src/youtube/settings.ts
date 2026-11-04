@@ -18,7 +18,6 @@ const PRIVACY = ["private", "unlisted", "public"];
 
 export const YOUTUBE: Site = {
   config: "configs/youtube.yaml",
-  what: "the video, its title, description, ... to upload",
   keys: ["video", "title", "description", "tags", "category", "privacy", "publishAt", "madeForKids", "thumbnail"],
   check: (s, errors) => {
     if (typeof s.title === "string") {
