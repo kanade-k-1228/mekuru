@@ -1,3 +1,4 @@
+use crate::lang::ast::Flow;
 use crate::lang::span::Span;
 use crate::settings::{Rgba, Settings, TextStyle};
 use std::path::PathBuf;
@@ -12,19 +13,6 @@ pub struct Script {
     pub nodes: Vec<Node>,
     pub elems: Vec<Elem>,
     pub base_dir: PathBuf,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum NodeKind {
-    Seq,
-    Par,
-    Repeat,
-}
-
-impl NodeKind {
-    pub fn chains(self) -> bool {
-        self == NodeKind::Seq
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -80,7 +68,7 @@ pub struct Hold {
 pub struct Node {
     pub id: NodeId,
     pub parent: Option<NodeId>,
-    pub kind: NodeKind,
+    pub flow: Flow,
     pub tag: &'static str,
     pub t: Time,
     pub head: Span,

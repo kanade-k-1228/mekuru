@@ -7,6 +7,7 @@ pub use session::{Session, Stats};
 use crate::{
     Project,
     ir::*,
+    lang::ast::Flow,
     media::Fps,
     prepare,
     render::{
@@ -283,7 +284,7 @@ fn timeline(p: &Project, sched: &Schedule, keys: &std::collections::HashMap<usiz
     }
     let top = |id: usize| id == 0 || s.nodes[0].order.first() == Some(&Target::Node(id));
     // Sequences are drawn as their children only.
-    for n in s.nodes.iter().filter(|n| !top(n.id) && n.kind != NodeKind::Seq) {
+    for n in s.nodes.iter().filter(|n| !top(n.id) && n.flow != Flow::Seq) {
         let t = sched.nodes[n.id];
         let line = p.index.line(n.head.lo);
         out.nodes.push(TimelineNode {

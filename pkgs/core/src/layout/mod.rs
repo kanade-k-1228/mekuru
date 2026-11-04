@@ -1,6 +1,6 @@
 use crate::ir::{
-    AudioSpec, CircleSpec, Dash, Dur, Elem, ElemId, ElemKind, Hold, ImageSpec, MediaSrc, Node, NodeId, NodeKind, PolySpec, RectSpec, Script, Speed, Target,
-    TextSpec, Time, VideoSpec, ViewOp, ViewSpec,
+    AudioSpec, CircleSpec, Dash, Dur, Elem, ElemId, ElemKind, Hold, ImageSpec, MediaSrc, Node, NodeId, PolySpec, RectSpec, Script, Speed, Target, TextSpec,
+    Time, VideoSpec, ViewOp, ViewSpec,
 };
 use crate::lang::ast::{Document, Flow, Tag, ValKind};
 use crate::lang::attrs::{Attrs, Dim, MEDIA, TIMES, Times, dim};
@@ -85,7 +85,7 @@ fn resolve_ids(nodes: &mut [Node], elems: &mut [Elem], names: Vec<(String, Targe
     // Each repeat body has its own clock. The repeat itself belongs to its parent's clock.
     let scope = |mut parent: Option<NodeId>| {
         while let Some(n) = parent {
-            if nodes[n].kind == NodeKind::Repeat {
+            if nodes[n].flow == Flow::Repeat {
                 return Some(n);
             }
             parent = nodes[n].parent;
@@ -164,7 +164,7 @@ impl Out {
         self.nodes.push(Node {
             id,
             parent,
-            kind: flow.kind(),
+            flow,
             tag: flow.name(),
             t: n.times.time(n.dur),
             head: n.head,

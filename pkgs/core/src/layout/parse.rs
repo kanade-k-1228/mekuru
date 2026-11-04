@@ -50,14 +50,6 @@ pub(super) struct Ctx<'a> {
 }
 
 impl Flow {
-    pub(super) fn kind(self) -> NodeKind {
-        match self {
-            Flow::Seq => NodeKind::Seq,
-            Flow::Repeat => NodeKind::Repeat,
-            _ => NodeKind::Par,
-        }
-    }
-
     pub(super) fn overlays(self) -> bool {
         !matches!(self, Flow::Row | Flow::Column) && !self.transparent()
     }

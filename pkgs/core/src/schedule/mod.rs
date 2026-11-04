@@ -2,6 +2,7 @@ mod model;
 pub use model::*;
 mod graph;
 use crate::ir::*;
+use crate::lang::ast::Flow;
 use crate::lang::diag::Diag;
 use crate::lang::span::Span;
 use crate::media::Fps;
@@ -271,7 +272,7 @@ impl<'a> Solver<'a> {
             let mut before = None;
             for &c in &n.order {
                 match before {
-                    Some(b) if n.kind.chains() => {
+                    Some(b) if n.flow == Flow::Seq => {
                         g.add(self.var(b, V::Flow), self.var(c, V::Flow), 0, None);
                         if self.timed(b) {
                             g.add(self.var(b, V::End), self.var(c, V::Flow), 0, None);
@@ -368,7 +369,7 @@ impl<'a> Solver<'a> {
         let node = &self.s.nodes[n];
         let (start, end) = self.targets[n].interval;
         let longest = node.order.iter().filter(|&&c| self.timed(c)).map(|&c| self.val[self.var(c, V::End)]).max();
-        let round = longest.map(|l| l - start).filter(|_| node.kind == NodeKind::Repeat);
+        let round = longest.map(|l| l - start).filter(|_| node.flow == Flow::Repeat);
         self.nodes[n].period = round;
         self.nodes[n].inner_end = round.map_or(end, |r| end.min(start + r));
         self.visit(n);
