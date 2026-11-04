@@ -67,7 +67,7 @@ export const expand = async (node: unknown, out: Item[]): Promise<void> => {
   throw new Error(`a video is made of elements and text, not ${describe(node)}`);
 };
 
-export type TextRun = string | null;
+type TextRun = string | null;
 
 /** Expand text components using the same rules as the rest of the video. Null is a line break. */
 export const resolveText = async (children: unknown): Promise<TextRun[]> => {

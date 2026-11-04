@@ -1,6 +1,7 @@
+import { rename, rm } from "node:fs/promises";
+import { resolve } from "node:path";
 import { attributes } from "./normalize.ts";
 import { expand, type Element, type Item } from "./expand.ts";
-export { fps, resolveText, type TextRun } from "./expand.ts";
 import { builds, context } from "./context.ts";
 
 const escapeXml = (s: string, quote: boolean) =>
@@ -32,3 +33,26 @@ const renderXml = async (video: unknown): Promise<string> => {
 };
 
 export const toXml = (video: unknown): Promise<string> => (builds.getStore() ? renderXml(video) : builds.run(context(), () => renderXml(video)));
+
+export const writeXml = async (path: string, video: unknown): Promise<void> => {
+  const build = context(true);
+  const file = resolve(build.root, path);
+  await builds.run(build, async () => {
+    const tmp = `${file}.${process.pid}.${crypto.randomUUID()}.tmp`;
+    const save = async () => {
+      await Bun.write(tmp, await renderXml(video));
+      await rename(tmp, file);
+    };
+    try {
+      await save();
+      build.draft = false;
+      if (build.waits.size === 0) return;
+      await Promise.all(build.waits);
+      await save();
+    } finally {
+      build.draft = false;
+      build.waits.clear();
+      await rm(tmp, { force: true });
+    }
+  });
+};
