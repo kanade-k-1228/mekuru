@@ -9,7 +9,7 @@ export const packageName = (dir: string): string => {
   return name || "my-video";
 };
 
-const MARKER = /\s*(?:\/\/|<!--)\s*#if\s+(.+?)\s*(?:-->)?\s*$/;
+const MARKER = /\s*<!--\s*#if\s+(.+?)\s*-->\s*$/;
 
 export const keepLines = (text: string, chosen: readonly string[]): string =>
   text
