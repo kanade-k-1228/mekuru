@@ -22,7 +22,7 @@ const post = async (configs: string[], { check = false }: { check?: boolean }): 
   for (const { config, settings, file, thumbnail } of posts) {
     if (posts.length > 1) console.log(`${config}:`);
     try {
-      const id = await upload(file, settings, { check, thumbnail });
+      const id = await upload(file, settings, thumbnail, check);
       if (check) continue;
       console.log(id ? `posted: https://www.nicovideo.jp/watch/${id}` : "posted (its ID was not shown: see your videos in niconico)");
     } catch (e) {

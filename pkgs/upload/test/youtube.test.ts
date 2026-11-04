@@ -100,7 +100,7 @@ test("video upload reads consecutive chunks from the Bun file", async () => {
     .mockResolvedValueOnce(new Response(null, { status: 308, headers: { range: `bytes=0-${chunk - 1}` } }))
     .mockResolvedValueOnce(Response.json({ id: "video-id" }));
   const progress = mock();
-  expect(await uploadVideo(file, videoResource({ title: "Test" }), "token", { progress })).toEqual({ id: "video-id" });
+  expect(await uploadVideo(file, videoResource({ title: "Test" }), "token", progress)).toEqual({ id: "video-id" });
   const first = fetch.mock.calls[1][1];
   const last = fetch.mock.calls[2][1];
   expect(new Headers(first?.headers).get("content-range")).toBe(`bytes 0-${chunk - 1}/${content.length}`);
