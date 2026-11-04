@@ -13,14 +13,14 @@ struct Node {
 }
 impl Node {
     fn parse(n: &crate::lang::ast::Tag) -> Self {
-        let children: Vec<_> = n.tags().map(Self::parse).collect();
+        let children: Vec<_> = n.children.iter().map(Self::parse).collect();
         let mut attrs: Vec<_> = n.attrs.iter().map(|a| (&a.key, &a.value)).collect();
         attrs.sort();
-        let text = n.text().display();
         let fingerprint = sha256_hex(
             format!(
-                "{:?}|{attrs:?}|{text:?}|{:?}",
+                "{:?}|{attrs:?}|{:?}|{:?}",
                 n.name.as_str(),
+                n.text,
                 children.iter().map(|c| &c.fingerprint).collect::<Vec<_>>()
             )
             .as_bytes(),

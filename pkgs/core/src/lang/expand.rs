@@ -12,10 +12,8 @@ pub(crate) fn lower(doc: &Document, base_dir: &Path, diags: &mut Vec<Diag>, prev
         if tag.name == "text" {
             out.extend(tag.attrs.iter().filter(|a| a.key == "font").map(|a| a.value.clone()));
         }
-        for child in &tag.children {
-            if let Child::Tag(tag) = child {
-                text_fonts(tag, out);
-            }
+        for tag in &tag.children {
+            text_fonts(tag, out);
         }
     }
     let mut requested = vec![];

@@ -27,6 +27,7 @@ pub fn parse(src: &str) -> (Document, Vec<Diag>) {
         name_span: Span::default(),
         head: Span::default(),
         attrs: vec![],
+        text: String::new(),
         children: vec![],
         span: Span::new(0, src.len()),
     });
@@ -110,8 +111,12 @@ impl Builder<'_> {
 
     fn tag(&mut self, n: Node) -> Tag {
         let name = n.tag_name().name();
+        let mut text = String::new();
         let children = match name {
-            "text" => self.content(n, n.attribute("pre") == Some("true")),
+            "text" => {
+                text = self.content(n, n.attribute("pre") == Some("true"));
+                vec![]
+            }
             "mekuru" => self.screen(n),
             "video" | "audio" => self.holds(n),
             "hold" => self.children(n),
@@ -127,22 +132,17 @@ impl Builder<'_> {
             name_span: self.name_span(n),
             head: self.start_tag(n),
             attrs,
+            text,
             children,
             span: self.span(n),
         }
     }
 
-    fn screen(&mut self, n: Node) -> Vec<Child> {
+    fn screen(&mut self, n: Node) -> Vec<Tag> {
         let children = self.children(n);
-        let groups = children
-            .iter()
-            .filter(|c| matches!(c, Child::Tag(t) if GROUPS.contains(&t.name.as_str())))
-            .count();
+        let groups = children.iter().filter(|t| GROUPS.contains(&t.name.as_str())).count();
         if children.len() != 1 || groups != 1 {
-            let span = match children.get(1).or(children.first()) {
-                Some(Child::Tag(t)) => t.head,
-                _ => self.start_tag(n),
-            };
+            let span = children.get(1).or(children.first()).map_or_else(|| self.start_tag(n), |t| t.head);
             self.diags.push(Diag::new(
                 "E107",
                 span,
@@ -152,12 +152,12 @@ impl Builder<'_> {
         children
     }
 
-    fn holds(&mut self, n: Node) -> Vec<Child> {
+    fn holds(&mut self, n: Node) -> Vec<Tag> {
         let mut out = vec![];
         for c in n.children() {
             let span = match c.node_type() {
                 NodeType::Element if matches!(c.tag_name().name(), "hold" | "cut" | "speed") => {
-                    out.push(Child::Tag(self.tag(c)));
+                    out.push(self.tag(c));
                     continue;
                 }
                 NodeType::Element => self.name_span(c),
@@ -180,15 +180,11 @@ impl Builder<'_> {
         Span::new(lo, hi.max(lo + 1))
     }
 
-    fn children(&mut self, parent: Node) -> Vec<Child> {
+    fn children(&mut self, parent: Node) -> Vec<Tag> {
         let mut out = vec![];
         for c in parent.children() {
             match c.node_type() {
-                NodeType::Element => {
-                    if let Some(t) = self.element(c, parent) {
-                        out.push(Child::Tag(t));
-                    }
-                }
+                NodeType::Element => out.extend(self.element(c, parent)),
                 NodeType::Text if !c.text().unwrap_or("").trim().is_empty() => {
                     let msg = format!("text cannot be in `<{}>`: put it in `<text>`", parent.tag_name().name());
                     self.diags.push(Diag::new("E107", self.trimmed(c), msg));
@@ -244,19 +240,19 @@ impl Builder<'_> {
         }
     }
 
-    fn content(&mut self, n: Node, pre: bool) -> Vec<Child> {
-        let mut run: Vec<Piece> = vec![];
+    fn content(&mut self, n: Node, pre: bool) -> String {
+        let mut run = vec![];
         for c in n.children() {
             match c.node_type() {
-                NodeType::Text => run.push(Piece::Text(c.text().unwrap_or("").to_string(), self.span(c))),
-                NodeType::Element if c.tag_name().name() == "br" => run.push(Piece::Br(self.span(c))),
+                NodeType::Text => run.push(Piece::Text(c.text().unwrap_or(""))),
+                NodeType::Element if c.tag_name().name() == "br" => run.push(Piece::Br),
                 NodeType::Element => self
                     .diags
                     .push(Diag::new("E107", self.name_span(c), "`<text>` can only contain text and `<br/>`")),
                 _ => {}
             }
         }
-        text_run(&run, pre).map(Child::Text).into_iter().collect()
+        text_run(&run, pre)
     }
 
     fn settings(&mut self, n: Node) {
@@ -300,9 +296,9 @@ impl Builder<'_> {
     }
 }
 
-enum Piece {
-    Text(String, Span),
-    Br(Span),
+enum Piece<'a> {
+    Text(&'a str),
+    Br,
 }
 
 fn is_cjk(c: char) -> bool {
@@ -356,49 +352,34 @@ fn dedent(raw: &str) -> String {
     lines.iter().map(|l| l.get(indent..).unwrap_or("").trim_end()).collect::<Vec<_>>().join("\n")
 }
 
-fn text_run(run: &[Piece], pre: bool) -> Option<Label> {
-    let lo = run.iter().map(|p| match p {
-        Piece::Text(_, s) | Piece::Br(s) => s.lo,
-    });
-    let hi = run.iter().map(|p| match p {
-        Piece::Text(_, s) | Piece::Br(s) => s.hi,
-    });
-    let span = Span { lo: lo.min()?, hi: hi.max()? };
+fn text_run(run: &[Piece], pre: bool) -> String {
     if pre {
         let raw: String = run
             .iter()
             .map(|p| match p {
-                Piece::Text(t, _) => t.as_str(),
-                Piece::Br(_) => "\n",
+                Piece::Text(t) => *t,
+                Piece::Br => "\n",
             })
             .collect();
-        let text = dedent(&raw);
-        return (!text.is_empty()).then(|| Label {
-            segs: vec![Seg::Text(text)],
-            span,
-        });
+        return dedent(&raw);
     }
-    let mut segs = vec![];
-    let count = run.len();
+    let mut out = String::new();
     for (i, p) in run.iter().enumerate() {
         match p {
-            Piece::Text(t, _) => {
+            Piece::Text(t) => {
                 let mut c = collapse(t);
-                if i == 0 || matches!(run[i - 1], Piece::Br(_)) {
+                if i == 0 || matches!(run[i - 1], Piece::Br) {
                     c = c.trim_start().to_string();
                 }
-                if i + 1 == count || matches!(run[i + 1], Piece::Br(_)) {
+                if i + 1 == run.len() || matches!(run[i + 1], Piece::Br) {
                     c = c.trim_end().to_string();
                 }
-                if !c.is_empty() {
-                    segs.push(Seg::Text(lex::strip_ruby(&c)));
-                }
+                out.push_str(&lex::strip_ruby(&c));
             }
-            Piece::Br(_) => segs.push(Seg::Break),
+            Piece::Br => out.push('\n'),
         }
     }
-    let label = Label { segs, span };
-    (!label.segs.is_empty()).then_some(label)
+    out
 }
 
 fn offset_of(src: &str, row: u32, col: u32) -> usize {

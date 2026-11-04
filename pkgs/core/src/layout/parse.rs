@@ -288,8 +288,7 @@ impl Ctx<'_> {
         };
         let mut children = vec![];
         let mut holds = vec![];
-        for c in &tag.children {
-            let crate::lang::ast::Child::Tag(t) = c else { continue };
+        for t in &tag.children {
             if is_speed(t) {
                 continue;
             }
@@ -462,17 +461,11 @@ impl Ctx<'_> {
                 tag.head,
                 "`<repeat>` repeats what is in it, but nothing there has a length: put something with a length (a `<video>`, an `<audio>`, or a `<dur>`) in it",
             )),
-            Kind::Group(Flow::Root) => {
-                let head = tag.children.iter().find_map(|c| match c {
-                    crate::lang::ast::Child::Tag(t) => Some(t.head),
-                    _ => None,
-                });
-                Some((
-                    "E323",
-                    head.unwrap_or(tag.head),
-                    "the video needs a length: put something with a length (speech, a `<video>`, an `<audio>`, or a `<dur>`) in it",
-                ))
-            }
+            Kind::Group(Flow::Root) => Some((
+                "E323",
+                tag.children.first().map_or(tag.head, |t| t.head),
+                "the video needs a length: put something with a length (speech, a `<video>`, an `<audio>`, or a `<dur>`) in it",
+            )),
             _ => None,
         };
         if let Some((code, span, msg)) = need
@@ -492,7 +485,6 @@ impl Ctx<'_> {
     pub(super) fn leaf(&self, tag: &Tag, at: &Attrs, style: &mut Style, diags: &mut Vec<Diag>) -> Option<Leaf> {
         Some(match tag.name.as_str() {
             "text" => {
-                let text = tag.text();
                 let size = at.num("size", diags).unwrap_or(48.0);
                 let stroke = at.color("stroke", diags);
                 let style_t = TextStyle {
@@ -515,7 +507,7 @@ impl Ctx<'_> {
                     line_height: at.num("line-height", diags).unwrap_or(1.4),
                 };
                 Leaf::Text(TextSpec {
-                    text: text.display(),
+                    text: tag.text.clone(),
                     x: 0.0,
                     y: 0.0,
                     width: None,
@@ -655,10 +647,7 @@ pub(super) fn is_speed(t: &Tag) -> bool {
 }
 
 pub(super) fn speeds(tag: &Tag) -> impl Iterator<Item = &Tag> {
-    tag.children.iter().filter_map(|c| match c {
-        crate::lang::ast::Child::Tag(t) if is_speed(t) => Some(t),
-        _ => None,
-    })
+    tag.children.iter().filter(|t| is_speed(t))
 }
 
 pub(super) fn keep_ratio(style: &mut Style, natural: (f32, f32)) {
