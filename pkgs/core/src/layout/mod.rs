@@ -146,6 +146,17 @@ struct Look {
     opacity: f32,
 }
 
+impl Look {
+    /// The look inside `times`: its `z`, else this one, and this opacity times its own.
+    fn inside(self, times: &Times) -> Look {
+        Look {
+            z: times.z.unwrap_or(self.z),
+            opacity: self.opacity * times.opacity.unwrap_or(1.0),
+            ..self
+        }
+    }
+}
+
 struct Out {
     tree: TaffyTree<Measure>,
     nodes: Vec<Node>,
@@ -177,20 +188,7 @@ impl Out {
     }
 
     fn elem(&mut self, n: &VNode, look: Look, kind: ElemKind) -> ElemId {
-        let id = self.elems.len();
-        let z = n.times.z.unwrap_or(look.z);
-        let opacity = look.opacity * n.times.opacity.unwrap_or(1.0);
-        self.elems.push(Elem {
-            source_id: n.times.id.clone(),
-            id,
-            node: look.node,
-            site: n.span,
-            z,
-            opacity,
-            t: n.times.time(n.dur),
-            kind,
-        });
-        self.nodes[look.node].order.push(Target::Elem(id));
+        let id = self.add(look.inside(&n.times), n.span, n.times.time(n.dur), n.times.id.clone(), kind);
         if let Some(name) = &n.times.id {
             self.names.push((name.clone(), Target::Elem(id), n.head));
         }
@@ -215,19 +213,24 @@ impl Out {
             v.ops.extend(ops);
             return;
         }
+        self.add(look, site, Time::default(), None, ElemKind::View(ViewSpec { ops }));
+    }
+
+    /// A new element, last in `look.node`.
+    fn add(&mut self, look: Look, site: Span, t: Time, source_id: Option<String>, kind: ElemKind) -> ElemId {
         let id = self.elems.len();
-        let kind = ElemKind::View(ViewSpec { ops });
         self.elems.push(Elem {
-            source_id: None,
+            source_id,
             id,
             node: look.node,
             site,
             z: look.z,
             opacity: look.opacity,
-            t: Time::default(),
+            t,
             kind,
         });
         self.nodes[look.node].order.push(Target::Elem(id));
+        id
     }
 
     fn children(&mut self, n: &VNode, ids: &Ids, bx: Bx, xf: Transform, look: Look) {
@@ -253,11 +256,7 @@ impl Out {
         match &n.kind {
             Kind::Group(flow) if n.split => {
                 let node = self.node(n, Some(look.node), *flow, hold);
-                let inner = Look {
-                    node,
-                    z: n.times.z.unwrap_or(look.z),
-                    opacity: look.opacity * n.times.opacity.unwrap_or(1.0),
-                };
+                let inner = Look { node, ..look.inside(&n.times) };
                 if flow.transparent() {
                     self.children(n, ids, bx, xf, inner);
                     return None;
