@@ -3,28 +3,15 @@ use super::diag::{Diag, did_you_mean};
 use super::span::Span;
 use crate::ir::*;
 use crate::layout;
-use crate::typography::font_book;
+use crate::typography::font::FontBook;
 use std::collections::BTreeMap;
 use std::path::Path;
 
-pub(crate) fn lower(doc: &Document, base_dir: &Path, diags: &mut Vec<Diag>, preview: bool) -> Script {
-    fn text_fonts(tag: &Tag, out: &mut Vec<String>) {
-        if tag.name == "text" {
-            out.extend(tag.attrs.iter().filter(|a| a.key == "font").map(|a| a.value.clone()));
-        }
-        for tag in &tag.children {
-            text_fonts(tag, out);
-        }
-    }
-    let mut requested = vec![];
-    text_fonts(&doc.root, &mut requested);
-    requested.sort();
-    requested.dedup();
-    let fonts = font_book(&doc.settings, base_dir, &requested);
+pub(crate) fn lower(doc: &Document, base_dir: &Path, fonts: &FontBook, diags: &mut Vec<Diag>, preview: bool) -> Script {
     let ctx = layout::Ctx {
         settings: &doc.settings,
         base_dir,
-        fonts: &fonts,
+        fonts,
         preview,
     };
     let layout::Lowered { mut nodes, mut elems, names } = layout::lower(&doc.root, &ctx, diags);
@@ -83,7 +70,6 @@ pub(crate) fn lower(doc: &Document, base_dir: &Path, diags: &mut Vec<Diag>, prev
     }
     Script {
         settings: doc.settings.clone(),
-        fonts: requested,
         nodes,
         elems,
         ids,

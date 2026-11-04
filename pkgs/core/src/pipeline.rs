@@ -1,12 +1,10 @@
-use crate::Project;
 use crate::audio::{Track, mix_wav};
 use crate::encode::Encoder;
 use crate::media::args::EncodeArgs;
 use crate::media::pcm::{self, Pcm, RATE};
-use crate::prepare::Prepared;
 use crate::progress::{Progress, Stage};
-use crate::render::{FrameRenderer, RenderTarget};
-use crate::schedule::{AudioClip, EPS, Fade, Schedule};
+use crate::render::{FrameRenderer, RenderCtx, RenderTarget};
+use crate::schedule::{AudioClip, EPS, Fade};
 use crate::util::hash::sha256_hex;
 use crate::util::temp::TempFile;
 use anyhow::Result;
@@ -14,13 +12,6 @@ use rayon::prelude::*;
 use std::collections::HashMap;
 use std::path::Path;
 use std::time::Instant;
-
-#[derive(Clone, Copy)]
-pub struct RenderCtx<'a> {
-    pub project: &'a Project,
-    pub prepared: &'a Prepared,
-    pub sched: &'a Schedule,
-}
 
 #[derive(Clone, Debug)]
 pub struct RenderOptions {
@@ -180,14 +171,7 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
         out,
     };
     let mut enc = Encoder::spawn(&args)?;
-    let mut renderer = FrameRenderer::new(
-        &crate::render::RenderInput {
-            script: &ctx.project.script,
-            prepared: ctx.prepared,
-            sched: ctx.sched,
-        },
-        target,
-    )?;
+    let mut renderer = FrameRenderer::new(*ctx, target)?;
     let mut last_report = Instant::now();
     for k in 0..frames {
         let t = first + k as f64 * step;

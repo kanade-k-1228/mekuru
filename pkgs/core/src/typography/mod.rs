@@ -2,6 +2,7 @@ pub mod font;
 pub(crate) mod layout;
 use crate::{
     ir::TextSpec,
+    lang::ast::Tag,
     settings::{Settings, resolve_font},
 };
 use font::FontBook;
@@ -27,14 +28,15 @@ fn measure_uncached(fonts: &FontBook, spec: &TextSpec) -> Option<(f32, f32)> {
     )
 }
 
-pub(crate) fn font_book(st: &Settings, base: &Path, requested: &[String]) -> Arc<FontBook> {
+pub(crate) fn font_book(st: &Settings, base: &Path, root: &Tag) -> Arc<FontBook> {
     let fonts: Vec<String> = st.fonts.iter().map(|f| resolve_font(f, base)).collect();
+    let requested = root.descendants().into_iter().filter(|t| t.name == "text").filter_map(|t| t.attribute("font"));
     // Preload the entire input's file fonts. Lazy loading a new font halfway
     // through layout could change fallback selection behind cached measurements.
     let mut extra: Vec<_> = fonts
         .iter()
         .cloned()
-        .chain(requested.iter().map(|f| resolve_font(f, base)))
+        .chain(requested.map(|f| resolve_font(f, base)))
         .map(std::path::PathBuf::from)
         .filter(|p| p.is_absolute())
         .collect();

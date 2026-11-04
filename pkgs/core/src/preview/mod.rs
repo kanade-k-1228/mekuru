@@ -170,7 +170,6 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, worker: &m
     let fps = st.rate();
     let s = |f: f64| fps.secs(f);
     let i = |f: i64| fps.secs(f as f64);
-    let fonts = p.fonts();
     let keys = worker.identities.update(&p.syntax);
     let mut counts = std::collections::HashMap::<String, usize>::new();
     let elem_keys: Vec<_> = script
@@ -196,7 +195,7 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, worker: &m
         match &e.kind {
             ElemKind::View(view) => {
                 for op in &view.ops {
-                    let drawing = worker.draw(op, &fonts, &script.base_dir);
+                    let drawing = worker.draw(op, &p.fonts, &script.base_dir);
                     drawings.push(drawing.id);
                 }
             }

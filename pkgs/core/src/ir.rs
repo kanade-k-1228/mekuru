@@ -10,8 +10,6 @@ pub type ElemId = usize;
 #[derive(Clone, Debug)]
 pub struct Script {
     pub settings: Settings,
-    /// Font names referenced by text, preloaded before measuring or drawing.
-    pub fonts: Vec<String>,
     pub nodes: Vec<Node>,
     pub elems: Vec<Elem>,
     pub ids: BTreeMap<String, Target>,

@@ -20,6 +20,8 @@ use anyhow::{Context, Result};
 use lang::diag::{Diag, has_errors};
 use lang::span::LineIndex;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use typography::font::FontBook;
 
 fn normalize(p: &Path) -> PathBuf {
     use std::path::Component;
@@ -43,6 +45,7 @@ pub struct Project {
     pub source: String,
     pub index: LineIndex,
     pub script: ir::Script,
+    pub fonts: Arc<FontBook>,
     pub syntax: lang::ast::Tag,
     pub diags: Vec<Diag>,
 }
@@ -67,13 +70,15 @@ impl Project {
         };
         let base = root.unwrap_or(dir).to_path_buf();
         let base = std::path::absolute(&base).map(|b| normalize(&b)).unwrap_or(base);
-        let script = lang::expand::lower(&doc, &base, &mut diags, preview);
+        let fonts = typography::font_book(&doc.settings, &base, &doc.root);
+        let script = lang::expand::lower(&doc, &base, &fonts, &mut diags, preview);
         let index = LineIndex::new(&source);
         Project {
             path: path.to_path_buf(),
             source,
             index,
             script,
+            fonts,
             syntax: doc.root,
             diags,
         }
@@ -85,10 +90,6 @@ impl Project {
 
     pub fn schedule(&self, media: &dyn schedule::MediaDb) -> schedule::Schedule {
         schedule::schedule(&self.script, media)
-    }
-
-    pub fn fonts(&self) -> std::sync::Arc<typography::font::FontBook> {
-        typography::font_book(&self.script.settings, &self.script.base_dir, &self.script.fonts)
     }
 
     pub fn default_output(&self) -> PathBuf {
