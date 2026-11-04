@@ -1,6 +1,6 @@
 # 設計
 
-[English](Concept.jp.md)
+[English](Concept.md)
 
 Mekuru は、セリフに合わせて画像や動画を並べる解説動画向けのツールです。台本を TSX の部品で組み立て、コンパイラが時間と配置を決めます。
 
