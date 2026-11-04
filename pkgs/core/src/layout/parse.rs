@@ -55,37 +55,12 @@ pub struct Lowered {
     pub names: Vec<(String, Target, Span)>,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(super) enum Flow {
-    Root,
-    Seq,
-    Stack,
-    Row,
-    Column,
-    Hold,
-    Repeat,
-    Dur,
-}
-
 impl Flow {
     pub(super) fn kind(self) -> NodeKind {
         match self {
             Flow::Seq => NodeKind::Seq,
             Flow::Repeat => NodeKind::Repeat,
             _ => NodeKind::Par,
-        }
-    }
-
-    pub(super) fn name(self) -> &'static str {
-        match self {
-            Flow::Root => "mekuru",
-            Flow::Seq => "seq",
-            Flow::Stack => "stack",
-            Flow::Row => "row",
-            Flow::Column => "column",
-            Flow::Hold => "hold",
-            Flow::Repeat => "repeat",
-            Flow::Dur => "dur",
         }
     }
 
@@ -230,17 +205,7 @@ impl Ctx<'_> {
     pub(super) fn node(&self, tag: &Tag, diags: &mut Vec<Diag>) -> Option<VNode> {
         let name = tag.name.as_str();
         let at = Attrs::new(name, &keys(name), &tag.attrs, tag.span, diags);
-        let flow = match name {
-            "mekuru" => Some(Flow::Root),
-            "seq" => Some(Flow::Seq),
-            "stack" => Some(Flow::Stack),
-            "row" => Some(Flow::Row),
-            "column" => Some(Flow::Column),
-            "hold" => Some(Flow::Hold),
-            "repeat" => Some(Flow::Repeat),
-            "dur" => Some(Flow::Dur),
-            _ => None,
-        };
+        let flow = Flow::of(name);
         let (mut style, anchor, deco) = self.appearance(name, flow, &at, diags);
         let times = at.times(diags);
         let hold = (flow == Some(Flow::Hold)).then(|| {

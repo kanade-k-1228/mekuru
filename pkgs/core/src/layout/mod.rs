@@ -2,7 +2,7 @@ use crate::ir::{
     AudioSpec, CircleSpec, Dash, Dur, Elem, ElemId, ElemKind, Hold, ImageSpec, MediaSrc, Node, NodeKind, PolySpec, RectSpec, Speed, Target, TextSpec, Time,
     VideoSpec, ViewOp, ViewSpec,
 };
-use crate::lang::ast::{Tag, ValKind};
+use crate::lang::ast::{Flow, Tag, ValKind};
 use crate::lang::attrs::{Attrs, Dim, MEDIA, TIMES, Times, dim};
 use crate::lang::diag::Diag;
 use crate::lang::span::Span;

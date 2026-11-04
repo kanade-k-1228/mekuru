@@ -6,13 +6,11 @@ use crate::settings::{self, Settings};
 use roxmltree::{Node, NodeType};
 
 const SETTING_ATTRS: &[&str] = &["size", "fps", "font", "preset", "crf", "audio-bitrate"];
-pub const GROUPS: &[&str] = &["seq", "row", "column", "stack", "repeat", "dur"];
-pub const LEAVES: &[&str] = &["text", "image", "video", "audio", "rect", "circle", "line"];
 
 fn known_names() -> impl Iterator<Item = &'static str> {
     ["mekuru", "br", "hold", "cut", "speed"]
         .into_iter()
-        .chain(GROUPS.iter().copied())
+        .chain(Flow::groups())
         .chain(LEAVES.iter().copied())
 }
 
@@ -119,8 +117,7 @@ impl Builder<'_> {
             }
             "mekuru" => self.screen(n),
             "video" | "audio" => self.holds(n),
-            "hold" => self.children(n),
-            _ if GROUPS.contains(&name) => self.children(n),
+            _ if Flow::of(name).is_some() => self.children(n),
             _ => {
                 self.leaf(n);
                 vec![]
@@ -140,7 +137,7 @@ impl Builder<'_> {
 
     fn screen(&mut self, n: Node) -> Vec<Tag> {
         let children = self.children(n);
-        let groups = children.iter().filter(|t| GROUPS.contains(&t.name.as_str())).count();
+        let groups = children.iter().filter(|t| Flow::of(&t.name).is_some_and(Flow::nests)).count();
         if children.len() != 1 || groups != 1 {
             let span = children.get(1).or(children.first()).map_or_else(|| self.start_tag(n), |t| t.head);
             self.diags.push(Diag::new(
@@ -197,32 +194,32 @@ impl Builder<'_> {
 
     fn element(&mut self, n: Node, parent: Node) -> Option<Tag> {
         let name = n.tag_name().name();
-        if GROUPS.contains(&name) || LEAVES.contains(&name) {
+        if Flow::of(name).is_some_and(Flow::nests) || LEAVES.contains(&name) {
             return Some(self.tag(n));
         }
-        let msg = match name {
-            "br" => format!("`<br/>` breaks a line in `<text>`; it cannot be in `<{}>`", parent.tag_name().name()),
-            "hold" => format!(
-                "`<hold>` goes in the `<video>` or `<audio>` it stops; it cannot be in `<{}>`",
-                parent.tag_name().name()
+        let parent = parent.tag_name().name();
+        let (code, msg) = match name {
+            "br" => ("E107", format!("`<br/>` breaks a line in `<text>`; it cannot be in `<{parent}>`")),
+            "hold" => (
+                "E107",
+                format!("`<hold>` goes in the `<video>` or `<audio>` it stops; it cannot be in `<{parent}>`"),
             ),
-            "cut" | "speed" => format!(
-                "`<{name}>` goes in the `<video>` or `<audio>` it plays; it cannot be in `<{}>`",
-                parent.tag_name().name()
+            "cut" | "speed" => (
+                "E107",
+                format!("`<{name}>` goes in the `<video>` or `<audio>` it plays; it cannot be in `<{parent}>`"),
             ),
-            "mekuru" => "`<mekuru>` is the root; it cannot be inside another element".to_string(),
-            _ if name.starts_with(|c: char| c.is_uppercase()) => {
-                format!("unknown element `<{name}>`: components are TSX functions; run the script (`bun src/main.tsx`) to write the XML")
-            }
-            _ => format!(
-                "unknown element `<{name}>`{}",
-                suggest(name, known_names()).map_or(String::new(), |s| format!(" (did you mean `<{s}>`?)"))
+            "mekuru" => ("E107", "`<mekuru>` is the root; it cannot be inside another element".to_string()),
+            _ if name.starts_with(|c: char| c.is_uppercase()) => (
+                "E300",
+                format!("unknown element `<{name}>`: components are TSX functions; run the script (`bun src/main.tsx`) to write the XML"),
             ),
-        };
-        let code = if matches!(name, "br" | "mekuru" | "hold" | "cut" | "speed") {
-            "E107"
-        } else {
-            "E300"
+            _ => (
+                "E300",
+                format!(
+                    "unknown element `<{name}>`{}",
+                    suggest(name, known_names()).map_or(String::new(), |s| format!(" (did you mean `<{s}>`?)"))
+                ),
+            ),
         };
         self.diags.push(Diag::new(code, self.name_span(n), msg));
         None
