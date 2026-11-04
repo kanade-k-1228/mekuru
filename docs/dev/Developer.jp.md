@@ -111,6 +111,4 @@ TSX の `fps()` は `<mekuru>` の展開中だけ使えます。音声の速度�
 
 ## パッケージの責務
 
-`core` はJSX・XMLと構築コンテキスト、`audio` は音声素材とWAV処理、`speech` は合成の準備とキャッシュを担当します。各エンジンは固有のHTTP API、`narrator` は立ち絵・字幕、`platform` はOS共通処理を担当します。プレビューの通信契約の型は [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts) にあり、ネイティブサーバーがそれを Rust で実装します。
-
-API移行: `AudioSource`・`Audio`・`readAudio` は `@mekuru/audio`、`joinWavs` は `@mekuru/audio/wav` からimportします。旧入口の再exportはありません。
+`types` はJSX・XMLと構築コンテキスト、`core` はネイティブコンパイラとプレビューサーバー、`audio` は音声素材とWAV処理、`speech` は合成の準備とキャッシュを担当します。各エンジンは固有のHTTP API、`narrator` は立ち絵・字幕、`platform` はOS共通処理を担当します。プレビューの通信契約の型は [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts) にあり、ネイティブサーバーがそれを Rust で実装します。
