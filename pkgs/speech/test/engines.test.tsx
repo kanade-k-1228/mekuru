@@ -144,12 +144,7 @@ const cases: { name: string; line: Node; json?: Record<string, unknown>; label: 
     ),
     json: { "/models/info": { 0: { model_path: "model_assets/amitaro/amitaro.safetensors", spk2id: { あみたろ: 0 }, style2id: { Neutral: 0, Happy: 1 } } } },
     label: "あみたろ: あいう。えおか。",
-    sent: [
-      ["GET http://127.0.0.1:5000/models/info"],
-      [`POST ${SBV2.replace("?", "?text=あいう。&")}`],
-      ["GET http://127.0.0.1:5000/models/info"],
-      [`POST ${SBV2.replace("?", "?text=えおか。&")}`],
-    ],
+    sent: [["GET http://127.0.0.1:5000/models/info"], [`POST ${SBV2.replace("?", "?text=あいう。&")}`], [`POST ${SBV2.replace("?", "?text=えおか。&")}`]],
   },
 ];
 
