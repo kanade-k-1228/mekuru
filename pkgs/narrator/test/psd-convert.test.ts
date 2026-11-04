@@ -1,29 +1,25 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, readFile, writeFile, rm, access, link, symlink } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile, writeFile, rm, access, link, symlink } from "node:fs/promises";
 import { join } from "node:path";
-import { writePsdBuffer, type Layer } from "ag-psd";
+import type { Layer } from "ag-psd";
 import sharp from "sharp";
 import { convertPsd, inspectPsd, type ConversionMap } from "../src/psd-convert.ts";
 import { exportPsd } from "../src/psd.ts";
 import { readArtwork } from "../src/portrait/psd-image.ts";
+import { pixel, psdFixture } from "./fixture.ts";
 
-const pixel = (name: string, color: number[], more: Partial<Layer> = {}): Layer => ({
-  name,
-  left: 1,
-  top: 0,
-  right: 2,
-  bottom: 1,
-  imageData: { width: 1, height: 1, data: new Uint8ClampedArray(color) },
-  ...more,
-});
+// Source artwork sits at x = 1, so conversion must keep layer offsets.
+const at = { left: 1, right: 2 };
 const source = (): Layer[] => [
-  pixel("body", [255, 0, 0, 255]),
+  pixel("body", [255, 0, 0, 255], at),
   {
     name: "!目",
     children: [
-      { name: "*開き", children: [pixel("paint", [0, 255, 0, 255], { opacity: 0.5 }), pixel("unused", [255, 255, 255, 255], { hidden: true })] },
-      pixel("*閉じ", [0, 0, 255, 255], { hidden: true }),
+      {
+        name: "*開き",
+        children: [pixel("paint", [0, 255, 0, 255], { ...at, opacity: 0.5 }), pixel("unused", [255, 255, 255, 255], { ...at, hidden: true })],
+      },
+      pixel("*閉じ", [0, 0, 255, 255], { ...at, hidden: true }),
     ],
   },
 ];
@@ -46,18 +42,7 @@ const mapping = (): ConversionMap => ({
     },
   ],
 });
-async function fixture(run: (input: string, output: string, save: (layers: Layer[]) => Promise<void>) => Promise<void>) {
-  const dir = await mkdtemp(join(tmpdir(), "mekuru-convert-"));
-  const input = join(dir, "input.psd"),
-    output = join(dir, "native.psd");
-  const save = (children: Layer[]) => writeFile(input, writePsdBuffer({ width: 3, height: 2, children }));
-  try {
-    await save(source());
-    await run(input, output, save);
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
-}
+const fixture = psdFixture(3, 2, source);
 
 test("inspect exposes exact source paths and conversion preserves flattened pixels, frames and defaults", () =>
   fixture(async (input, output) => {

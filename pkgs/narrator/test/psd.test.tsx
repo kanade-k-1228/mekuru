@@ -1,22 +1,14 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, rm, writeFile, readFile, access } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { writeFile, readFile, access } from "node:fs/promises";
 import { join } from "node:path";
-import { writePsdBuffer, type Layer } from "ag-psd";
+import type { Layer } from "ag-psd";
 import sharp from "sharp";
 import { toXml } from "@mekuru/types";
+import { wav } from "../../audio/test/fixture.ts";
 import { portrait } from "../src/index.tsx";
-import { exportPsd } from "../src/psd";
+import { exportPsd } from "../src/psd.ts";
+import { pixel, psdFixture } from "./fixture.ts";
 
-const pixel = (name: string, rgba: number[], more: Partial<Layer> = {}): Layer => ({
-  name,
-  top: 0,
-  left: 0,
-  bottom: 1,
-  right: 1,
-  imageData: { width: 1, height: 1, data: new Uint8ClampedArray(rgba) },
-  ...more,
-});
 const layers = (): Layer[] => [
   pixel("body [fixed]", [255, 0, 0, 255]),
   {
@@ -28,20 +20,7 @@ const layers = (): Layer[] => [
   },
   { name: "glass [toggle]", hidden: true, children: [pixel("glasses", [255, 255, 255, 255])] },
 ];
-async function fixture(run: (input: string, out: string, save: (children: Layer[]) => Promise<void>) => Promise<void>) {
-  const dir = await mkdtemp(join(tmpdir(), "mekuru-psd-"));
-  const input = join(dir, "test.psd"),
-    out = join(dir, "assets");
-  const save = async (children: Layer[]) => {
-    await writeFile(input, writePsdBuffer({ width: 2, height: 2, children }));
-  };
-  try {
-    await save(layers());
-    await run(input, out, save);
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
-}
+const fixture = psdFixture(2, 2, layers);
 interface Props {
   face?: "smile" | "angry" | null;
   glass?: boolean;
@@ -254,22 +233,9 @@ test("speech animates any lip group, closes during silence/draft/tail, and prese
       { name: "eyes [blink]", children: [{ name: "normal", children: [pixel("0", [255, 0, 0, 255], { hidden: true }), pixel("1", [0, 0, 255, 255])] }] },
     ]);
     await exportPsd(input, out);
-    const bytes = Buffer.alloc(44 + 9600);
-    bytes.write("RIFF");
-    bytes.writeUInt32LE(bytes.length - 8, 4);
-    bytes.write("WAVEfmt ", 8);
-    bytes.writeUInt32LE(16, 16);
-    bytes.writeUInt16LE(1, 20);
-    bytes.writeUInt16LE(1, 22);
-    bytes.writeUInt32LE(4800, 24);
-    bytes.writeUInt32LE(9600, 28);
-    bytes.writeUInt16LE(2, 32);
-    bytes.writeUInt16LE(16, 34);
-    bytes.write("data", 36);
-    bytes.writeUInt32LE(9600, 40);
-    for (let i = 2400; i < 4800; i++) bytes.writeInt16LE(12000, 44 + i * 2);
+    // Half a second of silence, then half a second of speech.
     const src = join(out, "speech.wav");
-    await writeFile(src, bytes);
+    await writeFile(src, wav([...new Array(2400).fill(0), ...new Array(2400).fill(12000)], 4800));
     const actor = portrait({ src: out, slot: "speaker", blink: 6 });
     const draft = await toXml(
       <mekuru>
@@ -299,9 +265,7 @@ test("speech animates any lip group, closes during silence/draft/tail, and prese
     expect(mouth.at(-1)?.[1]).toBe(0);
     expect(mouth.reduce((sum, [len]) => sum + len, 0)).toBe(60);
     expect(mouth.some(([, shape]) => shape === 1)).toBe(true);
-    const quiet = Buffer.from(bytes);
-    quiet.fill(0, 44);
-    await writeFile(src, quiet);
+    await writeFile(src, wav(4800, 4800));
     const silence = await toXml(
       <mekuru>
         <actor.Talk source={{ status: "ready", src, len: 60 }} />
