@@ -185,19 +185,12 @@ pub(super) fn in_cell(n: &mut VNode) {
     }
 }
 
-pub(super) fn dimension(d: Dim) -> Dimension {
+/// A `Dimension` or `LengthPercentageAuto`.
+pub(super) fn length_auto<T: TaffyAuto + FromLength + FromPercent>(d: Dim) -> T {
     match d {
-        Dim::Auto => Dimension::auto(),
-        Dim::Px(v) => Dimension::length(v),
-        Dim::Frac(f) => Dimension::percent(f),
-    }
-}
-
-pub(super) fn lpa(d: Dim) -> LengthPercentageAuto {
-    match d {
-        Dim::Auto => LengthPercentageAuto::auto(),
-        Dim::Px(v) => LengthPercentageAuto::length(v),
-        Dim::Frac(f) => LengthPercentageAuto::percent(f),
+        Dim::Auto => auto(),
+        Dim::Px(v) => length(v),
+        Dim::Frac(f) => percent(f),
     }
 }
 
@@ -210,42 +203,18 @@ pub(super) fn lp(d: Dim) -> LengthPercentage {
 }
 
 pub(super) fn padding(k: &ValKind) -> Result<taffy::Rect<LengthPercentage>, String> {
-    let one = |k: &ValKind| dim(k).map(lp);
-    match k {
-        ValKind::List(items) => {
-            let v: Vec<LengthPercentage> = items.iter().map(one).collect::<Result<_, _>>()?;
-            match v.as_slice() {
-                [a] => Ok(taffy::Rect {
-                    left: *a,
-                    right: *a,
-                    top: *a,
-                    bottom: *a,
-                }),
-                [y, x] => Ok(taffy::Rect {
-                    left: *x,
-                    right: *x,
-                    top: *y,
-                    bottom: *y,
-                }),
-                [t, r, b, l] => Ok(taffy::Rect {
-                    left: *l,
-                    right: *r,
-                    top: *t,
-                    bottom: *b,
-                }),
-                _ => Err("padding takes 1, 2 or 4 values".into()),
-            }
-        }
-        k => {
-            let a = one(k)?;
-            Ok(taffy::Rect {
-                left: a,
-                right: a,
-                top: a,
-                bottom: a,
-            })
-        }
-    }
+    let items = match k {
+        ValKind::List(items) => items.as_slice(),
+        k => std::slice::from_ref(k),
+    };
+    let v: Vec<LengthPercentage> = items.iter().map(|k| dim(k).map(lp)).collect::<Result<_, _>>()?;
+    let [top, right, bottom, left] = match *v.as_slice() {
+        [a] => [a; 4],
+        [y, x] => [y, x, y, x],
+        [t, r, b, l] => [t, r, b, l],
+        _ => return Err("padding takes 1, 2 or 4 values".into()),
+    };
+    Ok(taffy::Rect { left, right, top, bottom })
 }
 
 pub(super) fn alignment(a: &str) -> AlignItems {
@@ -375,22 +344,22 @@ impl Ctx<'_> {
             };
         }
         if let Some(w) = at.dim("w", diags) {
-            style.size.width = dimension(w);
+            style.size.width = length_auto(w);
         }
         if let Some(h) = at.dim("h", diags) {
-            style.size.height = dimension(h);
+            style.size.height = length_auto(h);
         }
         if let Some(v) = at.dim("min-w", diags) {
-            style.min_size.width = lpa(v);
+            style.min_size.width = length_auto(v);
         }
         if let Some(v) = at.dim("max-w", diags) {
-            style.max_size.width = lpa(v);
+            style.max_size.width = length_auto(v);
         }
         if let Some(v) = at.dim("min-h", diags) {
-            style.min_size.height = lpa(v);
+            style.min_size.height = length_auto(v);
         }
         if let Some(v) = at.dim("max-h", diags) {
-            style.max_size.height = lpa(v);
+            style.max_size.height = length_auto(v);
         }
         if let Some(g) = at.num("grow", diags) {
             style.flex_grow = g.max(0.0);
@@ -431,8 +400,8 @@ impl Ctx<'_> {
         if placed {
             style.position = Position::Absolute;
             style.inset = taffy::Rect {
-                left: lpa(x.unwrap_or(Dim::Px(0.0))),
-                top: lpa(y.unwrap_or(Dim::Px(0.0))),
+                left: length_auto(x.unwrap_or(Dim::Px(0.0))),
+                top: length_auto(y.unwrap_or(Dim::Px(0.0))),
                 right: LengthPercentageAuto::auto(),
                 bottom: LengthPercentageAuto::auto(),
             };
