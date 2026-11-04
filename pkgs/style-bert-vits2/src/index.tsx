@@ -18,7 +18,6 @@ export interface StyleBertVits2Props extends EngineProps {
 export const StyleBertVits2 = defineEngine<StyleBertVits2Props>({
   kind: "style-bert-vits2",
   name: "Style-Bert-VITS2",
-  env: "MEKURU_STYLE_BERT_VITS2_URL",
   defaultUrl: "http://127.0.0.1:5000",
   help:
     "  - start its API server in the Style-Bert-VITS2 folder: `python server_fastapi.py` (Server.bat on Windows);\n" +

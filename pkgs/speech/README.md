@@ -96,7 +96,6 @@ interface MySpeechProps extends EngineProps {
 export const MySpeech = defineEngine<MySpeechProps>({
   kind: "my-engine",
   name: "My engine",
-  env: "MY_ENGINE_URL",
   defaultUrl: "http://127.0.0.1:8000",
   help: "  - start My engine",
   concurrency: 1,
@@ -107,7 +106,7 @@ export const MySpeech = defineEngine<MySpeechProps>({
 ```
 
 - The props extend `EngineProps`, which adds `url` and `max-chars` to `SpeechProps`.
-- The server is the `url` prop, else the `env` environment variable, else `defaultUrl`. Each server gets its own `create(call, url)` reader and runs `concurrency` lines at a time.
+- The server is the `url` prop, else the environment variable `MEKURU_<KIND>_URL` named after `kind` (`MEKURU_MY_ENGINE_URL` here), else `defaultUrl`. Each server gets its own `create(call, url)` reader and runs `concurrency` lines at a time.
 - `call(path, init)` sends a request to the server with a five-minute timeout. If the server cannot be reached, the error shows `help`; an HTTP error shows `name`, the path and the status.
 - The reader gets `voice`, the props other than `SpeechProps` and `url`, which is also the cache key, and returns WAV bytes.
 - Lines longer than the `max-chars` prop (default `maxChars`; no limit when neither is set) are split near punctuation, read part by part and joined.

@@ -15,7 +15,6 @@ export interface CoeiroinkProps extends EngineProps {
 export const Coeiroink = defineEngine<CoeiroinkProps>({
   kind: "coeiroink",
   name: "COEIROINK",
-  env: "MEKURU_COEIROINK_URL",
   defaultUrl: "http://127.0.0.1:50032",
   help:
     "  - start COEIROINK v2 (its engine listens on port 50032 once the app has started)\n" +

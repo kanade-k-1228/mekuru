@@ -17,7 +17,6 @@ export interface VoisonaProps extends EngineProps {
 export const Voisona = defineEngine<VoisonaProps>({
   kind: "voisona",
   name: "VoiSona Talk",
-  env: "MEKURU_VOISONA_URL",
   defaultUrl: "http://localhost:32766",
   help:
     "  - start VoiSona Talk (1.3.7 or later), sign in, and turn on 「REST APIを有効にする」 in the API tab of its preferences\n" +

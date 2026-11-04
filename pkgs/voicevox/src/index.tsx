@@ -15,7 +15,6 @@ export interface VoicevoxProps extends EngineProps {
 export const Voicevox = defineEngine<VoicevoxProps>({
   kind: "voicevox",
   name: "VOICEVOX",
-  env: "MEKURU_VOICEVOX_URL",
   defaultUrl: "http://127.0.0.1:50021",
   help:
     "  - start the VOICEVOX app (its engine listens on port 50021), or\n" +

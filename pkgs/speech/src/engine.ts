@@ -11,12 +11,10 @@ export interface EngineProps extends SpeechProps {
 
 /** A speech engine behind an HTTP server. */
 export interface Engine<P extends EngineProps> {
-  /** Engine name in the cache key. */
+  /** Engine name in the cache key and in `MEKURU_<KIND>_URL` (`-` becomes `_`), the environment variable with the server URL when `url` is not set. */
   kind: string;
   /** Engine name in error messages. */
   name: string;
-  /** Environment variable with the server URL, used when `url` is not set. */
-  env: string;
   defaultUrl: string;
   /** How to start the server, shown when it is not reachable. */
   help: string;
@@ -90,9 +88,10 @@ const splitText = (text: string, max: number): string[] => {
 };
 
 export const defineEngine = <P extends EngineProps>(engine: Engine<P>) => {
+  const env = `MEKURU_${engine.kind.toUpperCase().replaceAll("-", "_")}_URL`;
   const servers = new Map<string, { read: ReturnType<Engine<P>["create"]>; queue: ReturnType<typeof limit> }>();
   const server = (url: string | undefined) => {
-    const at = (url ?? process.env[engine.env] ?? engine.defaultUrl).replace(/\/+$/, "");
+    const at = (url ?? process.env[env] ?? engine.defaultUrl).replace(/\/+$/, "");
     let found = servers.get(at);
     if (!found) {
       found = { read: engine.create(httpClient(at, engine.name, engine.help), at), queue: limit(engine.concurrency) };

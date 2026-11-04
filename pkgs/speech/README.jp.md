@@ -96,7 +96,6 @@ interface MySpeechProps extends EngineProps {
 export const MySpeech = defineEngine<MySpeechProps>({
   kind: "my-engine",
   name: "My engine",
-  env: "MY_ENGINE_URL",
   defaultUrl: "http://127.0.0.1:8000",
   help: "  - start My engine",
   concurrency: 1,
@@ -107,7 +106,7 @@ export const MySpeech = defineEngine<MySpeechProps>({
 ```
 
 - 属性は `EngineProps`（`SpeechProps` に `url` と `max-chars` を加えたもの）を拡張します。
-- 接続先は `url` 属性、なければ環境変数 `env`、なければ `defaultUrl` です。接続先ごとに `create(call, url)` で読み上げ関数を作り、同時に `concurrency` 本まで合成します。
+- 接続先は `url` 属性、なければ `kind` から決まる環境変数 `MEKURU_<KIND>_URL`（この例では `MEKURU_MY_ENGINE_URL`）、なければ `defaultUrl` です。接続先ごとに `create(call, url)` で読み上げ関数を作り、同時に `concurrency` 本まで合成します。
 - `call(path, init)` は接続先にリクエストを送ります（タイムアウトは5分）。接続できなければ `help` を、HTTP エラーなら `name`・パス・ステータスをエラーに含めます。
 - 読み上げ関数は `voice`（`SpeechProps` と `url` 以外の属性。キャッシュのキーにもなる）とテキストを受け取り、WAV のバイト列を返します。
 - `max-chars` 属性（既定は `maxChars`。どちらもなければ制限なし）より長いセリフは、句読点の近くで分割して順に読み、結合します。
