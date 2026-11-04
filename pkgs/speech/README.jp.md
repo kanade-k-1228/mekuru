@@ -19,7 +19,7 @@ bun add -d @mekuru/types @mekuru/speech
 次の再利用できるアダプターを `src/speech.tsx` に保存します。
 
 ```tsx
-import { defineSpeech, prepare, voiceOf, type SpeechProps } from "@mekuru/speech";
+import { defineSpeech, prepare, type SpeechProps } from "@mekuru/speech";
 
 interface CustomSpeechProps extends SpeechProps {
   speaker: string;
@@ -29,14 +29,14 @@ type Synthesize = (text: string, output: string, voice: { speaker: string }) => 
 
 export const createSpeech = (synthesize: Synthesize) =>
   defineSpeech<CustomSpeechProps>(async (props) => {
-    const voice = voiceOf(props);
+    const voice = { speaker: props.speaker };
     return prepare("my-engine", props, props.speaker, voice, (text, output) =>
       synthesize(text, output, voice),
     );
   });
 ```
 
-`createSpeech()` に WAV を書き出すコールバックを渡し、返された部品を `<mekuru>` 内に置きます。`"my-engine"` は自分のエンジンの識別名に置き換えます。`defineSpeech()` は準備済みの音声を JSX（`<dur><audio /></dur>`）として返し、`writeXml()`・`toXml()` の展開中にフレームレートを参照します。
+`createSpeech()` に WAV を書き出すコールバックを渡し、返された部品を `<mekuru>` 内に置きます。`"my-engine"` は自分のエンジンの識別名に置き換えます。`defineSpeech()` は準備済みの音声を JSX（`<dur><audio /></dur>`）として返し、`writeXml()`・`toXml()` の展開中にフレームレートを参照します。HTTP API を持つエンジンなら [`defineEngine()`](#defineengineengine) が残りを引き受けます。
 
 ## 詳しい使い方
 
@@ -80,14 +80,38 @@ export const createSpeech = (synthesize: Synthesize) =>
 ### その他のエクスポート
 
 - `await subtitleText(children)`: ルビを表示文字に変換し、空白と `<br />` を保持した Node を返します。純粋な文字処理の入口 `@mekuru/speech/text` からも使えます。読み上げと同じ入力形式を使います。字幕の配置・装飾には [@mekuru/narrator](../narrator/README.jp.md) の `Subtitle` を使えます。
-- `voiceOf(props)`: `SpeechProps` のフィールドを除き、残ったエンジンの設定を返します。接続先だけを表す `url` は、キャッシュのキーに使う前に自分で除きます。
 - `joinWavs(parts)`: フォーマットチャンクが同一の WAV バッファを連結します。空でない配列を渡します。リサンプリングや音声形式の変換は行いません。
 
-`@mekuru/speech/engine` から使えるもの:
+### defineEngine(engine)
 
-- `httpClient(url, name, help)`: `url + path` に HTTP リクエストを送る関数を返します。5分のタイムアウトと、エンジン別の接続案内または HTTP ステータス付きのエラーを付けます。必要な認証はアダプター側で追加します。
-- `limit(concurrency)`: 非同期処理のキューを返します。上限は正の整数。エンジンやサーバーごとに一つ作り、同時実行数を制限します。
-- `splitText(text, max)`: Unicode のコードポイント数で最大 `max` 文字に分割し、句読点や空白を優先します。各部分の前後の空白と空の部分は除きます。
+同梱のエンジンと同じく、HTTP API を持つエンジンの部品を作ります（例: [VOICEVOX](../voicevox/src/index.tsx)）。
+
+```tsx
+import { defineEngine, type SpeechProps } from "@mekuru/speech";
+
+interface MySpeechProps extends SpeechProps {
+  speaker: number;
+  url?: string;
+}
+
+export const MySpeech = defineEngine<MySpeechProps>({
+  kind: "my-engine",
+  name: "My engine",
+  env: "MY_ENGINE_URL",
+  defaultUrl: "http://127.0.0.1:8000",
+  help: "  - start My engine",
+  concurrency: 1,
+  who: (props) => String(props.speaker),
+  create: (call) => async (voice, text) =>
+    (await call("/synthesis", { method: "POST", body: JSON.stringify({ ...voice, text }) })).arrayBuffer(),
+});
+```
+
+- 接続先は `url` 属性、なければ環境変数 `env`、なければ `defaultUrl` です。接続先ごとに `create(call, url)` で読み上げ関数を作り、同時に `concurrency` 本まで合成します。
+- `call(path, init)` は接続先にリクエストを送ります（タイムアウトは5分）。接続できなければ `help` を、HTTP エラーなら `name`・パス・ステータスをエラーに含めます。
+- 読み上げ関数は `voice`（`SpeechProps` と `url` 以外の属性。キャッシュのキーにもなる）とテキストを受け取り、WAV のバイト列を返します。
+- `maxChars` を指定すると、`max-chars` 属性（既定は `maxChars`）より長いセリフを句読点の近くで分割して順に読み、結合します。
+- `who(props)` は `name` を省略したときの話者名です。
 
 ### 下書きを独自に扱う場合
 

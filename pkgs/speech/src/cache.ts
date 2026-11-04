@@ -1,7 +1,6 @@
 import { mkdir, rename, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { buildValue, projectRoot } from "@mekuru/types";
-import { showSpeech } from "./progress.ts";
 const CACHE_VERSION = 1;
 
 const canonical = (v: unknown): string => {
@@ -10,6 +9,12 @@ const canonical = (v: unknown): string => {
   const entries = Object.entries(v as Record<string, unknown>).filter(([, x]) => x !== undefined);
   entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   return `{${entries.map(([k, x]) => `${JSON.stringify(k)}:${canonical(x)}`).join(",")}}`;
+};
+
+const showSpeech = (p: { done: number; total: number; label: string }): void => {
+  const text = `speech ${p.done}/${p.total}  ${p.label.replace(/\s+/g, " ").slice(0, 40)}`;
+  if (process.stdout.isTTY) process.stdout.write(`\r\x1b[2K${text}${p.done === p.total ? "\n" : ""}`);
+  else console.log(text);
 };
 
 const SESSION = Symbol("speech");

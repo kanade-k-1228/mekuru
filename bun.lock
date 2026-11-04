@@ -38,7 +38,6 @@
       "name": "@mekuru/coeiroink",
       "version": "0.0.0",
       "dependencies": {
-        "@mekuru/audio": "workspace:^",
         "@mekuru/speech": "workspace:^",
       },
       "devDependencies": {
@@ -120,7 +119,6 @@
       "name": "@mekuru/style-bert-vits2",
       "version": "0.0.0",
       "dependencies": {
-        "@mekuru/audio": "workspace:^",
         "@mekuru/speech": "workspace:^",
       },
       "devDependencies": {
@@ -161,7 +159,6 @@
       "name": "@mekuru/voicevox",
       "version": "0.0.0",
       "dependencies": {
-        "@mekuru/audio": "workspace:^",
         "@mekuru/speech": "workspace:^",
       },
       "devDependencies": {
@@ -175,7 +172,6 @@
       "name": "@mekuru/voisona",
       "version": "0.0.0",
       "dependencies": {
-        "@mekuru/audio": "workspace:^",
         "@mekuru/speech": "workspace:^",
       },
       "devDependencies": {

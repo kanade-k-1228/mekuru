@@ -1,13 +1,5 @@
-import type { SpeechProps } from "@mekuru/speech";
-
-import { httpClient, limit, splitText } from "@mekuru/speech/engine";
-
-import { joinWavs } from "@mekuru/audio/wav";
-
-import type { StyleBertVits2Props } from "./props.ts";
-type Voice = Omit<StyleBertVits2Props, keyof SpeechProps | "url">;
-
-const DEFAULT_URL = "http://127.0.0.1:5000";
+import type { Engine } from "@mekuru/speech";
+import type { StyleBertVits2Props } from "./index.tsx";
 
 interface ModelInfo {
   model_path: string;
@@ -15,70 +7,30 @@ interface ModelInfo {
   style2id: Record<string, number>;
 }
 
-class Server {
-  private readonly limited = limit(1);
-
-  private readonly call: ReturnType<typeof httpClient>;
-
-  constructor(url: string) {
-    this.call = httpClient(
-      url,
-      "Style-Bert-VITS2",
-      "  - start its API server in the Style-Bert-VITS2 folder: `python server_fastapi.py` (Server.bat on Windows);\n" +
-        "    it listens on port 5000 (`server.port` in its config.yml)\n" +
-        '  - if the server is elsewhere (WSL2 without mirrored networking), set `url="http://<windows-ip>:5000"` on `<StyleBertVits2>`\n' +
-        "    or the MEKURU_STYLE_BERT_VITS2_URL environment variable",
-    );
+export const client: Engine<StyleBertVits2Props>["create"] = (call) => async (voice, text) => {
+  const models = Object.values((await (await call("/models/info")).json()) as Record<string, ModelInfo>);
+  const name = (m: ModelInfo) => m.model_path.split(/[\\/]/).at(-2);
+  const model = models.find((m) => name(m) === voice.model);
+  if (!model) throw new Error(`Style-Bert-VITS2 has no model \`${voice.model}\` (it has ${models.map(name).join(", ")})`);
+  const { speaker, style } = voice;
+  if (speaker !== undefined && !(typeof speaker === "number" ? Object.values(model.spk2id).includes(speaker) : Object.hasOwn(model.spk2id, speaker))) {
+    throw new Error(`the Style-Bert-VITS2 model \`${voice.model}\` has no speaker \`${speaker}\` (it has ${Object.keys(model.spk2id).join(", ")})`);
   }
-
-  private async check(props: Voice): Promise<void> {
-    const models = Object.values((await (await this.call("/models/info")).json()) as Record<string, ModelInfo>);
-    const name = (m: ModelInfo) => m.model_path.split(/[\\/]/).at(-2);
-    const model = models.find((m) => name(m) === props.model);
-    if (!model) throw new Error(`Style-Bert-VITS2 has no model \`${props.model}\` (it has ${models.map(name).join(", ")})`);
-    const { speaker, style } = props;
-    if (speaker !== undefined && !(typeof speaker === "number" ? Object.values(model.spk2id).includes(speaker) : Object.hasOwn(model.spk2id, speaker))) {
-      throw new Error(`the Style-Bert-VITS2 model \`${props.model}\` has no speaker \`${speaker}\` (it has ${Object.keys(model.spk2id).join(", ")})`);
-    }
-    if (style !== undefined && !Object.hasOwn(model.style2id, style)) {
-      throw new Error(`the Style-Bert-VITS2 model \`${props.model}\` has no style \`${style}\` (it has ${Object.keys(model.style2id).join(", ")})`);
-    }
+  if (style !== undefined && !Object.hasOwn(model.style2id, style)) {
+    throw new Error(`the Style-Bert-VITS2 model \`${voice.model}\` has no style \`${style}\` (it has ${Object.keys(model.style2id).join(", ")})`);
   }
-
-  private async write(props: Voice, text: string, out: string): Promise<void> {
-    await this.check(props);
-    const wavs: Buffer[] = [];
-    for (const part of splitText(text, props["max-chars"] ?? 100)) {
-      const query = new URLSearchParams({ text: part, model_name: props.model, language: props.language ?? "JP" });
-      const set = (key: string, value: number | string | undefined) => {
-        if (value !== undefined) query.set(key, String(value));
-      };
-      set(typeof props.speaker === "number" ? "speaker_id" : "speaker_name", props.speaker);
-      set("style", props.style);
-      set("style_weight", props["style-weight"]);
-      set("sdp_ratio", props["sdp-ratio"]);
-      set("noise", props.noise);
-      set("noisew", props["noise-w"]);
-      set("length", props.length);
-      set("assist_text", props["assist-text"]);
-      set("assist_text_weight", props["assist-text-weight"]);
-      wavs.push(Buffer.from(await (await this.call(`/voice?${query}`, { method: "POST" })).arrayBuffer()));
-    }
-    await Bun.write(out, wavs.length === 1 ? wavs[0] : joinWavs(wavs));
-  }
-
-  synthesize(props: Voice, text: string, out: string): Promise<void> {
-    return this.limited(() => this.write(props, text, out));
-  }
-}
-
-const servers = new Map<string, Server>();
-
-export const server = (url: string | undefined): Server => {
-  const at = (url ?? process.env.MEKURU_STYLE_BERT_VITS2_URL ?? DEFAULT_URL).replace(/\/+$/, "");
-  const found = servers.get(at);
-  if (found) return found;
-  const created = new Server(at);
-  servers.set(at, created);
-  return created;
+  const query = new URLSearchParams({ text, model_name: voice.model, language: voice.language ?? "JP" });
+  const set = (key: string, value: number | string | undefined) => {
+    if (value !== undefined) query.set(key, String(value));
+  };
+  set(typeof speaker === "number" ? "speaker_id" : "speaker_name", speaker);
+  set("style", style);
+  set("style_weight", voice["style-weight"]);
+  set("sdp_ratio", voice["sdp-ratio"]);
+  set("noise", voice.noise);
+  set("noisew", voice["noise-w"]);
+  set("length", voice.length);
+  set("assist_text", voice["assist-text"]);
+  set("assist_text_weight", voice["assist-text-weight"]);
+  return (await call(`/voice?${query}`, { method: "POST" })).arrayBuffer();
 };

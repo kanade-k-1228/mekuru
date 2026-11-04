@@ -1,12 +1,31 @@
-import { defineSpeech, prepare, voiceOf } from "@mekuru/speech";
-import { engine } from "./client.ts";
-import type { VoicevoxProps } from "./props.ts";
-export type { VoicevoxProps } from "./props.ts";
-const prepareLine = async (props: Omit<VoicevoxProps, "id" | "at">) => {
-  const { url, ...voice } = voiceOf(props);
-  return prepare("voicevox", props, String(props.speaker), voice, (say, out) => engine(url).synthesize(voice, say, out));
-};
+import { defineEngine, type SpeechProps } from "@mekuru/speech";
+import { client } from "./client.ts";
 
-export const Voicevox = defineSpeech<VoicevoxProps>(prepareLine);
+export interface VoicevoxProps extends SpeechProps {
+  speaker: number | string;
+  speed?: number;
+  pitch?: number;
+  intonation?: number;
+  volume?: number;
+  pre?: number;
+  post?: number;
+  "pause-scale"?: number;
+  url?: string;
+}
+
+export const Voicevox = defineEngine<VoicevoxProps>({
+  kind: "voicevox",
+  name: "VOICEVOX",
+  env: "MEKURU_VOICEVOX_URL",
+  defaultUrl: "http://127.0.0.1:50021",
+  help:
+    "  - start the VOICEVOX app (its engine listens on port 50021), or\n" +
+    "    docker run --rm -p 127.0.0.1:50021:50021 voicevox/voicevox_engine:cpu-latest\n" +
+    '  - if the engine is elsewhere (WSL2 without mirrored networking), set `url="http://<windows-ip>:50021"` on `<Voicevox>`\n' +
+    "    or the MEKURU_VOICEVOX_URL environment variable",
+  concurrency: 2,
+  who: (props) => String(props.speaker),
+  create: client,
+});
 
 export * from "./characters.ts";
