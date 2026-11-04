@@ -4,23 +4,7 @@ import { toXml } from "@mekuru/types";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-
-const wav = (samples: number): Buffer => {
-  const head = Buffer.alloc(44);
-  head.write("RIFF", 0, "latin1");
-  head.writeUInt32LE(36 + samples * 2, 4);
-  head.write("WAVEfmt ", 8, "latin1");
-  head.writeUInt32LE(16, 16);
-  head.writeUInt16LE(1, 20);
-  head.writeUInt16LE(1, 22);
-  head.writeUInt32LE(48000, 24);
-  head.writeUInt32LE(96000, 28);
-  head.writeUInt16LE(2, 32);
-  head.writeUInt16LE(16, 34);
-  head.write("data", 36, "latin1");
-  head.writeUInt32LE(samples * 2, 40);
-  return Buffer.concat([head, Buffer.alloc(samples * 2)]);
-};
+import { wav } from "../../audio/test/fixture.ts";
 
 const VOICES = [
   { voice_name: "tanaka-san_ja_JP", voice_version: "1.0.0", languages: ["ja_JP"], display_names: [{ language: "ja_JP", name: "田中傘" }] },

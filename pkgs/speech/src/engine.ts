@@ -1,4 +1,36 @@
-export const httpClient =
+import { joinWavs } from "@mekuru/audio/wav";
+import { defineSpeech, prepare, type SpeechProps } from "./index.tsx";
+
+interface EngineProps extends SpeechProps {
+  url?: string;
+  "max-chars"?: number;
+}
+
+/** A speech engine behind an HTTP server. */
+export interface Engine<P extends EngineProps> {
+  /** Engine name in the cache key. */
+  kind: string;
+  /** Engine name in error messages. */
+  name: string;
+  /** Environment variable with the server URL, used when `url` is not set. */
+  env: string;
+  defaultUrl: string;
+  /** How to start the server, shown when it is not reachable. */
+  help: string;
+  /** Lines synthesized at once by one server. */
+  concurrency: number;
+  /** Lines longer than `max-chars` (default `maxChars`) are split, read part by part and joined. */
+  maxChars?: number;
+  /** The speaker's name when `name` is not set. */
+  who: (props: Omit<P, "id" | "at">) => string;
+  /** Makes the reader for one server: `voice` is the props that are not text, timing or `url`, and also the cache key. */
+  create: (
+    call: (path: string, init?: RequestInit) => Promise<Response>,
+    url: string,
+  ) => (voice: Omit<P, keyof SpeechProps | "url">, text: string) => Promise<ArrayBuffer>;
+}
+
+const httpClient =
   (url: string, name: string, help: string) =>
   async (path: string, init?: RequestInit): Promise<Response> => {
     const res = await fetch(url + path, { ...init, signal: AbortSignal.timeout(300_000) }).catch((e: unknown) => {
@@ -9,8 +41,7 @@ export const httpClient =
     return res;
   };
 
-export const limit = (concurrency: number) => {
-  if (!Number.isInteger(concurrency) || concurrency < 1) throw new Error("concurrency must be a positive integer");
+const limit = (concurrency: number) => {
   let running = 0;
   const waiting: (() => void)[] = [];
   return async <T>(work: () => Promise<T>): Promise<T> => {
@@ -26,7 +57,7 @@ export const limit = (concurrency: number) => {
   };
 };
 
-export const splitText = (text: string, max: number): string[] => {
+const splitText = (text: string, max: number): string[] => {
   const size = Math.max(1, Math.floor(max));
   const out: string[] = [];
   let rest = [...text];
@@ -38,4 +69,30 @@ export const splitText = (text: string, max: number): string[] => {
   }
   out.push(rest.join("").trim());
   return out.filter((p) => p);
+};
+
+export const defineEngine = <P extends EngineProps>(engine: Engine<P>) => {
+  const servers = new Map<string, { read: ReturnType<Engine<P>["create"]>; queue: ReturnType<typeof limit> }>();
+  const server = (url: string | undefined) => {
+    const at = (url ?? process.env[engine.env] ?? engine.defaultUrl).replace(/\/+$/, "");
+    let found = servers.get(at);
+    if (!found) {
+      found = { read: engine.create(httpClient(at, engine.name, engine.help), at), queue: limit(engine.concurrency) };
+      servers.set(at, found);
+    }
+    return found;
+  };
+  return defineSpeech<P>((props) => {
+    // The component passes `id` and `at` too.
+    const { children, name, reading, gap, "gain-db": db, id, at, len, url, ...voice } = props as P;
+    const max = (props as EngineProps)["max-chars"] ?? engine.maxChars;
+    return prepare(engine.kind, props, engine.who(props), voice, (say, out) => {
+      const { read, queue } = server(url);
+      return queue(async () => {
+        const wavs: Buffer[] = [];
+        for (const part of max === undefined ? [say] : splitText(say, max)) wavs.push(Buffer.from(await read(voice, part)));
+        await Bun.write(out, wavs.length === 1 ? wavs[0] : joinWavs(wavs));
+      });
+    });
+  });
 };

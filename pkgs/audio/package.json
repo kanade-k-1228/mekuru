@@ -16,8 +16,11 @@
     "src"
   ],
   "sideEffects": false,
-  "dependencies": {
+  "peerDependencies": {
     "@mekuru/types": "workspace:^"
+  },
+  "devDependencies": {
+    "@mekuru/types": "workspace:*"
   },
   "engines": {
     "bun": ">=1.4"

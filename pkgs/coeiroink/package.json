@@ -23,8 +23,7 @@
     "@mekuru/types": "workspace:*"
   },
   "dependencies": {
-    "@mekuru/speech": "workspace:^",
-    "@mekuru/audio": "workspace:^"
+    "@mekuru/speech": "workspace:^"
   },
   "engines": {
     "bun": ">=1.4"

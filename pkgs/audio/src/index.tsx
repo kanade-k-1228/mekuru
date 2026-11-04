@@ -10,9 +10,9 @@ export type AudioSource = Readonly<{
 }> &
   (Readonly<{ status: "draft" }> | Readonly<{ status: "ready"; src: string }>);
 
-const frames = (seconds: number) => Math.ceil(seconds * fps() - 1e-6);
+export const frames = (seconds: number) => Math.ceil(seconds * fps() - 1e-6);
 
-const frameCount = (name: string, value: number): number => {
+export const frameCount = (name: string, value: number): number => {
   if (!Number.isSafeInteger(value) || value < 0) throw new Error(`${name} must be a non-negative whole number of frames`);
   return value;
 };

@@ -11,8 +11,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.tsx",
-    "./text": "./src/text.tsx",
-    "./engine": "./src/engine.ts"
+    "./text": "./src/text.tsx"
   },
   "files": [
     "src"

@@ -63,7 +63,7 @@ const withReadings = (text: string, words: [string, string][]): string => {
   return out;
 };
 
-export interface LineText {
+interface LineText {
   readonly say: string;
   readonly show: string;
   readonly display: Node;

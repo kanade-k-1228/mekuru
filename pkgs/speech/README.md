@@ -19,7 +19,7 @@ Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` in `tsconfig.json`
 Save this reusable adapter as `src/speech.tsx`:
 
 ```tsx
-import { defineSpeech, prepare, voiceOf, type SpeechProps } from "@mekuru/speech";
+import { defineSpeech, prepare, type SpeechProps } from "@mekuru/speech";
 
 interface CustomSpeechProps extends SpeechProps {
   speaker: string;
@@ -29,14 +29,14 @@ type Synthesize = (text: string, output: string, voice: { speaker: string }) => 
 
 export const createSpeech = (synthesize: Synthesize) =>
   defineSpeech<CustomSpeechProps>(async (props) => {
-    const voice = voiceOf(props);
+    const voice = { speaker: props.speaker };
     return prepare("my-engine", props, props.speaker, voice, (text, output) =>
       synthesize(text, output, voice),
     );
   });
 ```
 
-Pass your WAV-writing callback to `createSpeech()` and use the returned component inside `<mekuru>`. Change `"my-engine"` to your engine's identifier. `defineSpeech()` wraps the prepared audio in JSX (`<dur><audio /></dur>`) and needs the frame-rate context provided by `writeXml()` or `toXml()`.
+Pass your WAV-writing callback to `createSpeech()` and use the returned component inside `<mekuru>`. Change `"my-engine"` to your engine's identifier. `defineSpeech()` wraps the prepared audio in JSX (`<dur><audio /></dur>`) and needs the frame-rate context provided by `writeXml()` or `toXml()`. For an engine with an HTTP API, [`defineEngine()`](#defineengineengine) does the rest.
 
 ## Detailed usage
 
@@ -80,14 +80,38 @@ Draft preparation returns an estimated source and queues synthesis; the final pa
 ### Other exports
 
 - `await subtitleText(children)`: Converts ruby notation to display text and preserves whitespace and `<br />`. Also available from the text-only entry point `@mekuru/speech/text`, using the same input format as speech. For subtitle placement and styling, use `Subtitle` from [@mekuru/narrator](../narrator/README.md).
-- `voiceOf(props)`: Removes the fields in `SpeechProps` and returns the remaining engine settings. Remove a connection-only `url` yourself before using those settings as a cache key.
 - `joinWavs(parts)`: Joins a nonempty array of WAV buffers with identical format chunks. It does not resample or convert audio formats.
 
-From `@mekuru/speech/engine`:
+### defineEngine(engine)
 
-- `httpClient(url, name, help)`: Returns an HTTP request function for `url + path`. Adds a five-minute timeout and errors with engine-specific connection help or HTTP status. Add authentication in the adapter when required.
-- `limit(concurrency)`: Returns a queue for async jobs. The limit must be a positive integer; create one queue per engine or server to share the limit.
-- `splitText(text, max)`: Splits text into chunks of at most `max` Unicode code points, preferring punctuation and spaces. Trims chunk edges and omits empty chunks.
+Makes the component for an engine with an HTTP API, like the bundled ones (see [VOICEVOX](../voicevox/src/index.tsx)):
+
+```tsx
+import { defineEngine, type SpeechProps } from "@mekuru/speech";
+
+interface MySpeechProps extends SpeechProps {
+  speaker: number;
+  url?: string;
+}
+
+export const MySpeech = defineEngine<MySpeechProps>({
+  kind: "my-engine",
+  name: "My engine",
+  env: "MY_ENGINE_URL",
+  defaultUrl: "http://127.0.0.1:8000",
+  help: "  - start My engine",
+  concurrency: 1,
+  who: (props) => String(props.speaker),
+  create: (call) => async (voice, text) =>
+    (await call("/synthesis", { method: "POST", body: JSON.stringify({ ...voice, text }) })).arrayBuffer(),
+});
+```
+
+- The server is the `url` prop, else the `env` environment variable, else `defaultUrl`. Each server gets its own `create(call, url)` reader and runs `concurrency` lines at a time.
+- `call(path, init)` sends a request to the server with a five-minute timeout. If the server cannot be reached, the error shows `help`; an HTTP error shows `name`, the path and the status.
+- The reader gets `voice`, the props other than `SpeechProps` and `url`, which is also the cache key, and returns WAV bytes.
+- With `maxChars`, lines longer than the `max-chars` prop (default `maxChars`) are split near punctuation, read part by part and joined.
+- `who(props)` is the speaker's name when `name` is not set.
 
 ### Custom draft handling
 
