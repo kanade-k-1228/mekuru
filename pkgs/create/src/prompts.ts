@@ -59,27 +59,21 @@ const nextSteps = (target: string, sites: readonly Site[]): string => {
 };
 
 export const run = async (args: Args): Promise<number> => {
-  if (args.yes || !process.stdin.isTTY || !process.stdout.isTTY) {
-    const engines = args.engines ?? [];
-    const upload = args.upload ?? [];
-    try {
-      const target = await create(args.dir ?? "my-video", { ...args, engines, upload });
-      const steps = nextSteps(target, upload).replace(/^/gm, "  ");
-      console.log(`\nCreated a Mekuru Movie Maker project in ${relative(process.cwd(), target) || "."}\n\nNext:\n${steps}\n`);
+  const tty = !args.yes && process.stdin.isTTY && process.stdout.isTTY;
+  if (tty) p.intro("@mekuru/create");
+  try {
+    const answers = tty ? await ask(args) : { ...args, dir: args.dir ?? "my-video", engines: args.engines ?? [], upload: args.upload ?? [] };
+    const target = await create(answers.dir, answers);
+    const created = `Created a Mekuru Movie Maker project in ${relative(process.cwd(), target) || "."}`;
+    const steps = nextSteps(target, answers.upload);
+    if (!tty) {
+      console.log(`\n${created}\n\nNext:\n${steps.replace(/^/gm, "  ")}\n`);
       const { ok, detail } = await checkFfmpeg();
       console.log(`${ok ? "✓" : "✗"} ffmpeg: ${detail}\n`);
       return 0;
-    } catch (e) {
-      console.error(`error: ${(e as Error).message}`);
-      return 1;
     }
-  }
-  p.intro("@mekuru/create");
-  try {
-    const answers = await ask(args);
-    const target = await create(answers.dir, answers);
-    p.log.success(`Created a Mekuru Movie Maker project in ${relative(process.cwd(), target) || "."}`);
-    p.note(nextSteps(target, answers.upload), "Next");
+    p.log.success(created);
+    p.note(steps, "Next");
     const spin = p.spinner();
     spin.start("Checking ffmpeg");
     const { ok, detail } = await checkFfmpeg();
@@ -88,7 +82,9 @@ export const run = async (args: Args): Promise<number> => {
     p.outro("Done");
     return 0;
   } catch (e) {
-    p.cancel(e instanceof Cancelled ? "Cancelled" : `error: ${(e as Error).message}`);
+    const message = e instanceof Cancelled ? "Cancelled" : `error: ${(e as Error).message}`;
+    if (tty) p.cancel(message);
+    else console.error(message);
     return 1;
   }
 };
