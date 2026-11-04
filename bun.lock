@@ -16,7 +16,6 @@
         "@mekuru/audio": "workspace:*",
         "@mekuru/core": "workspace:*",
         "@mekuru/narrator": "workspace:*",
-        "@mekuru/speech": "workspace:*",
         "@mekuru/types": "workspace:*",
         "@mekuru/upload": "workspace:*",
         "@mekuru/voicevox": "workspace:*",
@@ -41,12 +40,6 @@
       "version": "0.0.0",
       "dependencies": {
         "@mekuru/speech": "workspace:^",
-      },
-      "devDependencies": {
-        "@mekuru/types": "workspace:*",
-      },
-      "peerDependencies": {
-        "@mekuru/types": "workspace:^",
       },
     },
     "pkgs/core": {
@@ -106,12 +99,6 @@
       "dependencies": {
         "@mekuru/speech": "workspace:^",
       },
-      "devDependencies": {
-        "@mekuru/types": "workspace:*",
-      },
-      "peerDependencies": {
-        "@mekuru/types": "workspace:^",
-      },
     },
     "pkgs/types": {
       "name": "@mekuru/types",
@@ -158,12 +145,6 @@
       "dependencies": {
         "@mekuru/speech": "workspace:^",
       },
-      "devDependencies": {
-        "@mekuru/types": "workspace:*",
-      },
-      "peerDependencies": {
-        "@mekuru/types": "workspace:^",
-      },
     },
     "pkgs/voisona": {
       "name": "@mekuru/voisona",
@@ -173,9 +154,6 @@
       },
       "devDependencies": {
         "@mekuru/types": "workspace:*",
-      },
-      "peerDependencies": {
-        "@mekuru/types": "workspace:^",
       },
     },
   },
