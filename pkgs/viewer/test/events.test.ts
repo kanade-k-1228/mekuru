@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { createStore } from "jotai";
 import { compilation, Events, install, patch, sharePreview, snapshot, state } from "./fixtures.ts";
 import { previewSocketUrl } from "../src/logic/preview";
-import { connAtom, elementsAtom, previewErrorAtom, scheduleAtom, serverAtom, timelineAtom } from "../src/logic/server";
+import { connAtom, elementsAtom, previewErrorAtom, previewAtom, serverAtom, timelineAtom } from "../src/logic/server";
 import { timeAtom, playingAtom } from "../src/logic/playback";
 import { timelineLayoutAtom, timelineViewAtom } from "../src/logic/timeline/atoms";
 
@@ -13,26 +13,26 @@ test("version mismatch requests a snapshot over WebSocket; reconnect and cleanup
   try {
     const a = sharePreview(compilation(), null);
     Events.all[0].receive(snapshot(state(), a));
-    const preview = store.get(scheduleAtom);
+    const preview = store.get(previewAtom);
     const b = sharePreview(compilation(2), a);
     Events.all[0].receive({ ...patch(state(2), a, b), baseVersion: 999 });
     expect(Events.all[0].closed).toBe(false);
     expect(Events.all[0].sent).toEqual([JSON.stringify({ type: "resync" })]);
-    expect(store.get(scheduleAtom)).toBe(preview);
+    expect(store.get(previewAtom)).toBe(preview);
     expect(store.get(connAtom)).toBe("reconnecting");
     Events.all[0].receive(patch(state(2), a, b)); // Ignore queued patches until the fresh snapshot.
-    expect(store.get(scheduleAtom)).toBe(preview);
+    expect(store.get(previewAtom)).toBe(preview);
     Events.all[0].receive(snapshot(state(2), b));
-    expect(store.get(scheduleAtom)?.version).toBe(2);
+    expect(store.get(previewAtom)?.version).toBe(2);
     expect(store.get(previewErrorAtom)).toBeNull();
     Events.all[0].onclose?.();
     expect(store.get(connAtom)).toBe("reconnecting");
     Events.all[0].receive(snapshot(state(), a)); // Closed sockets cannot roll state back.
-    expect(store.get(scheduleAtom)?.version).toBe(2);
+    expect(store.get(previewAtom)?.version).toBe(2);
     await Bun.sleep(1100);
     expect(Events.all).toHaveLength(2);
     Events.all[1].receive(snapshot(state(2), b));
-    expect(store.get(scheduleAtom)?.version).toBe(2);
+    expect(store.get(previewAtom)?.version).toBe(2);
     expect(store.get(previewErrorAtom)).toBeNull();
     Events.all[1].onerror?.();
     close();
@@ -93,11 +93,11 @@ test("malformed messages request one resync and a missing snapshot causes reconn
   const close = store.sub(serverAtom, () => {});
   try {
     Events.all[0].receive(snapshot(state(), sharePreview(compilation(), null)));
-    const before = store.get(scheduleAtom);
+    const before = store.get(previewAtom);
     Events.all[0].onmessage?.({ data: "invalid JSON" });
     Events.all[0].onmessage?.({ data: "invalid JSON again" });
     expect(Events.all[0].sent).toHaveLength(1);
-    expect(store.get(scheduleAtom)).toBe(before);
+    expect(store.get(previewAtom)).toBe(before);
     await Bun.sleep(3100);
     expect(Events.all[0].closed).toBe(true);
     expect(store.get(previewErrorAtom)).toContain("timed out");

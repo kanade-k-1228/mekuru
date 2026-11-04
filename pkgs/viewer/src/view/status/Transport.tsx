@@ -1,7 +1,7 @@
 import { useAtomValue, useSetAtom } from "jotai";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Pause, Play, type LucideIcon } from "lucide-react";
 import { playingAtom, stepAtom, togglePlayAtom } from "../../logic/playback";
-import { scheduleAtom } from "../../logic/server";
+import { previewAtom } from "../../logic/server";
 import { Tooltip } from "./Tooltip";
 import { clsx } from "clsx";
 
@@ -37,7 +37,7 @@ const IconButton = ({ icon: Icon, label, keys, disabled, onClick, main }: IconBu
 
 export const Transport = () => {
   const playing = useAtomValue(playingAtom);
-  const disabled = useAtomValue(scheduleAtom) == null;
+  const disabled = useAtomValue(previewAtom) == null;
   const onTogglePlay = useSetAtom(togglePlayAtom);
   const onStep = useSetAtom(stepAtom);
   return (

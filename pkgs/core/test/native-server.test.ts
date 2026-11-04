@@ -49,7 +49,7 @@ test("a relocated native executable serves its embedded UI without Bun or a view
   const binary = join(root, process.platform === "win32" ? "standalone.exe" : "standalone");
   await copyFile(findCompiler(), binary);
   await chmod(binary, 0o755);
-  server = await startServer({ xml, port: 0, compiler: binary, env: { ...process.env, PATH: root }, title: "Native 日本語" });
+  server = await startServer({ xml, port: 0, compiler: binary, env: { ...process.env, PATH: root } });
   const index = await fetch(server.url);
   expect(index.status).toBe(200);
   const html = await index.text();
@@ -59,7 +59,7 @@ test("a relocated native executable serves its embedded UI without Bun or a view
   expect(javascript.headers.get("content-type")).toMatch(/javascript/);
   expect((await javascript.text()).length).toBeGreaterThan(1000);
   await until(async () => (await state()).status === "ready");
-  expect((await state()).path).toBe("Native 日本語");
+  expect((await state()).title).toBe("scene.xml");
 }, 15000);
 
 test("streams media ranges, HEAD, revised asset URLs and rejects outside paths", async () => {

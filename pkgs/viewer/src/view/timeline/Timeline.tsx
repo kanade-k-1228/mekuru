@@ -2,7 +2,7 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useId, useMemo, type PointerEvent } from "react";
 import { timeAtom } from "../../logic/playback";
 import { timelineAtom } from "../../logic/server";
-import { attachTimelineAtom, timelineLayoutAtom, timelineMetricsAtom, timelineWidthAtom } from "../../logic/timeline/atoms";
+import { attachTimelineAtom, timelineLayoutAtom, timelineMetricsAtom } from "../../logic/timeline/atoms";
 import { LEFT_PAD, RULER_H, rulerTicks, timeAt, xAt } from "../../logic/timeline/model";
 import { formatTime } from "../../logic/util";
 import { TimelineContent } from "./TimelineContent";
@@ -15,14 +15,14 @@ const BADGE = "rounded-full border px-[7px] text-[11px]/4";
 
 export const Timeline = () => {
   const attach = useSetAtom(attachTimelineAtom);
-  const width = useAtomValue(timelineWidthAtom);
   const metrics = useAtomValue(timelineMetricsAtom);
+  const { width } = metrics;
   const layout = useAtomValue(timelineLayoutAtom);
   const estimated = useAtomValue(timelineAtom).clips.some((c) => c.estimated);
   const ruler = useMemo(() => rulerTicks(metrics), [metrics]);
   const [time, seek] = useAtom(timeAtom);
   const seekAt = (e: PointerEvent<HTMLElement>) => seek(timeAt(metrics, e.clientX - e.currentTarget.getBoundingClientRect().left));
-  const uid = useId().replace(/:/g, "");
+  const uid = useId();
   const px = xAt(metrics, time);
 
   const showHead = px >= LEFT_PAD - 1 && px <= width;

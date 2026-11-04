@@ -69,9 +69,6 @@
 }
 
 @layer base {
-  :root {
-    color-scheme: dark;
-  }
   html,
   body,
   #root {
@@ -86,8 +83,7 @@
   :focus-visible {
     @apply outline-2 outline-offset-1 outline-accent;
   }
-  button:not(:disabled),
-  [role="button"]:not(:disabled) {
+  button:not(:disabled) {
     cursor: pointer;
   }
 }

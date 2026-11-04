@@ -14,8 +14,11 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "moduleDetection": "force",
+    "noUncheckedSideEffectImports": true,
+    "erasableSyntaxOnly": true
   },
   "include": ["pkgs/*/src", "pkgs/*/test", "scripts", "example/src", "example/scripts", "pkgs/*/npm"],
-  "exclude": ["pkgs/viewer", "pkgs/create/template"]
+  "exclude": ["pkgs/viewer"]
 }

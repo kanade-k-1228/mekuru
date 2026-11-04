@@ -2,7 +2,7 @@ import { useAtomValue } from "jotai";
 import { RefreshCw } from "lucide-react";
 import type { StateDto } from "../protocol";
 import { keysAtom } from "../logic/playback";
-import { connAtom, previewErrorAtom, previewLoadingAtom, scheduleAtom, serverAtom } from "../logic/server";
+import { connAtom, previewAtom, previewErrorAtom, previewLoadingAtom, serverAtom } from "../logic/server";
 import { PREVIEW_MIN_HEIGHT, TIMELINE_MIN_HEIGHT, timelineHeightAtom } from "../logic/timeline/atoms";
 import { Preview } from "./preview/Preview";
 import { ResizeHandle } from "./timeline/ResizeHandle";
@@ -32,7 +32,7 @@ const Connecting = () => {
 const Workspace = ({ server }: { server: StateDto }) => {
   useAtomValue(keysAtom);
   const timelineHeight = useAtomValue(timelineHeightAtom);
-  const sched = useAtomValue(scheduleAtom);
+  const preview = useAtomValue(previewAtom);
   const loading = useAtomValue(previewLoadingAtom);
   const previewError = useAtomValue(previewErrorAtom);
   const errors = [
@@ -63,13 +63,13 @@ const Workspace = ({ server }: { server: StateDto }) => {
             </p>
           ))}
         <div className="relative flex min-h-0 flex-1 flex-col">
-          {sched && <Preview schedule={sched} />}
+          {preview && <Preview width={preview.width} height={preview.height} />}
           {(server.status === "building" || loading) && <Reloading />}
         </div>
       </main>
       <div className="relative min-h-0">
         <ResizeHandle />
-        {sched ? <Timeline /> : <div className="h-full border-t border-line bg-source" />}
+        {preview ? <Timeline /> : <div className="h-full border-t border-line bg-source" />}
       </div>
       <StatusBar />
     </div>

@@ -14,17 +14,9 @@ export const previewXml = (count: number, edit: number, language: string) => {
   return `<mekuru size="640x360" fps="30"><seq>${Array.from({ length: count }, (_, i) => `<dur len="30"><text x="10" y="20" size="32">${caption(i)}</text></dur>`).join("")}</seq></mekuru>`;
 };
 
-export async function startServer(opts: {
-  xml: string;
-  port: number;
-  root?: string;
-  run?: string;
-  title?: string;
-  compiler?: string;
-  env?: Record<string, string>;
-}) {
+export async function startServer(opts: { xml: string; port: number; root?: string; run?: string; compiler?: string; env?: Record<string, string> }) {
   const args = [opts.compiler ?? findCompiler(), opts.xml, "--serve", "--no-open", "--port", String(opts.port)];
-  for (const key of ["root", "run", "title"] as const) if (opts[key]) args.push(`--${key}`, opts[key]);
+  for (const key of ["root", "run"] as const) if (opts[key]) args.push(`--${key}`, opts[key]);
   const process = Bun.spawn(args, { stdout: "ignore", stderr: "pipe", env: opts.env ?? globalThis.process.env });
   const close = () => process.kill("SIGTERM");
   let stderr = "";

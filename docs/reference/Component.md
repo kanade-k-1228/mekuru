@@ -75,7 +75,7 @@ Each save updates the preview and timeline. Errors appear in the browser, which 
 - Zoom: Bottom-right slider or Ctrl + wheel
 - Resize: Drag the timeline's top edge; the setting is saved in the browser
 
-Use `bun preview --no-open` to prevent the browser from opening automatically. Set `MEKURU_OPEN=0` to make this the default, or pass `--open` to open it for one run. In VS Code, select the displayed URL to open it in Integrated Browser.
+Use `bun preview --no-open` to prevent the browser from opening automatically. Set `MEKURU_OPEN=0` to make this the default. In VS Code, select the displayed URL to open it in Integrated Browser.
 
 Timing and layout match the export. Text is drawn by the browser, so its width, wrapping, and outlines can differ, as can video seek precision. Speed changes preserve pitch; sections outside the 1/16–16× range use seeking to follow the timeline.
 

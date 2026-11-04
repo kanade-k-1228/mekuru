@@ -1,7 +1,7 @@
 import { atom } from "jotai";
 import type { Fade, MediaMap, SceneElement } from "../protocol";
 import { playingAtom, timeAtom } from "./playback";
-import { elementsAtom, scheduleAtom } from "./server";
+import { elementsAtom, previewAtom } from "./server";
 import { clamp } from "./util";
 
 interface Interval {
@@ -89,11 +89,11 @@ export interface Shown {
 const indexAtom = atom((get) => intervalIndex(get(elementsAtom).map((element, order) => ({ ...span(element), order, element }))));
 
 export const stageAtom = atom((get): Shown[] => {
-  const schedule = get(scheduleAtom);
-  if (!schedule) return [];
+  const preview = get(previewAtom);
+  if (!preview) return [];
   const time = get(timeAtom);
-  const t = Math.min(time, Math.max(0, schedule.duration - 1e-3));
-  const playing = get(playingAtom) && time < schedule.duration;
+  const t = Math.min(time, Math.max(0, preview.duration - 1e-3));
+  const playing = get(playingAtom) && time < preview.duration;
   return get(indexAtom)(t)
     .filter(({ element }) => shownAt(element, t))
     .sort((a, b) => a.order - b.order)

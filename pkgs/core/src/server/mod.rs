@@ -21,12 +21,11 @@ use axum::{
 };
 use serde::Serialize;
 use std::{
-    net::SocketAddr,
     path::PathBuf,
     sync::{Arc, Condvar, Mutex},
     time::{Duration, Instant},
 };
-use tokio::{net::TcpListener, sync::broadcast, task::JoinHandle};
+use tokio::{net::TcpListener, sync::broadcast};
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 
 #[derive(Clone, Debug)]
@@ -35,13 +34,14 @@ pub struct Options {
     pub root: Option<PathBuf>,
     pub run: Option<String>,
     pub port: u16,
-    pub title: Option<String>,
+    /// Open the viewer in a browser.
+    pub open: bool,
 }
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PreviewState {
-    path: String,
+    title: String,
     version: u64,
     preview_version: u64,
     status: &'static str,
@@ -137,12 +137,12 @@ impl Queue {
 }
 
 impl App {
-    fn new(root: PathBuf, path: String, xml: String, backlog: usize) -> App {
+    fn new(root: PathBuf, title: String, xml: String, backlog: usize) -> App {
         App {
             root,
             live: Arc::new(Mutex::new(Live {
                 state: PreviewState {
-                    path,
+                    title,
                     version: 1,
                     preview_version: 0,
                     status: "building",
@@ -250,42 +250,8 @@ fn compile(app: App, path: PathBuf) {
     }
 }
 
-pub struct Server {
-    address: SocketAddr,
-    app: App,
-    tasks: Vec<JoinHandle<()>>,
-}
-impl Server {
-    pub fn url(&self) -> String {
-        format!("http://{}", self.address)
-    }
-    pub async fn terminated(&self) {
-        self.app.cancel.cancelled().await;
-    }
-    pub fn close(&self) {
-        self.app.cancel.cancel();
-        self.app.queue.close();
-    }
-    pub async fn wait(mut self) {
-        self.app.cancel.cancelled().await;
-        self.close();
-        self.app.connections.close();
-        for mut task in self.tasks.drain(..) {
-            if tokio::time::timeout(Duration::from_secs(2), &mut task).await.is_err() {
-                task.abort();
-            }
-        }
-        // Upgraded sockets outlive Axum's HTTP requests; let their close frames finish.
-        let _ = tokio::time::timeout(Duration::from_secs(2), self.app.connections.wait()).await;
-    }
-}
-impl Drop for Server {
-    fn drop(&mut self) {
-        self.close();
-    }
-}
-
-pub async fn start(opts: Options) -> Result<Server> {
+/// Serves the preview until Ctrl-C, SIGTERM or a server error.
+pub async fn run(opts: Options) -> Result<()> {
     let path = crate::normalize(&std::path::absolute(&opts.xml)?);
     let xml = match tokio::fs::read_to_string(&path).await {
         Ok(xml) => xml,
@@ -300,38 +266,54 @@ pub async fn start(opts: Options) -> Result<Server> {
     let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, opts.port))
         .await
         .with_context(|| format!("cannot listen on 127.0.0.1:{} (is the port in use? try --port)", opts.port))?;
-    let address = listener.local_addr()?;
+    let url = format!("http://{}", listener.local_addr()?);
     // Send small status and patch messages immediately, without delayed-ACK/Nagle stalls.
     let listener = listener.tap_io(|socket| {
         if let Err(error) = socket.set_nodelay(true) {
             eprintln!("preview TCP_NODELAY: {error}");
         }
     });
-    let title = opts.title.unwrap_or_else(|| opts.xml.to_string_lossy().into_owned());
+    let title = path
+        .file_name()
+        .map_or_else(|| path.to_string_lossy(), |name| name.to_string_lossy())
+        .into_owned();
     let app = App::new(root, title, xml.clone(), 64);
     app.queue.push(1, xml);
-    let watcher = watch::start(path.clone(), app.clone())?;
-    let mut server = Server {
-        address,
-        app: app.clone(),
-        tasks: vec![watcher],
-    };
+    let mut tasks = vec![watch::start(path.clone(), app.clone())?];
     let compiler = app.clone();
     std::thread::Builder::new()
         .name("preview-compiler".into())
         .spawn(move || compile(compiler, path))?;
     if let Some(command) = opts.run {
-        server.tasks.push(script::start(command, app.clone()));
+        tasks.push(script::start(command, app.clone()));
     }
     let router = Router::new().route("/api/ws", get(socket::upgrade)).fallback(http).with_state(app.clone());
-    server.tasks.push(tokio::spawn(async move {
-        if let Err(error) = axum::serve(listener, router).with_graceful_shutdown(app.cancel.clone().cancelled_owned()).await {
+    let serving = app.clone();
+    tasks.push(tokio::spawn(async move {
+        if let Err(error) = axum::serve(listener, router)
+            .with_graceful_shutdown(serving.cancel.clone().cancelled_owned())
+            .await
+        {
             eprintln!("preview server: {error}");
         }
-        app.cancel.cancel();
-        app.queue.close();
+        serving.cancel.cancel();
     }));
-    Ok(server)
+    eprintln!("mekuru viewer: {url}  ({})", opts.xml.display());
+    if opts.open {
+        open_browser(&url);
+    }
+    let result = tokio::select! { result = shutdown_signal() => result, _ = app.cancel.cancelled() => Ok(()) };
+    app.cancel.cancel();
+    app.queue.close();
+    app.connections.close();
+    for mut task in tasks {
+        if tokio::time::timeout(Duration::from_secs(2), &mut task).await.is_err() {
+            task.abort();
+        }
+    }
+    // Upgraded sockets outlive Axum's HTTP requests; let their close frames finish.
+    let _ = tokio::time::timeout(Duration::from_secs(2), app.connections.wait()).await;
+    result
 }
 
 async fn http(State(app): State<App>, request: HttpRequest<Body>) -> Response {
@@ -362,7 +344,7 @@ async fn http(State(app): State<App>, request: HttpRequest<Body>) -> Response {
     files::viewer(&request)
 }
 
-pub fn open_browser(url: &str) {
+fn open_browser(url: &str) {
     let wsl = cfg!(target_os = "linux") && (std::env::var_os("WSL_INTEROP").is_some() || std::path::Path::new("/proc/sys/fs/binfmt_misc/WSLInterop").exists());
     let commands: &[(&str, &[&str])] = if wsl {
         &[("wslview", &[]), ("cmd.exe", &["/C", "start", ""])]
@@ -393,7 +375,7 @@ pub fn open_browser(url: &str) {
     }
 }
 
-pub async fn shutdown_signal() -> Result<()> {
+async fn shutdown_signal() -> Result<()> {
     #[cfg(unix)]
     {
         let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;

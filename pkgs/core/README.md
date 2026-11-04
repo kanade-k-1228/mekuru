@@ -28,8 +28,7 @@ Bun is still needed when your `--run` command authors XML using TSX. Video expor
 - `-p, --port <port>`: port, default 3333; use 0 to choose an available port.
 - `--root <dir>`: asset and script working directory. Defaults to the XML folder, or its parent when that folder is `.mekuru`.
 - `--run <command>`: run a shell command in the project directory. Stderr appears in the viewer until the next XML save. The server terminates the command and its child processes on shutdown.
-- `--title <name>`: browser title, default the XML argument.
-- `--no-open` / `--open`: control automatic browser opening. `MEKURU_OPEN=0`, `false`, `no` or `off` also disables it.
+- `--no-open`: do not open a browser. `MEKURU_OPEN=0` does the same.
 
 A missing XML file is allowed with `--run`. Compilation errors preserve the last successful scene. Saving uses two matching reads 10 ms apart; `/mnt/` uses a 500 ms polling fallback. Slow WebSocket readers receive a fresh snapshot when they fall behind. Asset URLs support HEAD and byte ranges; paths must resolve inside the project root.
 
