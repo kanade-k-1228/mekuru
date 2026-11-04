@@ -30,7 +30,10 @@
     "pkgs/audio": {
       "name": "@mekuru/audio",
       "version": "0.0.0",
-      "dependencies": {
+      "devDependencies": {
+        "@mekuru/types": "workspace:*",
+      },
+      "peerDependencies": {
         "@mekuru/types": "workspace:^",
       },
     },
