@@ -39,13 +39,13 @@ This component combines speech, a portrait, and subtitles into one line. Types a
 
 ```tsx
 // Excerpt from example/src/parts.tsx
-export const Tsuzumi: FC<Line> = async ({ children, face, show, ...time }) => {
-  const line = await Voisona.prepare({ ...voice, children });
+export const Zundamon: FC<Line> = async ({ children, face, show, ...time }) => {
+  const line = await Voicevox.prepare({ ...voice, children });
   return (
-    <dur len={line.len} {...time}>
+    <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
-        <tsuzumi.Talk source={line.audio} face={face} />
+        <zundamon.Talk source={line.audio} {...(face ? FACES[face] : { face: "normal" })} />
         <Subtitle>{line.display}</Subtitle>
         {show}
       </stack>
@@ -54,7 +54,7 @@ export const Tsuzumi: FC<Line> = async ({ children, face, show, ...time }) => {
 };
 ```
 
-`Voisona.prepare` prepares one shared audio source for `Audio` and `Talk` (`Audio` is imported from `@mekuru/speech`). `line.display` preserves ruby base text and line breaks. `Subtitle` only adds styles to ordinary `text`. The outer `<dur>` bounds the whole line, including anything passed as `show`. See [composing narrators](../../pkgs/narrator/README.md).
+`Voicevox.prepare` prepares one shared audio source for `Audio` and `Talk` (`Audio` is imported from `@mekuru/audio`). `line.display` preserves ruby base text and line breaks. `Subtitle` only adds styles to ordinary `text`. The outer `<dur>` bounds the whole line, including anything passed as `show`. See [composing narrators](../../pkgs/narrator/README.md).
 
 ### Displaying code
 
@@ -77,7 +77,7 @@ Each save updates the preview and timeline. Errors appear in the browser, which 
 
 Use `bun preview --no-open` to prevent the browser from opening automatically. Set `MEKURU_OPEN=0` to make this the default, or pass `--open` to open it for one run. In VS Code, select the displayed URL to open it in Integrated Browser.
 
-Timing, layout, and text shaping match the export. Browser rendering and video seek precision may differ. Speed changes preserve pitch; sections outside the 1/16–16× range use seeking to follow the timeline.
+Timing and layout match the export. Text is drawn by the browser, so its width, wrapping, and outlines can differ, as can video seek precision. Speed changes preserve pitch; sections outside the 1/16–16× range use seeking to follow the timeline.
 
 ## Export
 

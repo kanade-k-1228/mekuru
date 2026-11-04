@@ -1,4 +1,4 @@
-export const FIRST_SCENE = `<stack>
+const FIRST_SCENE = `<stack>
   <text x="50%" y="35%" anchor="center" size={90}>
     はじめての動画
   </text>
@@ -25,8 +25,8 @@ const indent = (code: string, spaces: number) =>
     .map((line) => " ".repeat(spaces) + line)
     .join("\n");
 
-const script = (body: string, withPortrait = false) => `import { type FC, writeXml } from "@mekuru/types";
-import { ${withPortrait ? "Zundamon, ZundamonPortrait" : "Zundamon"} } from "./character/zundamon";
+const script = (body: string) => `import { type FC, writeXml } from "@mekuru/types";
+import { Zundamon } from "./character/zundamon";
 
 const Video: FC = () => (
   <mekuru size="1920x1080" fps={30}>
@@ -39,4 +39,3 @@ await writeXml(".mekuru/main.xml", <Video />);
 
 export const FIRST_SCRIPT = script(`<rect w="100%" h="100%" fill="#141C26" />\n${FIRST_SCENE}`);
 export const PORTRAITS = `<ZundamonPortrait x="85%" h="45%" />`;
-export const FINAL_SCRIPT = script(`<rect w="100%" h="100%" fill="#141C26" />\n${PORTRAITS}\n${FIRST_SCENE}\n${SECOND_SCENE}`, true);

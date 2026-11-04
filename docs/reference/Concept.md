@@ -26,7 +26,7 @@ Time uses integer frames, rounding up fractions introduced by playback speed cha
 
 Static drawing and audio processing are cached. Audio speed changes use ffmpeg's `atempo` to preserve pitch.
 
-Preview uses the same timing, layout, and text paths. The compiler returns display data as JSON for the browser to render, without generating PCM audio or encoding video.
+Preview uses the same timing and layout; the browser draws text, so it can differ slightly from the export. The compiler returns display data as JSON for the browser to render, without generating PCM audio or encoding video.
 
 ## Composition
 
