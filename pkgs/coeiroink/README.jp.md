@@ -39,7 +39,7 @@ await writeXml(
 
 ```sh
 bun src/main.tsx
-bunx mekuru-server .mekuru/main.xml
+bunx mekuru-compiler .mekuru/main.xml --serve
 ```
 
 `http://localhost:3333` でプレビューします。書き出しは `bunx mekuru-compiler .mekuru/main.xml -o video.mp4`。

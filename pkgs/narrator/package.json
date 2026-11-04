@@ -11,8 +11,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.tsx",
-    "./psd": "./src/psd.ts",
-    "./captions": "./src/captions.ts"
+    "./psd": "./src/psd.ts"
   },
   "files": [
     "src"
@@ -31,8 +30,7 @@
     "@mekuru/speech": "workspace:^",
     "ag-psd": "^31.0.3",
     "sharp": "^0.35.5",
-    "@mekuru/audio": "workspace:^",
-    "@mekuru/protocol": "workspace:^"
+    "@mekuru/audio": "workspace:^"
   },
   "bin": {
     "mekuru-psd": "./src/mekuru-psd.ts"

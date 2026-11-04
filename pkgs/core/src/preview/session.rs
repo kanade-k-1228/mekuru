@@ -7,15 +7,12 @@ use crate::util::{
     hash::sha256_hex,
     lru::{Lru, file_stamp},
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Request {
     pub version: u64,
     pub xml: String,
-    #[serde(default)]
     pub base_version: Option<u64>,
 }
 #[derive(Serialize)]

@@ -10,8 +10,7 @@
   "description": "Native video compiler and preview server with an embedded browser viewer",
   "type": "module",
   "bin": {
-    "mekuru-compiler": "./bin/mekuru-compiler.js",
-    "mekuru-server": "./bin/mekuru-server.js"
+    "mekuru-compiler": "./bin/mekuru-compiler.js"
   },
   "files": [
     "bin",
@@ -20,11 +19,7 @@
   "engines": {
     "node": ">=20"
   },
-  "dependencies": {
-    "@mekuru/protocol": "workspace:^"
-  },
   "exports": {
-    "./compiler": "./npm/compiler.js",
-    "./timeline": "./npm/timeline.ts"
+    "./compiler": "./npm/compiler.js"
   }
 }

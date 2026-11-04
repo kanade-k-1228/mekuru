@@ -4,7 +4,7 @@
 
 React・Jotai・Vite で作られた、Mekuru Movie Maker のブラウザプレビューとタイムラインの UI です。非公開のワークスペースパッケージで、ビルド結果は [@mekuru/core](../core/README.jp.md) に同梱されます。
 
-開発時は `mekuru-server` をポート 3333 で起動し、Bun 1.4 以上を使ってリポジトリのルートから実行します。
+開発時は `mekuru-compiler <xml> --serve` をポート 3333 で起動し、Bun 1.4 以上を使ってリポジトリのルートから実行します。
 
 ```sh
 bun install

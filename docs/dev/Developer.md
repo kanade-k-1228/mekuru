@@ -72,9 +72,9 @@ A failed workflow can be rerun. `--tolerate-republish` handles versions already 
 
 ## How preview works
 
-`mekuru-compiler <xml> --serve` runs a Tokio/Axum HTTP server, filesystem watcher and a dedicated compiler thread in one process. The compiled viewer is embedded in the executable. `@mekuru/core` replaces the separate CLI package; `mekuru-server` is an npm alias that launches the same native executable. No Bun process or worker IPC is needed to preview existing XML. `--run` still executes the user's authoring command in the project folder.
+`mekuru-compiler <xml> --serve` runs a Tokio/Axum HTTP server, filesystem watcher and a dedicated compiler thread in one process. The compiled viewer is embedded in the executable. No Bun process is needed to preview existing XML. `--run` still executes the user's authoring command in the project folder.
 
-Scenes and drawing resources are shared with Arc, and only the latest pending XML is compiled. The compiler thread keeps the existing font, media, drawing and identity caches. HTTP and file streams remain asynchronous while compilation runs. `--emit-preview`, `--emit-timeline` and the tool-facing `--preview-worker` protocol remain available.
+Scenes and drawing resources are shared with Arc, and only the latest pending XML is compiled. The compiler thread keeps the existing font, media, drawing and identity caches. HTTP and file streams remain asynchronous while compilation runs.
 - File notifications settle through two matching reads 10 ms apart, normally about 20 ms after the last notification. New notifications invalidate in-flight reads; transient read errors retry up to three times. Atomic replacements and quick chunked writes are coalesced. The existing 500 ms polling fallback under `/mnt/` still applies.
 - Parsing, layout and timing run over the entire input. Font books, text measurements, media metadata and `ViewOp` drawing conversions are reused. A resource is one original `ViewOp`, even when the compiler merges many operations into one display element.
 - The drawing LRU has a 64 MiB estimated-size budget; each of up to four font books has 4 MiB of measurements and 16 MiB of glyph outlines. Probe and image-dimension LRUs each have a 1 MiB budget. The worker also retains at most the acknowledged scene and one candidate, sharing drawing resources through Arc. These scenes, active response data and the font system's own storage are additional. File keys include path, size and modification time; font-file dependencies are preloaded and validated before layout. Diagnostics always use the current formatted XML's line numbers.
@@ -87,33 +87,9 @@ Scenes and drawing resources are shared with Arc, and only the latest pending XM
 
 Preview text uses HTML/CSS from compiler-resolved positions, widths and styles; shapes and images use SVG, and media uses browser elements. Text width, wrapping and outlines can differ from export. Explicit and project-default font files inside the project load through `/files/` with a revision in the URL; unavailable or loading fonts use a fallback. The browser shares faces by source and revision and releases the last mounted reference. Export retains Rust shaping and glyph paths. The glyph cache described above is used by export, not HTML preview.
 
-Single-shot preview, resident preview and `--emit-timeline` share analysis. Preview diagnostics refer to formatted XML; timeline diagnostics refer to the input XML. The frame-based timeline and caption APIs are documented in [core](../../pkgs/core/README.md#programmatic-apis) and [narrator](../../pkgs/narrator/README.md). Timeline source IDs and preview reconciliation keys serve separate purposes.
-
 Asset-only watching, incremental XML/layout/timing, and playback optimization are outside this path. Asset changes are validated on the next compile; restart the server after installing system fonts.
 
-Run `bun scripts/preview-benchmark.ts 500 10 en` or `bun scripts/preview-benchmark.ts 500 10 ja` after building to compare fresh single-shot compilation with a resident worker. The fixture has 500 captions and ten edits to one caption. The script reports round-trip time, drawing hits, uncompressed response/WebSocket JSON bytes, and JSON decoding plus reducer time in Bun. Use a matching script/CLI and compiler when comparing protocol revisions. `MEKURU_COMPILER` selects the compiler; `MEKURU_BENCH_OUT=/tmp/benchmark` saves events for browser profiling. These script timings exclude browser layout and paint.
-
-Before the Rust-diff change (`ea09c5a`), a 2026-11-03 local Linux debug-build comparison used the same script and fonts for the pre-integration SVG worker and the integrated HTML worker (500 captions at 640×360; ten edits to the middle caption). Values below are SVG → HTML; the first request is one sample and edits use medians. KB/MB are decimal, uncompressed.
-
-| Language | First worker round trip | Repeated round trip | Initial SSE | SSE per edit |
-| --- | --- | --- | --- | --- |
-| English | 172.1 → 21.2 ms | 8.58 → 7.70 ms | 16.88 → 0.379 MB | 32.4 → 1.19 KB |
-| Japanese | 372.0 → 22.9 ms | 11.20 → 9.95 ms | 33.30 → 0.427 MB | 59.2 → 1.29 KB |
-
-Both workers reused 499/500 drawings and supplied one resource per edit. Replaying the events through the built viewer in headless Chromium at 1200×900, with the edited caption visible, measured first-event-to-second-animation-frame times of 57.9 → 54.3 ms (English) and 105.4 → 75.5 ms (Japanese). Repeated medians were 29.5 → 29.8 ms and 29.7 → 29.8 ms. These include React work, layout and frame waiting, exclude network transfer, and are not isolated paint timings or general performance guarantees. The main measured improvement is generation and transfer size.
-
-Browser checks also covered mixed HTML/SVG order, Japanese wrapping/alignment/stroke/rotation, default and explicit file fonts, same-path font replacement, failed font loading, media DOM retention, seek/zoom/playback preservation, shorter-duration clamping, compile errors, snapshot resynchronization and worker restart. The public timeline-to-caption-to-SRT flow was exercised at 30000/1001 fps.
-
-Before the native server migration, commit `280c231` moved diff generation to Rust and shortened file settling. Both sides used the HTML renderer and the same English/Japanese 500-caption fixtures. Ten local edits on Linux debug builds gave these medians (before → after; decimal KB):
-
-| Language | Rust → CLI response per edit | Worker round trip | File write → ready SSE |
-| --- | --- | --- | --- |
-| English | 209.95 → 1.23 KB | 8.86 → 7.81 ms | 111.1 → 29.7 ms |
-| Japanese | 233.50 → 1.32 KB | 10.46 → 9.69 ms | 115.6 → 32.1 ms |
-
-Rust diff generation took about 0.36 ms, and CLI snapshot-cache application plus event encoding took 0.48–0.61 ms per edit. Browser SSE payloads remained about 1.2–1.3 KB. The larger latency improvement comes from reducing file settling from roughly 102 ms to 22 ms. These are historical Bun-server measurements. The subsequent native server migration consolidates installation and distribution into one executable and removes the remaining relay and IPC.
-
-`bun scripts/preview-latency.ts 500 10 ja` launches the native server and measures atomic file writing through receipt of a ready WebSocket message, including settling and compilation but excluding browser rendering. It shares its input generator with `preview-benchmark.ts`. `MEKURU_COMPILER` selects the executable. Comparisons with earlier SSE versions must use that revision’s script and matching compiler. Initial loading transfers a full snapshot.
+`bun scripts/preview-latency.ts 500 10 ja` launches the native server and measures atomic file writing through receipt of a ready WebSocket message, including settling and compilation but excluding browser rendering. `MEKURU_COMPILER` selects the executable. Initial loading transfers a full snapshot.
 
 Tests cover a relocated binary with no Bun on PATH, embedded UI/assets, range requests, traversal rejection, snapshot/patch reconstruction, invalid XML recovery, chunked/atomic saves, newest-input coalescing, slow-subscriber resynchronization and `--run` shutdown. The CI platform matrix runs the real native server tests after embedding the viewer.
 

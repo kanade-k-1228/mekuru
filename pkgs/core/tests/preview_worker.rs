@@ -1,14 +1,26 @@
-use mekuru_compiler::preview::{Request, Session as PreviewSession};
+use mekuru_compiler::preview::{self, Request, Session as PreviewSession};
 use serde_json::{Value, json};
 use std::{
     collections::HashMap,
-    io::Write,
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::Command,
 };
 
 fn wire(value: impl serde::Serialize) -> serde_json::Result<Value> {
     serde_json::from_slice(&serde_json::to_vec(&value)?)
+}
+
+fn run(worker: &mut PreviewSession, root: Option<&Path>, version: u64, base_version: Option<u64>, xml: &str) -> Value {
+    wire(worker.compile(
+        Path::new("-"),
+        root,
+        Request {
+            version,
+            xml: xml.into(),
+            base_version,
+        },
+    ))
+    .unwrap()
 }
 
 fn apply_collection(before: &Value, delta: &Value) -> Value {
@@ -57,16 +69,8 @@ impl Session {
     }
     fn compile(&mut self, root: &Path, xml: &str) -> Value {
         self.version += 1;
-        let mut result = wire(self.worker.compile(
-            Path::new("-"),
-            Some(root),
-            Request {
-                version: self.version,
-                xml: xml.into(),
-                base_version: self.scene["version"].as_u64(),
-            },
-        ))
-        .unwrap();
+        let base_version = self.scene["version"].as_u64();
+        let mut result = run(&mut self.worker, Some(root), self.version, base_version, xml);
         let update = &result["update"];
         match update["type"].as_str() {
             Some("snapshot") => {
@@ -100,18 +104,8 @@ impl Session {
             scene
         };
         let expanded = expand(result["preview"].clone(), &mut self.resources);
-        // A fresh process keeps the uncached reference independent of resident caches.
-        let mut proc = Command::new(env!("CARGO_BIN_EXE_mekuru-compiler"))
-            .args(["-", "--emit-preview", "--root"])
-            .arg(root)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn()
-            .unwrap();
-        proc.stdin.take().unwrap().write_all(xml.as_bytes()).unwrap();
-        let output = proc.wait_with_output().unwrap();
-        assert!(output.status.success());
-        let reference: Value = serde_json::from_slice(&output.stdout).unwrap();
+        // A fresh session keeps the single-shot reference independent of the resident session's caches.
+        let reference = wire(preview::compile(Path::new("-"), Some(root), xml.into())).unwrap();
         let mut reference_scene = reference["preview"].clone();
         if let Some(scene) = reference_scene.as_object_mut() {
             scene.remove("version");
@@ -221,22 +215,10 @@ fn insertion_deletion_reordering_duplicate_elements_repeats_references_and_draft
 fn discarded_responses_and_evicted_cache_entries_never_lose_resources() {
     let mut worker = PreviewSession::new(1); // Every drawing exceeds this cache budget.
     let xml = document(r#"<dur len="30"><text>Cache</text></dur>"#);
-    let run = |w: &mut PreviewSession, version, base_version| {
-        wire(w.compile(
-            Path::new("-"),
-            None,
-            Request {
-                version,
-                xml: xml.clone(),
-                base_version,
-            },
-        ))
-        .unwrap()
-    };
-    let a = run(&mut worker, 1, None);
-    let b = run(&mut worker, 2, None); // CLI discarded a, so acknowledges no scene.
+    let a = run(&mut worker, None, 1, None, &xml);
+    let b = run(&mut worker, None, 2, None, &xml); // CLI discarded a, so acknowledges no scene.
     assert_eq!(a["update"]["resources"], b["update"]["resources"]);
-    let c = run(&mut worker, 3, Some(2));
+    let c = run(&mut worker, None, 3, Some(2), &xml);
     assert!(c["update"].is_null());
     assert_eq!(c["previewVersion"], 2);
     assert_eq!(c["stats"]["drawMisses"], 1);
@@ -366,48 +348,36 @@ fn cached_drawings_keep_analysis_warnings_on_current_source_lines() {
 fn deltas_use_only_acknowledged_scenes_and_reset_unknown_bases() {
     let mut worker = PreviewSession::default();
     let xml = document(&(0..100).map(|i| format!(r#"<dur len="30"><text>Caption {i}</text></dur>"#)).collect::<String>());
-    let run = |w: &mut PreviewSession, version, base_version, xml: &str| {
-        wire(w.compile(
-            Path::new("-"),
-            None,
-            Request {
-                version,
-                base_version,
-                xml: xml.into(),
-            },
-        ))
-        .unwrap()
-    };
-    let first = run(&mut worker, 1, None, &xml);
+    let first = run(&mut worker, None, 1, None, &xml);
     assert_eq!(first["update"]["type"], "snapshot");
-    let dropped = run(&mut worker, 2, Some(1), &xml.replace("Caption 50<", "Discarded<"));
+    let dropped = run(&mut worker, None, 2, Some(1), &xml.replace("Caption 50<", "Discarded<"));
     assert_eq!(dropped["update"]["type"], "patch");
     let latest_xml = xml.replace("Caption 50<", "Published<");
-    let latest = run(&mut worker, 3, Some(1), &latest_xml);
+    let latest = run(&mut worker, None, 3, Some(1), &latest_xml);
     assert_eq!(latest["update"]["baseVersion"], 1);
     assert_eq!(latest["update"]["version"], 3);
     assert_eq!(latest["update"]["resources"].as_object().unwrap().len(), 1);
     assert_eq!(latest["update"]["elements"]["upsert"].as_array().unwrap().len(), 1);
     assert!(latest["update"]["elements"]["order"].is_null());
-    let unchanged = run(&mut worker, 4, Some(3), &latest_xml);
+    let unchanged = run(&mut worker, None, 4, Some(3), &latest_xml);
     assert!(unchanged["update"].is_null());
     assert_eq!(unchanged["previewVersion"], 3);
-    let failed = run(&mut worker, 5, Some(3), "<mekuru>");
+    let failed = run(&mut worker, None, 5, Some(3), "<mekuru>");
     assert!(failed["previewVersion"].is_null());
     assert!(failed["update"].is_null());
-    let recovered = run(&mut worker, 6, Some(3), &latest_xml);
+    let recovered = run(&mut worker, None, 6, Some(3), &latest_xml);
     assert_eq!(recovered["previewVersion"], 3);
     assert!(recovered["update"].is_null());
-    let unknown = run(&mut worker, 7, Some(999), &latest_xml);
+    let unknown = run(&mut worker, None, 7, Some(999), &latest_xml);
     assert_eq!(unknown["update"]["type"], "snapshot");
     assert_eq!(unknown["update"]["resources"].as_object().unwrap().len(), 100);
-    let restarted = run(&mut PreviewSession::default(), 8, Some(7), &latest_xml);
+    let restarted = run(&mut PreviewSession::default(), None, 8, Some(7), &latest_xml);
     assert_eq!(restarted["update"]["type"], "snapshot");
     assert_ne!(
         restarted["update"]["preview"]["elements"][0]["key"],
         unknown["update"]["preview"]["elements"][0]["key"]
     );
     // A replacement of the entire scene is smaller as a snapshot.
-    let replaced = run(&mut worker, 9, Some(7), &document(r#"<dur len="30"><text>Only one</text></dur>"#));
+    let replaced = run(&mut worker, None, 9, Some(7), &document(r#"<dur len="30"><text>Only one</text></dur>"#));
     assert_eq!(replaced["update"]["type"], "snapshot");
 }

@@ -48,7 +48,7 @@ await writeXml(
 
 ```sh
 bun src/main.tsx
-bunx mekuru-server .mekuru/main.xml
+bunx mekuru-compiler .mekuru/main.xml --serve
 ```
 
 Preview: `http://localhost:3333`. Export with `bunx mekuru-compiler .mekuru/main.xml -o video.mp4`.

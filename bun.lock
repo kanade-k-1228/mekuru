@@ -53,10 +53,6 @@
       "version": "0.0.0",
       "bin": {
         "mekuru-compiler": "./bin/mekuru-compiler.js",
-        "mekuru-server": "./bin/mekuru-server.js",
-      },
-      "dependencies": {
-        "@mekuru/protocol": "workspace:^",
       },
     },
     "pkgs/create": {
@@ -80,7 +76,6 @@
       },
       "dependencies": {
         "@mekuru/audio": "workspace:^",
-        "@mekuru/protocol": "workspace:^",
         "@mekuru/speech": "workspace:^",
         "ag-psd": "^31.0.3",
         "sharp": "^0.35.5",
