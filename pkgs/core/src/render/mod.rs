@@ -156,8 +156,7 @@ const SPRITE_BUDGET: usize = 512 << 20;
 impl<'a> FrameRenderer<'a> {
     pub fn new(ctx: RenderCtx<'a>, target: RenderTarget) -> Result<Self> {
         let script = &ctx.project.script;
-        let mut order: Vec<ElemId> = script.elems.iter().filter(|e| e.kind.is_visual()).map(|e| e.id).collect();
-        order.sort_by_key(|&id| (script.elems[id].z, script.elems[id].order));
+        let order = script.stacked().into_iter().filter(|e| e.kind.is_visual()).map(|e| e.id).collect();
         let canvas = Pixmap::new(target.width, target.height).ok_or_else(|| anyhow::anyhow!("invalid output size"))?;
         Ok(FrameRenderer {
             ctx,

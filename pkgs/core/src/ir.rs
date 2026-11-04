@@ -15,6 +15,15 @@ pub struct Script {
     pub base_dir: PathBuf,
 }
 
+impl Script {
+    /// The elements back to front: by `z`, then in document order.
+    pub fn stacked(&self) -> Vec<&Elem> {
+        let mut out: Vec<&Elem> = self.elems.iter().collect();
+        out.sort_by_key(|e| (e.z, e.site.lo, e.id));
+        out
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Target {
     Node(NodeId),
@@ -81,7 +90,6 @@ pub struct Elem {
     pub id: ElemId,
     pub node: NodeId,
     pub site: Span,
-    pub order: u32,
     pub z: i32,
     pub opacity: f32,
     pub t: Time,

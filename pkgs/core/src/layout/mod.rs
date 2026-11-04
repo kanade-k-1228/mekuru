@@ -67,11 +67,6 @@ pub fn lower(doc: &Document, base_dir: &Path, fonts: &FontBook, diags: &mut Vec<
         mut nodes, mut elems, names, ..
     } = out;
     resolve_ids(&mut nodes, &mut elems, names, diags);
-    let mut idx: Vec<usize> = (0..elems.len()).collect();
-    idx.sort_by_key(|&i| elems[i].site.lo);
-    for (rank, i) in idx.into_iter().enumerate() {
-        elems[i].order = rank as u32;
-    }
     Script {
         settings: doc.settings.clone(),
         nodes,
@@ -190,7 +185,6 @@ impl Out {
             id,
             node: look.node,
             site: n.span,
-            order: 0,
             z,
             opacity,
             t: n.times.time(n.dur),
@@ -228,7 +222,6 @@ impl Out {
             id,
             node: look.node,
             site,
-            order: 0,
             z: look.z,
             opacity: look.opacity,
             t: Time::default(),

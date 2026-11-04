@@ -151,9 +151,7 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, session: &
         })
         .collect();
     let mut elements = vec![];
-    let mut order: Vec<_> = script.elems.iter().collect();
-    order.sort_by_key(|e| (e.z, e.order));
-    for e in order {
+    for e in script.stacked() {
         let et = &sched.elems[e.id];
         if !e.kind.is_visual() && !matches!(e.kind, ElemKind::Audio(_)) {
             continue;
