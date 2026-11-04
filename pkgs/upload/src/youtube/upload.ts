@@ -16,17 +16,12 @@ const failure = async (what: string, res: Response): Promise<Error> => {
   return new Error(`${what} failed: HTTP ${res.status}: ${message}`);
 };
 
-export interface UploadOptions {
-  progress?: (sent: number, total: number) => void;
-}
-
 export interface Uploaded {
   id: string;
   status?: { privacyStatus?: Privacy };
 }
 
-export const uploadVideo = async (file: string, video: VideoResource, token: string, options: UploadOptions = {}): Promise<Uploaded> => {
-  const { progress } = options;
+export const uploadVideo = async (file: string, video: VideoResource, token: string, progress?: (sent: number, total: number) => void): Promise<Uploaded> => {
   const data = Bun.file(file);
   const total = data.size;
   if (total === 0) throw new Error(`${file} is empty`);

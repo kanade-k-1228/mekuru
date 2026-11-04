@@ -80,6 +80,6 @@ bun run upload:niconico --check
 
 ### 投稿
 
-`--check` はブラウザで入力まで行い、投稿ボタンは手動で押します。`bun run upload:niconico` は自動投稿、`--headed` を付けるとブラウザの窓を表示します。
+`--check` はブラウザで入力まで行い、投稿ボタンは手動で押します。`bun run upload:niconico` はブラウザの窓を表示せずに自動で投稿します。
 
 Playwright で投稿ページを操作するため、ページの変更で動作しなくなる場合があります。失敗時は `.mekuru/niconico-error.png` と手動投稿用の内容を出力します。

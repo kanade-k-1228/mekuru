@@ -16,6 +16,5 @@ Unspecified choices are prompted in a terminal. The command checks ffmpeg after 
 - `--upload <sites>`: Add upload scripts and YAML settings for `youtube,niconico`. Default: none.
 - `--yes`: Use defaults without prompts; also the behavior outside a terminal.
 - `--force`: Allow creation in a nonempty directory.
-- `--mekuru <spec>`: Version specification for the TSX authoring package, `@mekuru/types`.
 
 [Tutorial](../../example/README.md) (Japanese) · [Project structure and workflow](../../docs/reference/Component.md).

@@ -7,7 +7,7 @@ import { create, VERSION } from "../src/create.ts";
 test("generated projects include the selected engines and upload commands", async () => {
   const dir = await mkdtemp(join(tmpdir(), "mekuru-create-"));
   try {
-    await create(dir, { mekuru: "^0.3.0", engines: ["voicevox", "aivisspeech"], upload: ["youtube", "niconico"] });
+    await create(dir, { engines: ["voicevox", "aivisspeech"], upload: ["youtube", "niconico"] });
     const pkg = await Bun.file(join(dir, "package.json")).json();
     expect(Object.keys(pkg.devDependencies)).toEqual([
       "@mekuru/audio",
@@ -19,7 +19,7 @@ test("generated projects include the selected engines and upload commands", asyn
       "@types/bun",
       "typescript",
     ]);
-    expect(pkg.devDependencies["@mekuru/types"]).toBe("^0.3.0");
+    expect(pkg.devDependencies["@mekuru/types"]).toBe(`^${VERSION}`);
     expect(pkg.devDependencies["@mekuru/core"]).toBe(`^${VERSION}`);
     expect(pkg.devDependencies["@mekuru/upload"]).toBe(`^${VERSION}`);
     expect(pkg.scripts["upload:youtube"]).toBe("mekuru-youtube");

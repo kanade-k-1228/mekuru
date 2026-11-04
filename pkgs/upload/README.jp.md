@@ -27,7 +27,7 @@ bunx mekuru-youtube             # 初回は Google にログインするため�
 bunx playwright-core install chromium
 bunx mekuru-niconico login      # ログイン状態を保存
 bunx mekuru-niconico --check    # ブラウザの窓で入力まで行い、投稿操作は手動
-bunx mekuru-niconico            # 自動で投稿。--headed でブラウザの窓を表示
+bunx mekuru-niconico            # 自動で投稿
 ```
 
 インストール済みの Chrome・Chromium を使う場合は、`MEKURU_BROWSER` に実行ファイルのパスを指定します。

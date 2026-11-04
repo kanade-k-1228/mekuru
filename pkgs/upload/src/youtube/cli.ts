@@ -21,10 +21,9 @@ const main = async (configs: string[], { dryRun = false }: { dryRun?: boolean })
 
 const uploadOne = async (file: string, thumbnail: string | undefined, video: VideoResource, token: string): Promise<void> => {
   const tty = process.stderr.isTTY;
-  const uploaded = await uploadVideo(file, video, token, {
-    progress: (sent, total) =>
-      tty && process.stderr.write(`\ruploading ${Math.floor((sent / total) * 100)}% (${(sent / 2 ** 20).toFixed(1)} / ${(total / 2 ** 20).toFixed(1)} MiB)`),
-  });
+  const progress = (sent: number, total: number) =>
+    tty && process.stderr.write(`\ruploading ${Math.floor((sent / total) * 100)}% (${(sent / 2 ** 20).toFixed(1)} / ${(total / 2 ** 20).toFixed(1)} MiB)`);
+  const uploaded = await uploadVideo(file, video, token, progress);
   if (tty) process.stderr.write("\n");
   console.log(`uploaded: https://youtu.be/${uploaded.id}`);
   console.log(`edit:     https://studio.youtube.com/video/${uploaded.id}/edit`);

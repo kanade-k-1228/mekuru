@@ -22,8 +22,6 @@ export interface Settings {
 export interface Site {
   /** the YAML file without arguments */
   config: string;
-  /** what the YAML file gives, for the error when there is none */
-  what: string;
   keys: string[];
   /** adds what is wrong with the settings only this site takes or limits */
   check?: (s: Record<string, unknown>, errors: string[]) => void;
@@ -49,7 +47,7 @@ const checkSettings = <S extends Settings>(value: unknown, name: string, site: S
 };
 
 export const readSettings = async <S extends Settings>(file: string, site: Site): Promise<S> => {
-  if (!(await Bun.file(file).exists())) throw new Error(`no ${file} (${site.what})`);
+  if (!(await Bun.file(file).exists())) throw new Error(`no ${file} (the video, its title, description, ... to upload)`);
   let value: unknown;
   try {
     value = Bun.YAML.parse(await Bun.file(file).text());

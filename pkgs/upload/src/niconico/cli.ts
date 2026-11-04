@@ -4,7 +4,6 @@ import { login, upload, UPLOAD_URL } from "./browser.ts";
 
 const NICONICO: Site = {
   config: "configs/niconico.yaml",
-  what: "the video, its title, description and tags to post",
   keys: ["video", "title", "description", "tags", "thumbnail"],
 };
 
@@ -18,12 +17,12 @@ const sheet = (s: Settings, file: string, thumbnail?: string): string =>
     descriptionOf(s.description),
   ].join("\n");
 
-const post = async (configs: string[], { check = false, headed = false }: { check?: boolean; headed?: boolean }): Promise<void> => {
+const post = async (configs: string[], { check = false }: { check?: boolean }): Promise<void> => {
   const posts = await readUploads(configs, NICONICO);
   for (const { config, settings, file, thumbnail } of posts) {
     if (posts.length > 1) console.log(`${config}:`);
     try {
-      const id = await upload(file, settings, { check, headed, thumbnail });
+      const id = await upload(file, settings, thumbnail, check);
       if (check) continue;
       console.log(id ? `posted: https://www.nicovideo.jp/watch/${id}` : "posted (its ID was not shown: see your videos in niconico)");
     } catch (e) {
@@ -43,7 +42,6 @@ const program = command(
 )
   .usage("[options] [config...]\n       mekuru-niconico login")
   .option("--check", "fill in the form in a browser window, and leave the posting to you")
-  .option("--headed", "show the browser while it posts")
   .helpCommand(false)
   .action(post);
 

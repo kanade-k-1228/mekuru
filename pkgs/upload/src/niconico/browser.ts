@@ -74,14 +74,8 @@ const ids = async (page: Page): Promise<Set<string>> => {
   return new Set(text.match(/\b(?:sm|so|ss)\d{3,}\b/g) ?? []);
 };
 
-export interface UploadOptions {
-  check?: boolean;
-  headed?: boolean;
-}
-
-export const upload = async (file: string, s: Settings, options: UploadOptions & { thumbnail?: string } = {}): Promise<string | undefined> => {
-  const { check = false, headed = false } = options;
-  const context = await launch(!check && !headed);
+export const upload = async (file: string, s: Settings, thumbnail: string | undefined, check: boolean): Promise<string | undefined> => {
+  const context = await launch(!check);
   const page = await firstPage(context);
   try {
     await page.goto(UPLOAD_URL, { waitUntil: "domcontentloaded" });
@@ -132,11 +126,11 @@ export const upload = async (file: string, s: Settings, options: UploadOptions &
         await tag.press("Enter");
       }
     }
-    if (options.thumbnail) {
+    if (thumbnail) {
       const input = page.locator('input[type="file"][accept*="image"]').first();
       try {
         await input.waitFor({ state: "attached", timeout: FIELD_TIMEOUT });
-        await input.setInputFiles(options.thumbnail);
+        await input.setInputFiles(thumbnail);
       } catch {
         console.error("warning: cannot find the thumbnail field in the upload page: the thumbnail is not set");
       }
