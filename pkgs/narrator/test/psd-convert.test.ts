@@ -1,34 +1,29 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, readFile, writeFile, rm, access, link, symlink } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile, writeFile, rm, access, link, symlink } from "node:fs/promises";
 import { join } from "node:path";
-import { writePsdBuffer, type Layer } from "ag-psd";
+import type { Layer } from "ag-psd";
 import sharp from "sharp";
 import { convertPsd, inspectPsd, type ConversionMap } from "../src/psd-convert.ts";
 import { exportPsd } from "../src/psd.ts";
 import { readArtwork } from "../src/portrait/psd-image.ts";
+import { pixel, psdFixture } from "./fixture.ts";
 
-const pixel = (name: string, color: number[], more: Partial<Layer> = {}): Layer => ({
-  name,
-  left: 1,
-  top: 0,
-  right: 2,
-  bottom: 1,
-  imageData: { width: 1, height: 1, data: new Uint8ClampedArray(color) },
-  ...more,
-});
+// Source artwork sits at x = 1, so conversion must keep layer offsets.
+const at = { left: 1, right: 2 };
 const source = (): Layer[] => [
-  pixel("body", [255, 0, 0, 255]),
+  pixel("body", [255, 0, 0, 255], at),
   {
     name: "!目",
     children: [
-      { name: "*開き", children: [pixel("paint", [0, 255, 0, 255], { opacity: 0.5 }), pixel("unused", [255, 255, 255, 255], { hidden: true })] },
-      pixel("*閉じ", [0, 0, 255, 255], { hidden: true }),
+      {
+        name: "*開き",
+        children: [pixel("paint", [0, 255, 0, 255], { ...at, opacity: 0.5 }), pixel("unused", [255, 255, 255, 255], { ...at, hidden: true })],
+      },
+      pixel("*閉じ", [0, 0, 255, 255], { ...at, hidden: true }),
     ],
   },
 ];
 const mapping = (): ConversionMap => ({
-  version: 1,
   layers: [
     { name: "body", kind: "fixed", initial: true, source: ["body"] },
     {
@@ -47,18 +42,7 @@ const mapping = (): ConversionMap => ({
     },
   ],
 });
-async function fixture(run: (input: string, output: string, save: (layers: Layer[]) => Promise<void>) => Promise<void>) {
-  const dir = await mkdtemp(join(tmpdir(), "mekuru-convert-"));
-  const input = join(dir, "input.psd"),
-    output = join(dir, "native.psd");
-  const save = (children: Layer[]) => writeFile(input, writePsdBuffer({ width: 3, height: 2, children }));
-  try {
-    await save(source());
-    await run(input, output, save);
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
-}
+const fixture = psdFixture(3, 2, source);
 
 test("inspect exposes exact source paths and conversion preserves flattened pixels, frames and defaults", () =>
   fixture(async (input, output) => {
@@ -77,7 +61,6 @@ test("inspect exposes exact source paths and conversion preserves flattened pixe
     expect(frames?.every((l) => !l.children)).toBe(true);
     const out = `${output}.assets`;
     const m = await exportPsd(output, out);
-    expect(m.version).toBe(2);
     expect(m.layers[1].initial).toBe("normal");
     const image = await sharp(join(out, "eyes/normal/1.png")).raw().toBuffer({ resolveWithObject: true });
     expect([image.info.width, image.info.height]).toEqual([3, 2]);
@@ -94,7 +77,6 @@ test("inspect exposes exact source paths and conversion preserves flattened pixe
 test("conversion supports toggle/select/lip and an editor composite matching defaults", () =>
   fixture(async (input, output) => {
     await convertPsd(input, output, {
-      version: 1,
       layers: [
         { name: "body", kind: "toggle", source: ["body"], initial: false },
         { name: "face", kind: "select", initial: null, options: [{ name: "one", frames: [["body"]] }] },
@@ -127,15 +109,25 @@ test("missing/ambiguous paths, invalid mappings, parent effects and unsupported 
     if (bad.layers[0].kind === "fixed") bad.layers[0].source = ["absent"];
     await expect(convertPsd(input, output, bad)).rejects.toThrow("Missing or ambiguous");
     await save([pixel("same", [0, 0, 0, 255]), pixel("same", [0, 0, 0, 255])]);
-    const fixed = (source: string[]) => ({ version: 1, layers: [{ name: "body", kind: "fixed", initial: true, source }] });
+    const fixed = (source: string[]) => ({ layers: [{ name: "body", kind: "fixed", initial: true, source }] });
     await expect(convertPsd(input, output, fixed(["same"]))).rejects.toThrow("ambiguous");
     await save([{ name: "parent", opacity: 0.5, children: [pixel("child", [0, 0, 0, 255])] }]);
     await expect(convertPsd(input, output, fixed(["parent", "child"]))).rejects.toThrow("parent effects");
     await save([pixel("body", [0, 0, 0, 255], { blendMode: "multiply" })]);
     await expect(convertPsd(input, output, fixed(["body"]))).rejects.toThrow("Unsupported PSD feature");
     await save(source());
-    for (const map of [null, {}, { version: 1, layers: [] }, { version: 1, layers: [{ name: "x", kind: "select", initial: "missing", options: [] }] }])
-      await expect(convertPsd(input, output, map)).rejects.toThrow();
+    const select = (initial: string | null, frames: string[][]) => ({ layers: [{ name: "x", kind: "select", initial, options: [{ name: "a", frames }] }] });
+    for (const [map, message] of [
+      [null, "with layers"],
+      [{ layers: [] }, "with layers"],
+      [{ layers: [{ name: "x", kind: "bogus" }] }, "a name and a kind"],
+      [{ layers: [{ name: "body", kind: "toggle", initial: "yes", source: ["body"] }] }, "true or false"],
+      [{ layers: [{ name: "x", kind: "select", initial: null, options: [] }] }, "Empty group"],
+      [select("missing", [["body"]]), "option name as initial"],
+      [select("a", [["body"], ["body"]]), "exactly one frame"],
+      [{ layers: [...mapping().layers, { name: "Body", kind: "fixed", initial: true, source: ["body"] }] }, "duplicate PSD"],
+    ] as [unknown, string][])
+      await expect(convertPsd(input, output, map)).rejects.toThrow(message);
     await expect(access(output)).rejects.toThrow();
     await convertPsd(input, output, mapping());
     const before = await readFile(output);
@@ -158,7 +150,7 @@ test("source PSD is protected through direct, hardlink and symlink destinations"
 test("CLI inspects, converts and rejects invalid arguments", () =>
   fixture(async (input, output) => {
     const cli = async (args: string[]) => {
-      const proc = Bun.spawn([process.execPath, new URL("../src/mekuru-psd-convert.ts", import.meta.url).pathname, ...args], {
+      const proc = Bun.spawn([process.execPath, new URL("../src/mekuru-psd.ts", import.meta.url).pathname, ...args], {
         stdout: "pipe",
         stderr: "pipe",
       });
@@ -172,5 +164,9 @@ test("CLI inspects, converts and rejects invalid arguments", () =>
     await writeFile(config, JSON.stringify(mapping()));
     expect((await cli([input, "--map", config, "--out", output])).code).toBe(0);
     expect((await exportPsd(output, `${output}.assets`)).layers).toHaveLength(2);
-    expect((await cli([input, "--unknown"])).code).toBe(1);
+    for (const args of [[input, "--unknown"], [input, "--inspect", "--out", output], [input, "--map", config], [input]]) {
+      const { code, stderr } = await cli(args);
+      expect(code).toBe(1);
+      expect(stderr).toContain("Usage: mekuru-psd");
+    }
   }));

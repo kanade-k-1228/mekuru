@@ -1,7 +1,6 @@
 /** @jsxImportSource @mekuru/types */
 import type { IntrinsicElements } from "@mekuru/types";
 export * from "./portrait/index.tsx";
-export { subtitleText } from "@mekuru/speech/text";
 
 export type SubtitleProps = IntrinsicElements["text"];
 

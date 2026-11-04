@@ -16,7 +16,7 @@ bun add -d @mekuru/types @mekuru/narrator
 
 ## ナレータを組み立てる
 
-次は `@mekuru/voisona`・`@mekuru/speech` を追加したプロジェクトでの例です。先に `face [select]` グループを持つPSDを `mekuru-psd` で展開し、`src` をそのフォルダーに置き換えます。
+次は `@mekuru/voisona`・`@mekuru/audio` を追加したプロジェクトでの例です。先に `face [select]` グループを持つPSDを `mekuru-psd` で展開し、`src` をそのフォルダーに置き換えます。
 
 ```tsx
 import type { At, FC, Node } from "@mekuru/types";
@@ -55,7 +55,7 @@ export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
 
 `portrait<LayerProps>({ src, ...options })` は展開済みの独自PSD素材を読みます。`Stand` は待機表示、`Talk` は共有音声素材の長さと音量に合わせた口パクを行います。PSDには `[fixed]`・`[toggle]`・`[select]`・`[blink]`・`[lip]` を明示し、部位名に依存せず生成されたpropsで表情を選びます。
 
-`blink` でまばたきの平均間隔、`x`・`y`・`w`・`h`・`z`・`rotate`・`anchor`・`slot` で配置を指定できます。[PSD規約・変換・移行手順](../../docs/reference/Portrait.jp.md)を参照してください。
+`blink` でまばたきの平均間隔、`x`・`y`・`w`・`h`・`z`・`rotate`・`anchor`・`slot` で配置を指定できます。[PSD規約・変換手順](../../docs/reference/Portrait.jp.md)を参照してください。
 
 ## Subtitle / SubtitleProps
 
@@ -69,22 +69,7 @@ export const Tsuzumi: FC<TsuzumiProps> = async ({ children, face, id, at }) => {
 </Subtitle>
 ```
 
-`Subtitle` は通常の `<text>` と同じように子を展開します。空白や改行を独自に変更せず、`pre` もそのまま渡します。ルビは自動変換しません。音声と組み合わせる場合は `line.display`、表示だけ変換する場合は `await subtitleText(children)` を渡します。
-
-## subtitleText(children): Promise<Node>
-
-ルビを表示文字に変換し、`<br />` を保持したNodeを返します。独自の字幕に使えます。`@mekuru/speech/text` が提供する同じ非同期関数の再エクスポートです。
-
-```tsx
-import type { FC, Node } from "@mekuru/types";
-import { subtitleText } from "@mekuru/narrator";
-
-const MySubtitle: FC<{ children?: Node }> = async ({ children }) => (
-  <text x="50%" y="95%" anchor="b" size={48}>
-    {await subtitleText(children)}
-  </text>
-);
-```
+`Subtitle` は通常の `<text>` と同じように子を展開します。空白や改行を独自に変更せず、`pre` もそのまま渡します。ルビ記法はXMLにそのまま残り、ほかの `<text>` と同じくコンパイラが親文字だけを表示します（`漢字《かんじ》` は「漢字」と表示）。音声と組み合わせる場合は `line.display` を渡します。
 
 二重の縁取りなどは、異なる `stroke` と `stroke-width` の `Subtitle` を同じ位置に重ねて実装できます。
 
@@ -93,10 +78,8 @@ const MySubtitle: FC<{ children?: Node }> = async ({ children }) => (
 ```sh
 bun x mekuru-psd assets/source/character.psd --out assets/character
 # 別の規約で作られた既存PSDを変換する場合:
-bun x mekuru-psd-convert source.psd --inspect
-bun x mekuru-psd-convert source.psd --map mapping.json --out character.psd
+bun x mekuru-psd source.psd --inspect
+bun x mekuru-psd source.psd --map mapping.json --out character.psd
 ```
 
-変換ツールは指定されたレイヤーをパーツ・差分ごとに合成し、独自規約のPSDを作ります。元PSDは変更しません。変換後も `mekuru-psd` で展開し、同じ `portrait()` で使います。設定の書き方は[立ち絵ガイド](../../docs/reference/Portrait.jp.md)を参照してください。
-
-旧 `psdPortrait` とYMM4フォルダー方式の `portrait` は、単一の `portrait<LayerProps>` APIに置き換えました。旧PSDは種類を名前に付けてversion 2の素材を再出力してください。旧 `Face`・`faces`・INI規約は廃止し、表情プリセットは利用側のTSXで定義します。`Audio`・`readAudio` は引き続き `@mekuru/audio` が提供します。
+`--map` を付けた `mekuru-psd` は、指定されたレイヤーをパーツ・差分ごとに合成し、独自規約のPSDを作ります。元PSDは変更しません。変換後のPSDも通常どおり `--out` で展開し、同じ `portrait()` で使います。設定の書き方は[立ち絵ガイド](../../docs/reference/Portrait.jp.md)を参照してください。

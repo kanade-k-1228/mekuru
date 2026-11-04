@@ -71,7 +71,7 @@ example の素材を再展開するには、リポジトリ直下で実行しま
 ```sh
 bun run --cwd example portrait
 # 同じレイヤ名・選択肢を持つ別の PSD を使う場合
-bun run --cwd example portrait /path/to/zundamon.psd
+bun run --cwd example mekuru-psd /path/to/zundamon.psd --out tutorial/assets/character/zundamon
 ```
 
 [元イラスト](tutorial/assets/source/zundamon-sd-sheet.png) は内蔵 `image_gen` で生成した透明背景の6表情シートです。[使用プロンプト](tutorial/assets/source/zundamon-sd-prompts.json) を同梱しています。[PSD作成スクリプト](scripts/create-portrait.ts) はシートを表情ごとに分割し、位置と大きさをそろえてPSDにまとめます。

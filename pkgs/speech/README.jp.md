@@ -83,10 +83,6 @@ export const createSpeech = (synthesize: Synthesize) =>
 
 下書きでは見積もりの素材を返して合成を予約し、完成版では実際の WAV と長さを返します。どちらも同じ部品で表示できます。キャッシュ基準・進捗・実行中の合成は一回の構築に属し、import 時点の作業フォルダには依存しません。
 
-### その他のエクスポート
-
-- `await subtitleText(children)`: ルビを表示文字に変換し、空白と `<br />` を保持した Node を返します。純粋な文字処理の入口 `@mekuru/speech/text` からも使えます。読み上げと同じ入力形式を使います。字幕の配置・装飾には [@mekuru/narrator](../narrator/README.jp.md) の `Subtitle` を使えます。
-
 ### defineEngine(engine)
 
 同梱のエンジンと同じく、HTTP API を持つエンジンの部品を作ります（例: [VOICEVOX](../voicevox/src/index.tsx)）。

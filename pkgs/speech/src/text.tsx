@@ -103,5 +103,3 @@ export const speechText = async (children: Node, reading: Readonly<Record<string
   });
   return Object.freeze({ say: say.trim(), show: show.trim(), display });
 };
-
-export const subtitleText = async (children: Node): Promise<Node> => (await speechText(children)).display;

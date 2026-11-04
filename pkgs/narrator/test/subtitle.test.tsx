@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { toXml, type Node } from "@mekuru/types";
-import { Subtitle, subtitleText } from "../src/index.tsx";
+import { Subtitle } from "../src/index.tsx";
 
 const render = (children: Node) => toXml(<mekuru>{children}</mekuru>);
 
@@ -21,7 +21,6 @@ test("subtitle defaults and native text overrides", async () => {
   );
   expect(custom).toContain('x="10" y="20" anchor="c" max-w="50%" align="left" size="30" color="#FF0000" stroke="#0000FF" stroke-width="2" z="5"');
   expect(custom).toContain('font="custom" id="caption" delay="3"');
-  expect(await render(<text>{await subtitleText("｜表示《よみ》")}</text>)).toContain("<text>表示</text>");
 });
 
 test("subtitle styling preserves text components, whitespace, and explicit line breaks", async () => {

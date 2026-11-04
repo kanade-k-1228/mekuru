@@ -16,7 +16,7 @@ Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` in `tsconfig.json`
 
 ## Compose a narrator
 
-This example also uses `@mekuru/voisona` and `@mekuru/speech`. First export a PSD containing a `face [select]` group with `mekuru-psd`. Replace `src` with the exported folder.
+This example also uses `@mekuru/voisona` and `@mekuru/audio`. First export a PSD containing a `face [select]` group with `mekuru-psd`. Replace `src` with the exported folder.
 
 ```tsx
 import type { At, FC, Node } from "@mekuru/types";
@@ -55,7 +55,7 @@ Place `<Tsuzumi>漢字《かんじ》を読みます。</Tsuzumi>` inside `<meku
 
 `portrait<LayerProps>({ src, ...options })` reads exported Mekuru PSD assets. `Stand` supplies idle animation; `Talk` uses the shared audio source for duration and lip sync. PSD groups explicitly declare `[fixed]`, `[toggle]`, `[select]`, `[blink]` or `[lip]`. Part names are unrestricted by body-part conventions, and generated props select expressions.
 
-Use `blink` for the average blinking interval and `x`, `y`, `w`, `h`, `z`, `rotate`, `anchor`, `slot` for placement. See [the PSD convention, converter and migration guide](../../docs/reference/Portrait.md).
+Use `blink` for the average blinking interval and `x`, `y`, `w`, `h`, `z`, `rotate`, `anchor`, `slot` for placement. See [the PSD convention and converter guide](../../docs/reference/Portrait.md).
 
 ## Subtitle / SubtitleProps
 
@@ -69,22 +69,7 @@ Defaults: `x="50%"`, `y="95%"`, `anchor="b"`, `max-w="90%"`, `align="center"`, `
 </Subtitle>
 ```
 
-`Subtitle` expands children exactly like `<text>`. It does not trim whitespace or transform ruby notation; `pre` is passed through. For speech, pass `line.display`. For a standalone conversion, pass `await subtitleText(children)`.
-
-## subtitleText(children): Promise<Node>
-
-Converts ruby notation to display text while retaining `<br />`. Use it to build custom subtitles. This is a re-export of the same function from `@mekuru/speech/text`.
-
-```tsx
-import type { FC, Node } from "@mekuru/types";
-import { subtitleText } from "@mekuru/narrator";
-
-const MySubtitle: FC<{ children?: Node }> = async ({ children }) => (
-  <text x="50%" y="95%" anchor="b" size={48}>
-    {await subtitleText(children)}
-  </text>
-);
-```
+`Subtitle` expands children exactly like `<text>`. It does not trim whitespace, and `<br />` and `pre` are passed through. Ruby notation stays in the XML as written; as in every `<text>`, the compiler shows only the base text (`漢字《かんじ》` appears as “漢字”). For speech, pass `line.display`.
 
 For multiple outlines, layer `Subtitle` components at the same position with different `stroke` and `stroke-width` values.
 
@@ -93,10 +78,8 @@ For multiple outlines, layer `Subtitle` components at the same position with dif
 ```sh
 bun x mekuru-psd assets/source/character.psd --out assets/character
 # For an existing PSD with different conventions:
-bun x mekuru-psd-convert source.psd --inspect
-bun x mekuru-psd-convert source.psd --map mapping.json --out character.psd
+bun x mekuru-psd source.psd --inspect
+bun x mekuru-psd source.psd --map mapping.json --out character.psd
 ```
 
-The converter maps explicitly selected layers into a native PSD, flattening each part/frame. It never changes the source. Export the resulting PSD with `mekuru-psd` and use the same `portrait()` runtime. See the [mapping format](../../docs/reference/Portrait.md#convert-an-existing-psd-including-ymm4-artwork).
-
-`psdPortrait` and the old YMM4 folder-based `portrait` are replaced by the single `portrait<LayerProps>` API. Annotate old PSDs and re-export version 2 assets. Old `Face`, `faces` and INI conventions are removed. Define expression presets in your TSX code. `Audio` and `readAudio` remain in `@mekuru/audio`.
+With `--map`, `mekuru-psd` copies explicitly selected layers into a native PSD, flattening each part/frame, and never changes the source. Export the resulting PSD with `--out` as usual and use the same `portrait()` runtime. See the [mapping format](../../docs/reference/Portrait.md#convert-an-existing-psd-including-ymm4-artwork).

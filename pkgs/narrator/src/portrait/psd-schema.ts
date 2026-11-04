@@ -1,5 +1,7 @@
+/** The `[kind]` a top-level PSD layer declares. */
+export const kinds = ["fixed", "toggle", "select", "blink", "lip"] as const;
+export type PortraitKind = (typeof kinds)[number];
 /** Generated assets only. Layers are ordered from back to front. */
-export type PortraitKind = "fixed" | "toggle" | "select" | "blink" | "lip";
 export interface PsdLayer {
   name: string;
   kind: PortraitKind;
@@ -7,14 +9,12 @@ export interface PsdLayer {
   initial: string | boolean | null;
 }
 export interface PsdManifest {
-  version: 2;
   width: number;
   height: number;
   layers: PsdLayer[];
 }
 export const selectable = (kind: PortraitKind): boolean => kind !== "fixed" && kind !== "toggle";
 export const animated = (kind: PortraitKind): boolean => kind === "blink" || kind === "lip";
-export const assetFiles = (m: PsdManifest): string[] => m.layers.flatMap((l) => l.options.flatMap((o) => o.frames));
 const reserved = new Set(["id", "at", "len", "children", "source", "key", "ref", "__proto__", "constructor", "prototype"]);
 export function assetName(name: string, prop = false): string {
   if (
@@ -34,28 +34,12 @@ export const safeAssetPath = (value: string): boolean =>
   value.endsWith(".png") && !/[\\:\p{Cc}]/u.test(value) && value.split("/").every((s) => s !== ".." && s !== "." && s !== "");
 export function validateManifest(value: unknown): asserts value is PsdManifest {
   const m = value as PsdManifest;
-  if ((value as { version?: unknown })?.version === 1) throw new Error("Old portrait assets: re-export the PSD with mekuru-psd (version 2)");
-  if (
-    m?.version !== 2 ||
-    !Number.isInteger(m.width) ||
-    m.width <= 0 ||
-    !Number.isInteger(m.height) ||
-    m.height <= 0 ||
-    !Array.isArray(m.layers) ||
-    !m.layers.length
-  )
+  if (!Number.isInteger(m?.width) || m.width <= 0 || !Number.isInteger(m.height) || m.height <= 0 || !Array.isArray(m.layers) || !m.layers.length)
     throw new Error("Invalid PSD portrait manifest");
   const names = new Set<string>();
   const paths = new Set<string>();
   for (const l of m.layers) {
-    if (
-      !l ||
-      typeof l.name !== "string" ||
-      names.has(l.name.toLowerCase()) ||
-      !["fixed", "toggle", "select", "blink", "lip"].includes(l.kind) ||
-      !Array.isArray(l.options) ||
-      !l.options.length
-    )
+    if (!l || typeof l.name !== "string" || names.has(l.name.toLowerCase()) || !kinds.includes(l.kind) || !Array.isArray(l.options) || !l.options.length)
       throw new Error("Invalid or duplicate PSD portrait layer");
     assetName(l.name, l.kind !== "fixed");
     names.add(l.name.toLowerCase());

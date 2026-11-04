@@ -4,7 +4,6 @@ import { Audio, frameCount, frames, readAudio, type AudioSource } from "@mekuru/
 import { fps, isDraft, waitFor, type At, type JSX, type Node, type Time } from "@mekuru/types";
 import { speechText } from "./text.tsx";
 
-export { subtitleText } from "./text.tsx";
 export { cached, defineEngine, type Engine, type EngineProps } from "./engine.ts";
 
 export interface SpeechProps {

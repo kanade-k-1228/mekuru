@@ -65,15 +65,14 @@
       "version": "0.0.0",
       "bin": {
         "mekuru-psd": "./src/mekuru-psd.ts",
-        "mekuru-psd-convert": "./src/mekuru-psd-convert.ts",
       },
       "dependencies": {
         "@mekuru/audio": "workspace:^",
-        "@mekuru/speech": "workspace:^",
         "ag-psd": "^31.0.3",
         "sharp": "^0.35.5",
       },
       "devDependencies": {
+        "@mekuru/speech": "workspace:*",
         "@mekuru/types": "workspace:*",
       },
       "peerDependencies": {

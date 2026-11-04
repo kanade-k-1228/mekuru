@@ -2,20 +2,16 @@ import { writePsdBuffer, type Layer, type Psd } from "ag-psd";
 import { mkdir, realpath, rename, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { readArtwork, rasterize } from "./portrait/psd-image.ts";
-import { animated } from "./portrait/psd-schema.ts";
+import { animated, kinds } from "./portrait/psd-schema.ts";
 import { parsePortrait } from "./psd.ts";
 
 export type LayerPath = string[];
-export type ConversionLayer =
-  | { [K in "fixed" | "toggle"]: { name: string; kind: K; initial: boolean; source: LayerPath } }["fixed" | "toggle"]
-  | { [K in "select" | "blink" | "lip"]: { name: string; kind: K; initial: string | null; options: { name: string; frames: LayerPath[] }[] } }[
-      | "select"
-      | "blink"
-      | "lip"];
 /** Layers are listed back to front; frames are listed closed to open. */
 export interface ConversionMap {
-  version: 1;
-  layers: ConversionLayer[];
+  layers: (
+    | { name: string; kind: "fixed" | "toggle"; initial: boolean; source: LayerPath }
+    | { name: string; kind: "select" | "blink" | "lip"; initial: string | null; options: { name: string; frames: LayerPath[] }[] }
+  )[];
 }
 
 export async function inspectPsd(input: string) {
@@ -44,7 +40,7 @@ export async function convertPsd(input: string, output: string, mapping: unknown
   if (sourcePath === targetPath || (targetStat?.dev === sourceStat.dev && targetStat?.ino === sourceStat.ino))
     throw new Error("Conversion must not overwrite the source PSD");
   const map = mapping as ConversionMap;
-  if (map?.version !== 1 || !Array.isArray(map.layers) || !map.layers.length) throw new Error("Expected conversion map version 1 with layers");
+  if (!Array.isArray(map?.layers) || !map.layers.length) throw new Error("Expected a conversion map with layers");
   const psd = await readArtwork(input);
   const find = (path: LayerPath): Layer => {
     if (!Array.isArray(path) || !path.length || path.some((p) => typeof p !== "string" || !p)) throw new Error("Expected a non-empty layer path array");
@@ -63,42 +59,35 @@ export async function convertPsd(input: string, output: string, mapping: unknown
     }
     return found as Layer;
   };
-  // Resolve all paths and validate the target convention before rasterizing.
+  // Resolve all paths and validate before rasterizing. parsePortrait checks the convention on the PSD this map becomes;
+  // only what that PSD cannot express is checked here: defaults become visibility, and a select option one image.
   const copies: { source: Layer; target: Layer }[] = [];
   const copy = (path: LayerPath, name: string, hidden: boolean): Layer => {
     const target: Layer = { name, hidden, top: 0, left: 0, bottom: psd.height, right: psd.width };
     copies.push({ source: find(path), target });
     return target;
   };
-  const children = map.layers.map((part) => {
-    if (!part || typeof part.name !== "string" || !["fixed", "toggle", "select", "blink", "lip"].includes(part.kind))
-      throw new Error("Invalid conversion layer");
+  const children = map.layers.map((part): Layer => {
+    if (typeof part?.name !== "string" || !kinds.includes(part.kind)) throw new Error(`Expected a name and a kind (${kinds.join("|")}) for every layer`);
     const name = `${part.name} [${part.kind}]`;
-    if (part.kind === "fixed" || part.kind === "toggle") {
-      if (typeof part.initial !== "boolean") throw new Error(`Expected boolean initial: ${name}`);
-      return copy(part.source, name, !part.initial);
+    switch (part.kind) {
+      case "fixed":
+      case "toggle":
+        if (typeof part.initial !== "boolean") throw new Error(`Expected true or false as initial: ${name}`);
+        return copy(part.source, name, !part.initial);
     }
-    if (!Array.isArray(part.options) || !part.options.length || (part.initial !== null && !part.options.some((o) => o?.name === part.initial)))
-      throw new Error(`Invalid options or initial: ${part.name}`);
+    const options = Array.isArray(part.options) ? part.options : [];
+    if (part.initial !== null && !options.some((o) => o?.name === part.initial)) throw new Error(`Expected null or an option name as initial: ${name}`);
     return {
       name,
       hidden: part.initial === null,
-      children: part.options.map((option) => {
-        if (
-          !option ||
-          typeof option.name !== "string" ||
-          !Array.isArray(option.frames) ||
-          !option.frames.length ||
-          (!animated(part.kind) && option.frames.length !== 1)
-        )
-          throw new Error(`Invalid frames: ${part.name}`);
-        const hidden = option.name !== part.initial;
-        if (option.frames.length === 1) return copy(option.frames[0], option.name, hidden);
-        return {
-          name: option.name,
-          hidden,
-          children: option.frames.map((path, i) => copy(path, String(i), i !== (part.kind === "blink" ? option.frames.length - 1 : 0))),
-        };
+      children: options.map((option) => {
+        if (!Array.isArray(option?.frames) || (!animated(part.kind) && option.frames.length !== 1))
+          throw new Error(`Expected ${animated(part.kind) ? "a frames array" : "exactly one frame"} for each option: ${name}`);
+        const { name: choice, frames } = option;
+        const hidden = choice !== part.initial;
+        if (frames.length === 1) return copy(frames[0], choice, hidden);
+        return { name: choice, hidden, children: frames.map((path, i) => copy(path, String(i), i !== (part.kind === "blink" ? frames.length - 1 : 0))) };
       }),
     };
   });

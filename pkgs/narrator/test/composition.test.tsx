@@ -3,29 +3,10 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { projectRoot, toXml, writeXml } from "@mekuru/types";
-import type { AudioSource } from "@mekuru/audio";
+import { Audio, type AudioSource } from "@mekuru/audio";
 import { prepare } from "@mekuru/speech";
-import { Audio } from "@mekuru/audio";
-import { readAudio } from "@mekuru/audio";
+import { wav } from "../../audio/test/fixture.ts";
 import { portrait, Subtitle } from "../src/index.tsx";
-
-const wav = () => {
-  const bytes = Buffer.alloc(44 + 4800);
-  bytes.write("RIFF");
-  bytes.writeUInt32LE(bytes.length - 8, 4);
-  bytes.write("WAVEfmt ", 8);
-  bytes.writeUInt32LE(16, 16);
-  bytes.writeUInt16LE(1, 20);
-  bytes.writeUInt16LE(1, 22);
-  bytes.writeUInt32LE(4800, 24);
-  bytes.writeUInt32LE(9600, 28);
-  bytes.writeUInt16LE(2, 32);
-  bytes.writeUInt16LE(16, 34);
-  bytes.write("data", 36);
-  bytes.writeUInt32LE(4800, 40);
-  for (let at = 44; at < bytes.length; at += 2) bytes.writeInt16LE(12000, at);
-  return bytes;
-};
 
 test("one prepared source drives speech, portraits and subtitles in both passes, independent of cwd changes", async () => {
   const before = process.cwd();
@@ -40,7 +21,6 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
     await Bun.write(
       join(dir, "actor", "portrait.json"),
       JSON.stringify({
-        version: 2,
         width: 1,
         height: 1,
         layers: [{ name: "mouth", kind: "lip", initial: "normal", options: [{ name: "normal", frames: ["closed.png", "open.png"] }] }],
@@ -65,7 +45,7 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
       syntheses++;
       expect(say).toBe("かんじ 次");
       await ready.promise;
-      await Bun.write(out, wav());
+      await Bun.write(out, wav(new Array(2400).fill(12000), 4800)); // half a second
     };
     const Narrator = async () => {
       roots.push(projectRoot());
@@ -124,28 +104,6 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
     ready.resolve();
     await writing?.catch(() => {});
     process.chdir(before);
-    await rm(dir, { recursive: true, force: true });
-  }
-});
-
-test("existing WAV sources have the same duration and rendering contract", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "mekuru-audio-"));
-  try {
-    const file = join(dir, "line.wav");
-    await Bun.write(file, wav());
-    const Clip = async () => {
-      const source = await readAudio(file, { gap: 2 });
-      expect(source.len).toBe(14); // half a second at 24 fps, plus two frames
-      return <Audio source={source} />;
-    };
-    const xml = await toXml(
-      <mekuru fps={24}>
-        <Clip />
-      </mekuru>,
-    );
-    expect(xml).toContain('<dur len="14">');
-    expect(xml.match(/<audio\b/g)).toHaveLength(1);
-  } finally {
     await rm(dir, { recursive: true, force: true });
   }
 });

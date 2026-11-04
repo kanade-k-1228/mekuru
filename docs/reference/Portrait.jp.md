@@ -52,12 +52,12 @@
 bun x mekuru-psd assets/source/character.psd --out assets/character
 ```
 
-`exportPsd(input, output)` は `@mekuru/narrator/psd` からも使えます。PNGは元のキャンバス寸法と座標を維持します。
+PNGは元のキャンバス寸法と座標を維持します。
 
 - 固定・オンオフ: `body.png`
 - 静止選択肢: `clothes/casual.png`
 - アニメーション: `eyes/normal/0.png`、`eyes/normal/1.png` など
-- `portrait.json`: version 2。奥→手前のパーツ、種類、初期値、選択肢ごとの閉→開の画像配列
+- `portrait.json`: 奥→手前のパーツ、種類、初期値、選択肢ごとの閉→開の画像配列
 - `portrait.d.ts`: `LayerProps` 型
 
 表示に必要な画像だけを生成します。線画などの内部レイヤーは個別PNGとして保存しません。編集用原稿はPSDに残してください。出力先は素材専用のフォルダーとし、再出力時には以前のマニフェストに記録された不要な画像だけを削除します。無関係なファイルは保持します。
@@ -92,18 +92,17 @@ const Line: FC = async () => {
 ## 既存のYMM4向けPSDなどから変換する
 
 ```sh
-bun x mekuru-psd-convert source.psd --inspect
-bun x mekuru-psd-convert source.psd --map mapping.json --out character.psd
+bun x mekuru-psd source.psd --inspect
+bun x mekuru-psd source.psd --map mapping.json --out character.psd
 bun x mekuru-psd character.psd --out assets/character
 ```
 
-`--inspect` はレイヤーパスの配列、各レイヤー自身の表示状態、グループかどうか、合成モード、不透明度をJSONで出力します。順序は奥→手前です。表示状態は親の非表示を含む実効値ではありません。
+`--map` を付けると、`--out` は素材フォルダーではなく変換後のPSDを指します。`--inspect` はレイヤーパスの配列、各レイヤー自身の表示状態、グループかどうか、合成モード、不透明度をJSONで出力します。順序は奥→手前です。表示状態は親の非表示を含む実効値ではありません。
 
 次の設定では `!目` の配下の画像を明示的に指定します。`!` や `*` は元の名前の一部として一致させるだけで、互換規約として解釈しません。
 
 ```json
 {
-  "version": 1,
   "layers": [
     { "name": "body", "kind": "fixed", "initial": true, "source": ["体"] },
     {
@@ -122,11 +121,3 @@ bun x mekuru-psd character.psd --out assets/character
 - 存在しないパス、同名で曖昧なパスはエラーです。参照先より上の親に不透明度変更、有効なマスク、特殊合成がある場合もエラーです。親の効果を含めて統合した差分を用意してください。
 - 元PSDは変更しません。変換先にはパーツ・差分ごとに合成した画像レイヤーを配置します。細かい線画の修正は元PSDで行い、同じ設定で再変換します。再実行は変換先を更新します。
 - 描画機能の対応範囲は上記のPSD取り込みと同じです。YMM4の設定ファイルの読み取り、部位名の推定、PSDTool独自機能の再現は行いません。
-
-APIは `@mekuru/narrator/psd-convert` の `inspectPsd(input)` と `convertPsd(input, output, mapping)` です。
-
-## 旧形式からの移行
-
-旧 `psdPortrait` は `portrait<LayerProps>` に変更します。最上位の名前に種類を付け、素材を再出力してください。旧PSDの1子グループで非表示を初期値にしたい場合は、`[toggle]` と名付けてPSDで非表示にします。
-
-version 1のマニフェストは表示時に拒否しますが、再出力時の不要ファイルの清掃には利用します。YMM4の「動く立ち絵」フォルダー、INI、旧 `Face`・`faces` APIは廃止しました。元PSDを変換するか、手元のパーツを新規約のPSDへまとめてください。
