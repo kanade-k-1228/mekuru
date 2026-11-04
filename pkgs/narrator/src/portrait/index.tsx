@@ -1,161 +1,98 @@
-import { samples } from "@mekuru/audio/wav";
 /** @jsxImportSource @mekuru/types */
-import { fps, projectRoot, type Anchor, type At, type JSX, type Length, type Node, type Time } from "@mekuru/types";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fps, projectRoot, type At, type IntrinsicElements, type Time } from "@mekuru/types";
 import type { AudioSource } from "@mekuru/audio";
-import { FOLDERS, isMany, readParts, type Folder, type Many, type Part, type Parts } from "./folder.ts";
-import { blinks, lipSync, random, type Shot } from "./motion.ts";
+import { samples } from "@mekuru/audio/wav";
+import { blinks } from "./blink.ts";
+import { lipSync } from "./lips.ts";
+import { random, type Shot } from "./shots.ts";
+import { selectable, validateManifest } from "./psd-schema.ts";
 
-export { FOLDERS, type Folder, type Part, type Parts } from "./folder.ts";
-
-export type Face = { [F in Exclude<Folder, Many>]?: string | null } & { [F in Many]?: string | readonly string[] | null };
-
-export interface PortraitOptions<Name extends string = string> {
+export interface PortraitOptions extends Pick<IntrinsicElements["image"], "x" | "y" | "anchor" | "w" | "h" | "z" | "rotate"> {
   src: string;
-  x?: Length;
-  y?: Length;
-  anchor?: Anchor;
-  w?: Length;
-  h?: Length;
-  z?: number;
-  face?: Face;
-  faces?: Record<Name, Face>;
-  blink?: number | false;
   slot?: string;
+  blink?: number | false;
 }
 
-export type FaceOf<Name extends string> = Name | Face;
-
-export interface StandProps<Name extends string> {
-  face?: FaceOf<Name>;
-  id?: string;
-  at?: At;
-  len?: Time;
-}
-
-export interface TalkProps<Name extends string> {
-  face?: FaceOf<Name>;
-  source: AudioSource;
-}
-
-export interface Portrait<Name extends string = string> {
-  readonly parts: Parts;
-  readonly faces: readonly Name[];
-  Stand(props: StandProps<Name>): JSX.Element;
-  Talk(props: TalkProps<Name>): Promise<Awaited<JSX.Element>>;
-}
-
-type Chosen = Record<Folder, Part[]>;
-
-export const portrait = <Name extends string = never>(options: PortraitOptions<Name>): Portrait<Name> => {
+/** One runtime for native PSD assets and converted portraits alike. */
+export function portrait<Props extends object>(options: PortraitOptions) {
   const root = projectRoot();
-  const parts = readParts(root, options.src);
-  const slot = options.slot ?? `portrait:${options.src}`;
-  const every = () => (options.blink === false ? 0 : (options.blink ?? Math.round(4 * fps())));
-  const place = {
-    x: options.x ?? "50%",
-    y: options.y ?? "100%",
-    anchor: options.anchor ?? ("b" as Anchor),
-    w: options.w,
-    h: options.h ?? (options.w === undefined ? "80%" : undefined),
-    z: options.z,
-  };
-  const faces = (options.faces ?? {}) as Record<string, Face>;
-
-  const part = (folder: Folder, name: string): Part => {
-    const p = parts[folder].get(name);
-    if (!p) {
-      const names = [...parts[folder].keys()];
-      throw new Error(`portrait ${options.src}: ${folder} has no part \`${name}\` (${names.length ? `it has ${names.join(", ")}` : "it is empty"})`);
-    }
-    return p;
-  };
-  const choose = (face: Face): Partial<Chosen> => {
-    const out: Partial<Chosen> = {};
-    for (const folder of FOLDERS) {
-      if (!(folder in face)) continue;
-      const v = face[folder as keyof Face];
-      const names: readonly string[] = v === null || v === undefined ? [] : typeof v === "string" ? [v] : v;
-      if (names.length > 1 && !isMany(folder)) throw new Error(`portrait ${options.src}: ${folder} shows one part (${names.join(", ")})`);
-      if (names.length > 3) throw new Error(`portrait ${options.src}: ${folder} shows up to three parts (${names.join(", ")})`);
-      out[folder] = names.map((n) => part(folder, n));
-    }
-    return out;
-  };
-  const first = (folder: Folder): Part[] => {
-    if (isMany(folder) || folder === "顔色") return [];
-    const all = [...parts[folder].values()];
-    const moving = folder === "目" || folder === "口" ? all.find((p) => p.frames.length > 0) : undefined;
-    const p = moving ?? all[0];
-    return p ? [p] : [];
-  };
-  const base: Chosen = { ...(Object.fromEntries(FOLDERS.map((f) => [f, first(f)])) as Chosen), ...choose(options.face ?? {}) };
-  const named = new Map(Object.entries(faces).map(([name, face]) => [name, choose(face)]));
-  const faceOf = (face: FaceOf<Name> | undefined): Chosen => {
-    if (face === undefined) return base;
-    if (typeof face === "string") {
-      const f = named.get(face);
-      if (!f)
-        throw new Error(
-          `portrait ${options.src}: there is no face \`${face}\` (${named.size ? `faces: ${[...named.keys()].join(", ")}` : "no faces are named"})`,
-        );
-      return { ...base, ...f };
-    }
-    return { ...base, ...choose(face) };
-  };
-
-  const image = (src: string, more: { opacity?: number } = {}) => <image src={src} {...place} {...more} />;
-  const seq = (shots: Shot[]) => (
+  let manifest: unknown;
+  try {
+    manifest = JSON.parse(readFileSync(resolve(root, options.src, "portrait.json"), "utf8"));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") throw new Error(`Missing portrait.json: export a Mekuru PSD with mekuru-psd --out ${options.src}`);
+    throw error;
+  }
+  validateManifest(manifest);
+  const { layers } = manifest;
+  const { src, slot = `portrait:${src}`, blink, ...placement } = options;
+  if (blink !== undefined && blink !== false && (!Number.isSafeInteger(blink) || blink < 0))
+    throw new Error("blink must be a non-negative whole number of frames or false");
+  const place: Omit<PortraitOptions, "src"> = { x: "50%", y: "100%", anchor: "b" as const, h: options.w === undefined ? "80%" : undefined, ...placement };
+  const image = (path: string) => <image src={`${src.replace(/\/$/, "")}/${path}`} {...place} />;
+  const sequence = (shots: Shot[]) => (
     <seq>
       {shots.map((s) => (
         <dur len={s.len}>{image(s.src)}</dur>
       ))}
     </seq>
   );
-  const figure = (c: Chosen, eyes: Node, mouth: Node) => (
+  const choose = (props: Props) => {
+    const values = props as Record<string, unknown>;
+    for (const name of Object.keys(values)) {
+      if (!layers.some((l) => l.kind !== "fixed" && l.name === name)) throw new Error(`Unknown PSD property: ${name}`);
+    }
+    return layers.flatMap((layer) => {
+      const value = layer.kind === "fixed" || !Object.hasOwn(values, layer.name) || values[layer.name] === undefined ? layer.initial : values[layer.name];
+      if (!selectable(layer.kind) && typeof value !== "boolean") throw new Error(`PSD ${layer.name}: expected boolean`);
+      if (selectable(layer.kind) && value !== null && (typeof value !== "string" || !layer.options.some((o) => o.name === value)))
+        throw new Error(`PSD ${layer.name}: unknown option ${String(value)}`);
+      if (value === false || value === null) return [];
+      const part = selectable(layer.kind) ? layer.options.find((o) => o.name === value) : layer.options[0];
+      if (!part) throw new Error(`Missing PSD option: ${layer.name}`);
+      return [{ kind: layer.kind, frames: part.frames }];
+    });
+  };
+  const figure = (chosen: ReturnType<typeof choose>, len?: number, audio?: ReturnType<typeof samples>, seed = "stand") => (
     <stack slot={slot}>
-      {[...c.後].reverse().map((p) => image(p.src))}
-      {c.体.map((p) => image(p.src))}
-      {c.顔色.map((p) => image(p.src))}
-      {c.髪.map((p) => image(p.src))}
-      {mouth}
-      {eyes}
-      {c.眉.map((p) => image(p.src))}
-      {c.髪.filter((p) => p.opacity).map((p) => image(p.src, { opacity: p.opacity }))}
-      {[...c.他].reverse().map((p) => image(p.src))}
+      {chosen.map(({ kind, frames }) => {
+        const closed = frames[0];
+        const open = frames[frames.length - 1];
+        if (kind === "blink" && frames.length > 1) {
+          const every = blink === false ? 0 : (blink ?? Math.round(4 * fps()));
+          if (every > 0) {
+            const shots = sequence(blinks({ open, frames: frames.slice(0, -1), every, fps: fps(), rand: random(`${slot}:${closed}:${seed}`) }, len));
+            return len === undefined ? <repeat>{shots}</repeat> : shots;
+          }
+          return image(open);
+        }
+        if (kind === "lip" && frames.length > 1 && audio && len !== undefined) return sequence(lipSync(audio, frames, len, fps()));
+        return image(closed);
+      })}
     </stack>
   );
-  const closed = (p: Part) => p.frames[0] ?? p.src;
-  const blinking = (p: Part, seed: string) => ({ open: p.src, frames: p.frames, every: every(), fps: fps(), rand: random(seed) });
-  const canBlink = (p: Part) => every() > 0 && p.frames.length > 0;
-
-  const Stand = ({ face, len, ...time }: StandProps<Name>): JSX.Element => {
-    const c = faceOf(face);
-    const eyes = c.目.map((p) => (canBlink(p) ? <repeat>{seq(blinks(blinking(p, `${slot}:${p.src}`)))}</repeat> : image(p.src)));
-    const mouth = c.口.map((p) => image(closed(p)));
-    const body = figure(c, eyes, mouth);
+  const Stand = ({ id, at, len, ...props }: Props & { id?: string; at?: At; len?: Time }) => {
+    const body = figure(choose(props as Props), len);
     return len === undefined ? (
-      <stack {...time}>{body}</stack>
+      <stack id={id} at={at}>
+        {body}
+      </stack>
     ) : (
-      <dur len={len} {...time}>
+      <dur id={id} at={at} len={len}>
         {body}
       </dur>
     );
   };
-
-  const Talk = async ({ face, source }: TalkProps<Name>): Promise<Awaited<JSX.Element>> => {
-    const c = faceOf(face);
-    const wav = source.status === "ready" ? Buffer.from(await Bun.file(source.src).arrayBuffer()) : undefined;
-    const len = source.len;
-    const seed = `${slot}:${source.label ?? (source.status === "ready" ? source.src : "")}:${len}`;
-    const eyes = c.目.map((p) => (canBlink(p) ? seq(blinks(blinking(p, seed), len)) : image(p.src)));
-    const mouth = c.口.map((p) => {
-      if (!wav || p.frames.length === 0) return image(closed(p));
-      return seq(lipSync(samples(wav), [...p.frames, p.src], len, fps()));
-    });
-    return <dur len={len}>{figure(c, eyes, mouth)}</dur>;
+  const Talk = async ({ source, ...props }: Props & { source: AudioSource }) => {
+    const chosen = choose(props as Props);
+    const audio =
+      source.status === "ready" && chosen.some((c) => c.kind === "lip" && c.frames.length > 1)
+        ? samples(Buffer.from(await Bun.file(resolve(root, source.src)).arrayBuffer()))
+        : undefined;
+    const seed = `${source.label ?? (source.status === "ready" ? source.src : "")}:${source.len}`;
+    return <dur len={source.len}>{figure(chosen, source.len, audio, seed)}</dur>;
   };
-
-  return { parts, faces: Object.keys(faces) as Name[], Stand, Talk };
-};
-
-export { psdPortrait, type PsdPortraitOptions } from "./psd.tsx";
+  return { Stand, Talk };
+}

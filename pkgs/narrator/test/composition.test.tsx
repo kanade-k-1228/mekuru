@@ -34,11 +34,18 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
   const ready = Promise.withResolvers<void>();
   let writing: Promise<void> | undefined;
   try {
-    await mkdir(join(dir, "actor", "口"), { recursive: true });
+    await mkdir(join(dir, "actor"), { recursive: true });
     await mkdir(other);
-    // XML generation only needs the part names; no renderer or engine is involved.
-    await Bun.write(join(dir, "actor", "口", "口.png"), "");
-    await Bun.write(join(dir, "actor", "口", "口.0.png"), "");
+    // XML generation needs metadata and WAV samples, but no image decoding.
+    await Bun.write(
+      join(dir, "actor", "portrait.json"),
+      JSON.stringify({
+        version: 2,
+        width: 1,
+        height: 1,
+        layers: [{ name: "mouth", kind: "lip", initial: "normal", options: [{ name: "normal", frames: ["closed.png", "open.png"] }] }],
+      }),
+    );
     process.chdir(dir);
     const actor = portrait({ src: "actor", blink: false });
     const sources: AudioSource[] = [];

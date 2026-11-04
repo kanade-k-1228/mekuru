@@ -53,5 +53,5 @@ for (const [index, name] of expressions.entries()) {
 
 const output = resolve(import.meta.dir, "../tutorial/assets/source/zundamon.psd");
 await mkdir(resolve(output, ".."), { recursive: true });
-await writeFile(output, writePsdBuffer({ width, height, children: [{ name: "face", children }], imageData: children[0].imageData }));
+await writeFile(output, writePsdBuffer({ width, height, children: [{ name: "face [select]", children }], imageData: children[0].imageData }));
 console.log(`SD ずんだもんの6表情を PSD にまとめました: ${output}`);
