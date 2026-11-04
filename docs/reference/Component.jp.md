@@ -12,15 +12,17 @@ src/main.tsx → .mekuru/main.xml → video.mp4
 ## プロジェクトを作る
 
 ```sh
-bun create @mekuru my-video --engine voisona
+bun create @mekuru my-video
 cd my-video
 bun install
 ```
 
 作成オプションは [@mekuru/create](../../pkgs/create/README.jp.md)、最初の台本は [チュートリアル](../../example/README.md) を参照してください。
 
+既定は VOICEVOX サンプルです。プレビュー前に、別のターミナルで `bun run voicevox`（Docker が必要）または VOICEVOX アプリを起動します。空の台本は `--template empty` で作成できます。
+
 - `src/main.tsx`: 台本
-- `src/parts.tsx`: 字幕などの共通部品
+- `src/parts.tsx`: 字幕などの共通部品（VOICEVOX サンプル）
 - `assets/`: 画像・動画・音声
 - `configs/`: 投稿設定とサムネイル
 - `.mekuru/`: 生成した XML と音声キャッシュ

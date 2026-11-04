@@ -4,7 +4,7 @@ type Props = Record<string, unknown>;
 export interface Element {
   tag: string;
   props: Props;
-  children: Item[];
+  children: Element[];
 }
 export type Item = Element | string;
 
@@ -55,16 +55,15 @@ export const expand = async (node: unknown, out: Item[]): Promise<void> => {
       return;
     }
     if (typeof tag === "string") {
-      const el: Element = { tag, props, children: [] };
+      const items: Item[] = [];
       const inside = async () => {
-        for (const c of children) await expand(c, el.children);
+        for (const c of children) await expand(c, items);
       };
       await (tag === "mekuru" ? rate.run(frameRate(props.fps), inside) : inside());
-      if (tag === "text" && el.children.length) throw new Error('`<text>` takes its string in `text` (`<text text="…" />`), not as children');
-      const words = el.children.find((c) => typeof c === "string" && c.trim());
+      if (tag === "text" && items.length) throw new Error('`<text>` takes its string in `text` (`<text text="…" />`), not as children');
+      const words = items.find((c) => typeof c === "string" && c.trim());
       if (words !== undefined) throw new Error(`text cannot be in \`<${tag}>\`: write it in \`<text text="…" />\` (found ${JSON.stringify(words)})`);
-      el.children = el.children.filter((c) => typeof c !== "string");
-      out.push(el);
+      out.push({ tag, props, children: items.filter((c) => typeof c !== "string") });
       return;
     }
   }

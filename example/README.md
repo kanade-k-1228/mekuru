@@ -34,7 +34,7 @@ bun run --cwd example export:vscode
 ## 動画内のサンプル
 
 ```sh
-bun create @mekuru my-video --engine voicevox
+bun create @mekuru my-video --template sample
 ```
 
 まず、このリポジトリの直下で `bun run --cwd example portrait` を実行して、PSD から PNG を展開します。その後、作ったプロジェクトに [tutorial/character/zundamon.tsx](tutorial/character/zundamon.tsx) を `src/character/zundamon.tsx`、[tutorial/assets](tutorial/assets) の内容を `assets` としてコピーします。[tutorial/main.tsx](tutorial/main.tsx) は完成時の台本です。`src/parts.tsx` は作成時のものを使います。

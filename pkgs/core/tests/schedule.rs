@@ -147,6 +147,28 @@ fn holds_at_one_position_wait_for_the_longest_and_holds_at_others_add_up() {
 }
 
 #[test]
+fn a_reference_to_the_source_end_precedes_its_hold_but_media_completion_waits() {
+    let (p, s) = compile(
+        r#"
+        <stack>
+            <video id="movie" src="movie.mp4">
+                <speed rate="2"/>
+                <hold at="4"><dur len="2"/></hold>
+                <hold at="10"><dur len="3"/></hold>
+            </video>
+            <dur at="movie:10" len="1"><rect id="cue" w="10" h="10"/></dur>
+        </stack>
+        <dur len="1"><rect id="after" w="10" h="10"/></dur>
+        "#,
+    );
+    clean(&s);
+    assert_eq!(elem(&p, &s, "cue").start, 7);
+    assert_eq!(elem(&p, &s, "movie").end, 10);
+    assert_eq!(elem(&p, &s, "after").start, 10);
+    assert_eq!(s.total, 11);
+}
+
+#[test]
 fn hold_lasts_as_long_as_what_is_in_it() {
     let (p, s) = compile(
         r#"

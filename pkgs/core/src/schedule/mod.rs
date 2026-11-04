@@ -323,23 +323,29 @@ impl<'a> Solver<'a> {
         }
     }
 
+    /// Arrival is the latest of these variable + offset terms. Only a media end waits for holds at `q` itself.
+    fn arrival_terms(&self, y: Target, q: f64, end: bool) -> impl Iterator<Item = (usize, i64)> + '_ {
+        let clock = self.clock(y);
+        let elapsed = clock.map_or(q, |(v, c)| self.played(v, c.from, q));
+        std::iter::once((self.var(y, V::Start), up(elapsed))).chain(clock.into_iter().flat_map(move |(v, _)| {
+            self.holds_of(v)
+                .iter()
+                .filter(move |(at, _)| (*at as f64) < q || (end && *at as f64 <= q))
+                .map(move |&(at, h)| (self.var(Target::Node(h), V::End), up(self.played(v, at as f64, q))))
+        }))
+    }
+
     fn arrival(&self, g: &mut Graph, y: Target, q: f64, to: usize, cause: Option<Target>, end: bool) {
-        let start = self.var(y, V::Start);
-        let Some((v, c)) = self.clock(y) else { return g.add(start, to, up(q), cause) };
-        g.add(start, to, up(self.played(v, c.from, q)), cause);
-        for &(at, h) in self.holds_of(v).iter().filter(|(at, _)| (*at as f64) < q || (end && *at as f64 <= q)) {
-            g.add(self.var(Target::Node(h), V::End), to, up(self.played(v, at as f64, q)), cause);
+        for (from, offset) in self.arrival_terms(y, q, end) {
+            g.add(from, to, offset, cause);
         }
     }
 
     fn arrival_at(&self, y: Target, q: i64) -> i64 {
-        let start = self.val[self.var(y, V::Start)];
-        let Some((v, c)) = self.clock(y) else { return start + q };
-        let q = q as f64;
-        let before = self.holds_of(v).iter().filter(|(at, _)| (*at as f64) < q);
-        before.fold(start + up(self.played(v, c.from, q)), |t, &(at, h)| {
-            t.max(self.val[self.var(Target::Node(h), V::End)] + up(self.played(v, at as f64, q)))
-        })
+        self.arrival_terms(y, q as f64, false)
+            .map(|(from, offset)| self.val[from] + offset)
+            .max()
+            .expect("arrival includes the target's start")
     }
 
     fn intervals(&mut self) {

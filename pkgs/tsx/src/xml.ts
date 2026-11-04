@@ -14,7 +14,7 @@ const head = (element: Element) =>
 
 /** Text lives in attributes (`<text text="…"/>`), so elements hold only elements. */
 const serialize = (element: Element, indent = ""): string => {
-  const children = element.children.filter((child): child is Element => typeof child !== "string");
+  const { children } = element;
   const opening = `${indent}${head(element)}`;
   if (!children.length) return `${opening}/>`;
   return `${opening}>\n${children.map((child) => serialize(child, `${indent}  `)).join("\n")}\n${indent}</${element.tag}>`;

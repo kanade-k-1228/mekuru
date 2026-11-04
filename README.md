@@ -28,6 +28,7 @@ curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.s
 bun create @mekuru my-video
 cd my-video
 bun install
+bun run voicevox # keep running in another terminal (requires Docker)
 bun preview     # http://localhost:3333
 bun run build   # video.mp4
 ```
@@ -56,6 +57,6 @@ const Video = () => (
 await writeXml(".mekuru/main.xml", <Video />);
 ```
 
-This uses VOICEVOX: choose it during setup and keep the app running. See the [first-video tutorial](example/README.md) for a complete example.
+The default “VOICEVOX sample” includes speech and its required packages. Keep `bun run voicevox` (Docker) or the VOICEVOX app running. To start with a blank script, select “Empty project” during creation or pass `--template empty`. See the [first-video tutorial](example/README.md) for a complete example.
 
 > [@mekuru/tsx](pkgs/tsx/README.md) provides TSX types, the JSX runtime and XML output. [@mekuru/core](pkgs/core/README.md) provides the native compiler and preview server, including the viewer and platform binaries. Generated projects include both packages.

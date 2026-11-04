@@ -162,21 +162,16 @@ const Tutorial: FC = () => (
           <Terminal
             at={PICK}
             w={800}
-            text={[
-              "◆ Speech engines (You can add them later)",
-              "│ …",
-              "│ ◼ VOICEVOX",
-              "│ …",
-              "◇ Upload to (You can add it later)",
-              "│   ◻ YouTube   ◻ niconico",
-            ].join("\n")}
+            text={["◇ Project template", "│ ● VOICEVOX sample", "│ ○ Empty project", "◇ Upload to (You can add it later)", "│   ◻ YouTube   ◻ niconico"].join(
+              "\n",
+            )}
           />
           <seq>
             <Zundamon text="次は、プロジェクトを作ります。" />
-            <Zundamon text="選ぶ画面になったら、音声エンジンに VOICEVOX を選びます。">
-              <TermMark term={PICK} from={3} w={440} />
+            <Zundamon text="テンプレートは VOICEVOX sample を選びます。空の台本から始めることもできます。">
+              <TermMark term={PICK} from={1} to={3} w={740} />
             </Zundamon>
-            <Zundamon text="上下で移動、スペースで選んで、エンターで決定です。">
+            <Zundamon text="上下で移動して、エンターで決定です。投稿先はスペースでチェックできます。">
               <column x={910} y={330} gap={18}>
                 <Label x={0} y={0} anchor="tl" color={COLOR.blue} size={44} text="↑↓ 移動" />
                 <Label x={0} y={80} anchor="tl" color={COLOR.blue} size={44} text="Space 選ぶ" />
@@ -184,10 +179,10 @@ const Tutorial: FC = () => (
               </column>
             </Zundamon>
             <Zundamon face="wink" text="投稿先も選べるけど、動画を作るだけなら、選ばなくて大丈夫！">
-              <TermMark term={PICK} from={5} to={6} w={740} />
+              <TermMark term={PICK} from={4} to={5} w={740} />
             </Zundamon>
             <Zundamon text="同じ選択は、オプションでまとめて指定することもできます。">
-              <Terminal at={OPTION_TERM} w={1140} text={"$ bun create @mekuru my-video \\\n    --engine voicevox --upload youtube,niconico --yes"} />
+              <Terminal at={OPTION_TERM} w={1140} text={"$ bun create @mekuru my-video \\\n    --template sample --upload youtube,niconico --yes"} />
             </Zundamon>
           </seq>
         </stack>
@@ -199,23 +194,23 @@ const Tutorial: FC = () => (
             text={[
               "Created a Mekuru Movie Maker project in my-video",
               "",
-              "Tools:",
-              "  ✓ ffmpeg: 8.1",
-              "  ✓ VOICEVOX: connected at http://127.0.0.1:50021",
+              "✓ ffmpeg: 8.1",
               "",
               "$ cd my-video",
               "$ bun install",
+              "$ bun run voicevox",
+              "# 別のターミナルで bun preview",
             ].join("\n")}
           />
           <seq>
-            <Zundamon text="プロジェクトができると、道具がそろっているかのチェック結果が出ます。">
-              <TermMark term={INSTALL_TERM} from={3} to={5} w={1110} />
-            </Zundamon>
-            <Zundamon face="worry" text="VOICEVOX につながらない場合は、アプリの起動と接続先を確認してください。">
-              <TermMark term={INSTALL_TERM} from={5} w={1110} />
+            <Zundamon text="プロジェクトができると、ffmpeg のチェック結果が出ます。">
+              <TermMark term={INSTALL_TERM} from={3} w={1110} />
             </Zundamon>
             <Zundamon text="問題なければ、フォルダに移って、bun install です。">
-              <TermMark term={INSTALL_TERM} from={7} to={8} w={400} />
+              <TermMark term={INSTALL_TERM} from={5} to={6} w={400} />
+            </Zundamon>
+            <Zundamon text="Docker があれば、bun run voicevox で音声サーバーを起動できます。アプリが起動済みなら、この手順は不要です。">
+              <TermMark term={INSTALL_TERM} from={7} to={8} w={1110} />
             </Zundamon>
             <Zundamon text="ここから先のコマンドは、全部このフォルダの中で実行します。">
               <Label x={640} y={760} size={50} text="ここから先は my-video の中で" />
