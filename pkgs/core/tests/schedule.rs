@@ -1,6 +1,6 @@
 use mekuru_compiler::{
     Project,
-    ir::{Elem, ElemKind, ViewOp},
+    ir::{Elem, ElemKind, RectSpec, ViewOp},
     media::probe::MediaProbe,
     prepare::{MediaAsset, Prepared},
     schedule::{ElemTime, Schedule},
@@ -46,10 +46,14 @@ fn elem<'a>(p: &Project, s: &'a Schedule, id: &str) -> &'a ElemTime {
     &s.elems[self::id(p, id)]
 }
 
-fn marked<'a>(p: &Project, s: &'a Schedule, marker: &str) -> &'a ElemTime {
+/// The innermost element whose source contains `marker`.
+fn marked_elem<'a>(p: &'a Project, marker: &str) -> &'a Elem {
     let has = |e: &&Elem| p.source[e.site.lo as usize..e.site.hi as usize].contains(marker);
-    let e = p.script.elems.iter().filter(has).min_by_key(|e| e.site.hi - e.site.lo).expect(marker);
-    &s.elems[e.id]
+    p.script.elems.iter().filter(has).min_by_key(|e| e.site.hi - e.site.lo).expect(marker)
+}
+
+fn marked<'a>(p: &Project, s: &'a Schedule, marker: &str) -> &'a ElemTime {
+    &s.elems[marked_elem(p, marker).id]
 }
 
 fn clean(s: &Schedule) {
@@ -817,19 +821,18 @@ fn dur_gives_a_length_to_what_has_none_and_cuts_or_stretches_what_has_one() {
     }
 }
 
-fn rect_in(p: &Project, e: usize) -> mekuru_compiler::ir::RectSpec {
+fn rect_in(p: &Project, e: usize) -> RectSpec {
     let ElemKind::View(v) = &p.script.elems[e].kind else { panic!() };
     let ViewOp::Rect(r) = &v.ops[0] else { panic!() };
     r.clone()
 }
 
-fn rect_of(p: &Project, id: &str) -> mekuru_compiler::ir::RectSpec {
+fn rect_of(p: &Project, id: &str) -> RectSpec {
     rect_in(p, self::id(p, id))
 }
 
-fn marked_rect(p: &Project, marker: &str) -> mekuru_compiler::ir::RectSpec {
-    let has = |e: &&Elem| p.source[e.site.lo as usize..e.site.hi as usize].contains(marker);
-    rect_in(p, p.script.elems.iter().filter(has).min_by_key(|e| e.site.hi - e.site.lo).expect(marker).id)
+fn marked_rect(p: &Project, marker: &str) -> RectSpec {
+    rect_in(p, marked_elem(p, marker).id)
 }
 
 #[test]
@@ -888,10 +891,7 @@ fn a_seq_in_a_row_takes_the_space_of_its_widest_child() {
     );
     clean(&s);
     assert_eq!((elem(&p, &s, "s2").start, elem(&p, &s, "s2").end), (1, 2));
-    let after = id(&p, "after");
-    let ElemKind::View(v) = &p.script.elems[after].kind else { panic!() };
-    let ViewOp::Rect(r) = &v.ops[0] else { panic!() };
-    assert_eq!(r.x, 60.0);
+    assert_eq!(rect_of(&p, "after").x, 60.0);
 }
 
 #[test]
@@ -905,9 +905,7 @@ fn hold_is_drawn_over_the_parent_of_its_media() {
     "##,
     );
     clean(&s);
-    let note = id(&p, "note");
-    let ElemKind::View(v) = &p.script.elems[note].kind else { panic!() };
-    let ViewOp::Rect(r) = &v.ops[0] else { panic!() };
+    let r = rect_of(&p, "note");
     assert_eq!((r.x, r.y), (150.0, 10.0));
 }
 
@@ -951,4 +949,47 @@ fn xml_is_strict() {
         let p = Project::from_source(Path::new("test.xml"), None, doc.into(), false);
         assert!(p.has_errors(), "{doc}: {:?}", p.diags);
     }
+}
+
+/// `body` in a one-frame `<stack>`.
+fn stacked(body: &str) -> Project {
+    project(&format!(r#"<dur len="1"><stack>{body}</stack></dur>"#))
+}
+
+fn ops(p: &Project) -> Vec<&ViewOp> {
+    p.script
+        .elems
+        .iter()
+        .filter_map(|e| if let ElemKind::View(v) = &e.kind { Some(v) } else { None })
+        .flat_map(|v| &v.ops)
+        .collect()
+}
+
+#[test]
+fn rotate_turns_the_element_and_its_children_about_the_center() {
+    let p = stacked(r##"<column x="10" y="20" w="40" h="20" fill="#f00" rotate="90"><rect w="10" h="10" fill="#00f"/></column>"##);
+    assert!(!p.has_errors(), "{:?}", p.diags);
+    let ops = ops(&p);
+    assert_eq!(ops.len(), 2);
+    for op in ops {
+        let ViewOp::Transformed(t, _) = op else { panic!("not rotated: {op:?}") };
+        let map = |x: f32, y: f32| (t.sx * x + t.kx * y + t.tx, t.ky * x + t.sy * y + t.ty);
+        for ((x, y), (ex, ey)) in [((30.0, 30.0), (30.0, 30.0)), ((10.0, 20.0), (40.0, 10.0))] {
+            let (mx, my) = map(x, y);
+            assert!((mx - ex).abs() < 1e-3 && (my - ey).abs() < 1e-3, "({x}, {y}) -> ({mx}, {my})");
+        }
+    }
+}
+
+#[test]
+fn rotate_zero_and_full_turns_draw_as_is() {
+    let p = stacked(r##"<rect w="10" h="10" fill="#f00" rotate="0"/><rect w="10" h="10" fill="#f00" rotate="360"/>"##);
+    assert!(!p.has_errors(), "{:?}", p.diags);
+    assert!(ops(&p).iter().all(|op| matches!(op, ViewOp::Rect(_))));
+}
+
+#[test]
+fn rotate_cannot_turn_a_video() {
+    let p = stacked(r#"<column rotate="5"><video src="movie.mp4" w="10"/></column>"#);
+    assert!(p.diags.iter().any(|d| d.code == "E322"), "{:?}", p.diags);
 }
