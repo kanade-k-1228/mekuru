@@ -12,6 +12,7 @@
     "@mekuru/types": "^0.2.0",
     "@mekuru/core": "^0.2.0",
     "typescript": "7.0.2",
-    "@mekuru/narrator": "^0.2.0"
+    "@mekuru/narrator": "^0.2.0",
+    "@mekuru/audio": "^0.2.0"
   }
 }

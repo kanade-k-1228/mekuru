@@ -10,6 +10,7 @@ test("generated projects include the selected engines and upload commands", asyn
     await create(dir, { mekuru: "^0.3.0", engines: ["voicevox", "aivisspeech"], upload: ["youtube", "niconico"] });
     const pkg = await Bun.file(join(dir, "package.json")).json();
     expect(Object.keys(pkg.devDependencies)).toEqual([
+      "@mekuru/audio",
       "@mekuru/core",
       "@mekuru/narrator",
       "@mekuru/types",
