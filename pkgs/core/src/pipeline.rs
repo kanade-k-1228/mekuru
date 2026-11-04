@@ -1,6 +1,7 @@
 use crate::audio::{Track, mix_wav};
 use crate::media::encode::{EncodeArgs, Encoder};
 use crate::media::pcm::{self, Pcm, RATE};
+use crate::prepare::pcm_path;
 use crate::progress::Progress;
 use crate::render::{FrameRenderer, RenderCtx, RenderTarget};
 use crate::schedule::{AudioClip, EPS, Fade};
@@ -90,7 +91,7 @@ pub fn audio_tracks(ctx: &RenderCtx) -> Result<Vec<Track>> {
     let made: HashMap<String, Pcm> = todo
         .into_par_iter()
         .map(|(k, (c, base))| {
-            let p = pcm::stretch(base, c.src, c.len * c.rate, c.rate, &cache.pcm(&k))?;
+            let p = pcm::stretch(base, c.src, c.len * c.rate, c.rate, &pcm_path(&cache, &k))?;
             Ok((k, p))
         })
         .collect::<Result<_>>()?;
@@ -129,7 +130,7 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
         height: target.height,
         ..Default::default()
     };
-    let tmp = ctx.project.cache().tmp();
+    let tmp = ctx.project.cache().join("tmp");
     std::fs::create_dir_all(&tmp)?;
     let wav: Option<TempFile> = if opts.audio {
         progress(Progress::Mix);

@@ -99,9 +99,8 @@ impl Project {
         self.script.base_dir.join(format!("{stem}.mp4"))
     }
 
-    pub fn cache(&self) -> prepare::Cache {
-        prepare::Cache {
-            root: self.script.base_dir.join(".mekuru"),
-        }
+    /// The folder for files made from the project: decoded audio and temporary files.
+    pub fn cache(&self) -> PathBuf {
+        self.script.base_dir.join(".mekuru")
     }
 }
