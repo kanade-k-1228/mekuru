@@ -7,7 +7,7 @@ import { startServer } from "./fixtures/native-server.ts";
 import { findCompiler } from "../pkgs/core/npm/compiler.js";
 import { previewXml } from "./preview-fixture.ts";
 import { previewStore } from "../pkgs/viewer/src/logic/preview.ts";
-import type { SnapshotEvent, StateDto } from "../pkgs/protocol/src/index.ts";
+import type { SnapshotEvent, StateDto } from "../pkgs/viewer/src/protocol.ts";
 
 let root: string;
 let xml: string;

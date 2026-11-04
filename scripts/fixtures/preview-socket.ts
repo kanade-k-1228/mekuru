@@ -1,5 +1,5 @@
 /** Native-server test and benchmark client; ReadableStream queues incoming messages. */
-import type { PreviewCommand, PreviewEvent } from "../../pkgs/protocol/src/index.ts";
+import type { PreviewCommand, PreviewEvent } from "../../pkgs/viewer/src/protocol.ts";
 
 export function connectPreview(url: string) {
   const endpoint = new URL("/api/ws", url);

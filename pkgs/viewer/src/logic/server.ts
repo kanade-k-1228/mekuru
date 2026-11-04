@@ -1,4 +1,4 @@
-import type { SceneElement, TimelineDto } from "@mekuru/protocol";
+import type { SceneElement, TimelineDto } from "../protocol";
 import { atom } from "jotai";
 
 import { seekTimeAtom } from "./playback/position";

@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 import type { FixtureCompilation } from "./preview.ts";
-import type { CollectionPatch, Keyed, PatchEvent, Resources, PreviewDto, SnapshotEvent, StateDto } from "@mekuru/protocol";
+import type { CollectionPatch, Keyed, PatchEvent, Resources, PreviewDto, SnapshotEvent, StateDto } from "../../src/protocol";
 
 export interface SharedPreview {
   preview: PreviewDto;

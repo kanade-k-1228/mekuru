@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import { atom, useAtomValue } from "jotai";
 import { memo, useCallback, useEffect, useMemo, useRef, type CSSProperties, type Ref } from "react";
-import type { DrawOp, SceneElement, TextOp } from "@mekuru/protocol";
+import type { DrawOp, SceneElement, TextOp } from "../../protocol";
 import { resourcesAtom } from "../../logic/server";
 import { stageAtom, type Shown } from "../../logic/stage";
 

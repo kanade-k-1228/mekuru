@@ -1,4 +1,4 @@
-import type { CollectionPatch, Keyed, PatchEvent, PreviewDto, Resources, SnapshotEvent } from "@mekuru/protocol";
+import type { CollectionPatch, Keyed, PatchEvent, PreviewDto, Resources, SnapshotEvent } from "../protocol";
 
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 

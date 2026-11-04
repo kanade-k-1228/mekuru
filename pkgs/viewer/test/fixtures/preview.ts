@@ -1,4 +1,4 @@
-import type { DrawOp, Resources, SceneElement, StateDto, PreviewDto } from "@mekuru/protocol";
+import type { DrawOp, Resources, SceneElement, StateDto, PreviewDto } from "../../src/protocol";
 export const path = (d: string): DrawOp => ({ kind: "path", d, color: "#000000ff", stroke: null });
 export const resources: Resources = { A: [path("M0 0L1 1".repeat(100))], B: [path("M0 0L2 2".repeat(100))], C: [path("M0 0L3 3".repeat(100))] };
 export const element = (key: string, drawings: string[], start = 0): SceneElement => ({

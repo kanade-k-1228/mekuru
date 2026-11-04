@@ -107,10 +107,10 @@ The timing tree, layout, and draw order are resolved at compile time. Times are 
 
 TSX `fps()` is available only while expanding `<mekuru>`. Audio speed changes use `atempo` for export and `playbackRate` for preview.
 
-Viewer state lives in Jotai atoms; `logic/` does not depend on `view/`. Components read and write atoms without custom hooks. Shared DTOs come from `@mekuru/protocol`; React refs handle DOM attachment and cleanup.
+Viewer state lives in Jotai atoms; `logic/` does not depend on `view/`. Components read and write atoms without custom hooks. React refs handle DOM attachment and cleanup.
 
 ## Package boundaries
 
-`core` owns JSX and XML build context. `audio` owns audio resources and WAV processing; `speech` owns synthesis preparation and caches. Engine packages own their HTTP APIs. `narrator` composes portraits and subtitles. `protocol` contains transport types without runtime dependencies. `platform` owns OS integration. The viewer depends on protocol; compiler output and the native server implement that contract in Rust.
+`core` owns JSX and XML build context. `audio` owns audio resources and WAV processing; `speech` owns synthesis preparation and caches. Engine packages own their HTTP APIs. `narrator` composes portraits and subtitles. `platform` owns OS integration. The preview contract is typed in [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts); the native server implements it in Rust.
 
-Moved APIs: import `AudioSource`, `Audio`, and `readAudio` from `@mekuru/audio`; import `joinWavs` from `@mekuru/audio/wav`; import preview DTOs from `@mekuru/protocol`. No compatibility re-exports remain at the old paths.
+Moved APIs: import `AudioSource`, `Audio`, and `readAudio` from `@mekuru/audio`; import `joinWavs` from `@mekuru/audio/wav`. No compatibility re-exports remain at the old paths.

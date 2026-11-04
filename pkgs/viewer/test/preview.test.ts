@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { patch, sharePreview, snapshot } from "./fixtures/sharing.ts";
 import { compilation, element, resources, state } from "./fixtures/preview.ts";
-import type { PreviewDto } from "@mekuru/protocol";
+import type { PreviewDto } from "../src/protocol";
 import { previewStore } from "../src/logic/preview";
 
 const present = (p: PreviewDto | null): PreviewDto => {

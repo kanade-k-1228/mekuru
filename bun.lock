@@ -103,10 +103,6 @@
       "name": "@mekuru/platform",
       "version": "0.0.0",
     },
-    "pkgs/protocol": {
-      "name": "@mekuru/protocol",
-      "version": "0.0.0",
-    },
     "pkgs/speech": {
       "name": "@mekuru/speech",
       "version": "0.0.0",
@@ -152,7 +148,6 @@
         "react-dom": "19.3.1",
       },
       "devDependencies": {
-        "@mekuru/protocol": "workspace:^",
         "@tailwindcss/vite": "4.3.3",
         "@types/node": "24.13.6",
         "@types/react": "19.3.0",
@@ -305,8 +300,6 @@
     "@mekuru/niconico": ["@mekuru/niconico@workspace:pkgs/niconico"],
 
     "@mekuru/platform": ["@mekuru/platform@workspace:pkgs/platform"],
-
-    "@mekuru/protocol": ["@mekuru/protocol@workspace:pkgs/protocol"],
 
     "@mekuru/speech": ["@mekuru/speech@workspace:pkgs/speech"],
 

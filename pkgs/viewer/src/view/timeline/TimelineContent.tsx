@@ -1,5 +1,5 @@
 import { memo, type PointerEvent as ReactPointerEvent } from "react";
-import type { ClipLane } from "@mekuru/protocol";
+import type { ClipLane } from "../../protocol";
 import { formatTime } from "../../logic/formatTime";
 import { clsx } from "clsx";
 import { LEFT_PAD, rulerTicks, xAt, type Layout, type Viewport } from "../../logic/timeline/model";

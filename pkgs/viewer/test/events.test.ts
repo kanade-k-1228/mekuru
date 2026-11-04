@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { createStore } from "jotai";
-import type { PreviewEvent } from "@mekuru/protocol";
+import type { PreviewEvent } from "../src/protocol";
 import { compilation, state } from "./fixtures/preview.ts";
 import { patch, sharePreview, snapshot } from "./fixtures/sharing.ts";
 import { connectEvents, initialConnection, previewSocketUrl } from "../src/logic/events";

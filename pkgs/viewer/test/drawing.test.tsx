@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 import { expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { DrawOp, TextOp } from "@mekuru/protocol";
+import type { DrawOp, TextOp } from "../src/protocol";
 import { Drawing } from "../src/view/preview/Stage";
 
 const text: TextOp = {

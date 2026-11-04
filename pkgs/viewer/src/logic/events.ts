@@ -1,4 +1,4 @@
-import type { PreviewCommand, PreviewDto, PreviewEvent, Resources, StateDto } from "@mekuru/protocol";
+import type { PreviewCommand, PreviewDto, PreviewEvent, Resources, StateDto } from "../protocol";
 import { previewStore } from "./preview";
 export type ConnState = "connecting" | "open" | "reconnecting";
 export interface Connection {
