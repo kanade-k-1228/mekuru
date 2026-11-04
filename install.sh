@@ -3,8 +3,7 @@ set -euo pipefail
 
 # Keep the installation version aligned with package.json's packageManager.
 BUN_VERSION=1.4.4
-MIN_BUN_VERSION=1.4.0
-check_only=false
+MIN_BUN_VERSION=1.4
 temp_dir=
 
 log() { printf '%s\n' "$*"; }
@@ -12,12 +11,12 @@ fail() { printf 'error: %s\n' "$*" >&2; exit 1; }
 cleanup() { if [[ -n "$temp_dir" ]]; then rm -rf -- "$temp_dir"; fi; }
 
 check_bun() {
-  local version major minor
+  local version major minor min_major=${MIN_BUN_VERSION%.*} min_minor=${MIN_BUN_VERSION#*.}
   version=$("$bun_cmd" --version) || fail "Cannot run $bun_cmd. Repair the existing Bun installation."
   [[ "$version" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]] || fail "Cannot verify Bun version '$version'; install stable Bun >= $MIN_BUN_VERSION."
   major=$((10#${BASH_REMATCH[1]}))
   minor=$((10#${BASH_REMATCH[2]}))
-  (( major > 1 || (major == 1 && minor >= 4) )) || fail "Bun $version is too old; need >= $MIN_BUN_VERSION. Update Bun with its original installer or package manager, then rerun."
+  (( major > min_major || (major == min_major && minor >= min_minor) )) || fail "Bun $version is too old; need >= $MIN_BUN_VERSION. Update Bun with its original installer or package manager, then rerun."
   log "Bun $version ($bun_cmd)"
 }
 
@@ -61,13 +60,11 @@ install_packages() {
 main() {
   case "${1:-}" in
     '') ;;
-    --check) check_only=true; shift ;;
     --help|-h)
-      log 'Usage: bash install.sh [--check]'
-      log 'Prepare Bun >= 1.4 and ffmpeg/ffprobe with libx264 for Mekuru.'
+      log 'Usage: bash install.sh'
+      log "Prepare Bun >= $MIN_BUN_VERSION and ffmpeg/ffprobe with libx264 for Mekuru."
       log 'Missing tools: install on Debian/Ubuntu/WSL or macOS with Homebrew.'
       log 'Existing incompatible tools: report the problem without replacing them.'
-      log '--check: check only; do not install anything.'
       return ;;
     *) fail "Unknown option: $1 (use --help)" ;;
   esac
@@ -100,28 +97,23 @@ main() {
   else
     check_ffprobe
   fi
-  if [[ "$check_only" == true ]]; then
-    [[ -n "$bun_cmd" ]] || fail "Bun is missing; rerun without --check."
-    [[ "$need_ffmpeg" == false ]] || fail 'ffmpeg or ffprobe is missing; rerun without --check.'
-  else
-    if [[ -z "$bun_cmd" ]]; then
-      command -v curl >/dev/null 2>&1 || packages+=(curl)
-      command -v unzip >/dev/null 2>&1 || packages+=(unzip)
-    fi
-    if [[ "$need_ffmpeg" == true ]]; then packages+=(ffmpeg); fi
-    # Bash 3.2 (macOS) treats an empty array as unset under nounset.
-    if (( ${#packages[@]} > 0 )); then install_packages "${packages[@]}"; fi
-    if [[ -z "$bun_cmd" ]]; then
-      log "Installing Bun $BUN_VERSION using the official installer."
-      temp_dir=$(mktemp -d)
-      trap cleanup EXIT
-      curl --fail --silent --show-error --location https://bun.com/install --output "$temp_dir/bun-install.sh"
-      BUN_INSTALL="$bun_dir" bash "$temp_dir/bun-install.sh" "bun-v$BUN_VERSION"
-      bun_cmd="$bun_dir/bin/bun"
-      check_bun
-    fi
-    if [[ "$need_ffmpeg" == true ]]; then check_ffmpeg; check_ffprobe; fi
+  if [[ -z "$bun_cmd" ]]; then
+    command -v curl >/dev/null 2>&1 || packages+=(curl)
+    command -v unzip >/dev/null 2>&1 || packages+=(unzip)
   fi
+  if [[ "$need_ffmpeg" == true ]]; then packages+=(ffmpeg); fi
+  # Bash 3.2 (macOS) treats an empty array as unset under nounset.
+  if (( ${#packages[@]} > 0 )); then install_packages "${packages[@]}"; fi
+  if [[ -z "$bun_cmd" ]]; then
+    log "Installing Bun $BUN_VERSION using the official installer."
+    temp_dir=$(mktemp -d)
+    trap cleanup EXIT
+    curl --fail --silent --show-error --location https://bun.com/install --output "$temp_dir/bun-install.sh"
+    BUN_INSTALL="$bun_dir" bash "$temp_dir/bun-install.sh" "bun-v$BUN_VERSION"
+    bun_cmd="$bun_dir/bin/bun"
+    check_bun
+  fi
+  if [[ "$need_ffmpeg" == true ]]; then check_ffmpeg; check_ffprobe; fi
   log 'Mekuru dependencies are ready.'
   if ! command -v bun >/dev/null 2>&1; then
     printf 'Open a new terminal, or add Bun to PATH: export PATH=%q:"$PATH"\n' "$bun_dir/bin"

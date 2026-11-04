@@ -17,13 +17,9 @@ curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.s
 - A speech engine for the selected voice.
 - On Windows, run Mekuru in WSL.
 
-Automatic installation supports apt on Ubuntu/Debian (including WSL) and [Homebrew](https://brew.sh/) on macOS. apt requires administrator privileges. If Bun is missing, its official installer installs version 1.4.4. Set up a speech engine and Japanese fonts separately.
+Automatic installation supports apt on Ubuntu/Debian (including WSL) and [Homebrew](https://brew.sh/) on macOS. apt requires administrator privileges. If Bun is missing, it is installed with its official installer. Set up a speech engine and Japanese fonts separately.
 
-Compatible existing tools are reused. An outdated Bun or ffmpeg without libx264 produces an error with update instructions. `MEKURU_FFMPEG` and `MEKURU_FFPROBE` overrides are respected. To check without installing anything:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.sh | bash -s -- --check
-```
+Compatible existing tools are reused. An outdated Bun or ffmpeg without libx264 produces an error with update instructions. `MEKURU_FFMPEG` and `MEKURU_FFPROBE` overrides are respected.
 
 ## Quick start
 
