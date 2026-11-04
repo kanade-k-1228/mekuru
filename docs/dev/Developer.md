@@ -44,7 +44,7 @@ bun run --cwd pkgs/viewer dev
 
 The development server at `http://localhost:5173` proxies API requests to port 3333.
 
-TypeScript configuration lives at the root and in the viewer. Generated projects use `pkgs/create/template/tsconfig.json`. There are no Project References, incremental builds, or per-package JS/type declaration outputs. Type checking can run before building. `bun run test` builds the native binary and UI before the server integration tests.
+TypeScript configuration lives at the root and in the viewer. Generated projects use `pkgs/create/template/sample/tsconfig.json` or `pkgs/create/template/empty/tsconfig.json`. Each template contains the complete set of project files; create copies the selected directory. There are no Project References, incremental builds, or per-package JS/type declaration outputs. Type checking can run before building. `bun run test` builds the native binary and UI before the server integration tests.
 
 ## Releases
 

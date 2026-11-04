@@ -12,15 +12,17 @@ src/main.tsx → .mekuru/main.xml → video.mp4
 ## Create a project
 
 ```sh
-bun create @mekuru my-video --engine voisona
+bun create @mekuru my-video
 cd my-video
 bun install
 ```
 
 See [@mekuru/create](../../pkgs/create/README.md) for creation options and the [tutorial](../../example/README.md) (Japanese) for your first script.
 
+The default is the VOICEVOX sample. Before previewing, run `bun run voicevox` in another terminal (requires Docker), or start the VOICEVOX app. Use `--template empty` to start with a blank script.
+
 - `src/main.tsx`: Script
-- `src/parts.tsx`: Shared components, such as subtitles
+- `src/parts.tsx`: Shared components, such as subtitles (VOICEVOX sample)
 - `assets/`: Images, video, and audio
 - `configs/`: Upload settings and thumbnails
 - `.mekuru/`: Generated XML and speech cache

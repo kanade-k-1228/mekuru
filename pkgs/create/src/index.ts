@@ -1,34 +1,33 @@
 #!/usr/bin/env bun
-import { Command, InvalidArgumentError } from "commander";
+import { Command, InvalidArgumentError, Option } from "commander";
 import { VERSION } from "./create.ts";
 import { run, type Args } from "./prompts.ts";
-import { ENGINE_NAMES, SITE_NAMES, type Engine } from "./choices.ts";
-const parseList =
-  <T extends string>(what: string, all: readonly T[]) =>
-  (value: string, previous: T[] = []): T[] => {
-    const names = value
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s !== "");
-    const unknown = names.find((n) => !(all as readonly string[]).includes(n));
-    if (unknown !== undefined) throw new InvalidArgumentError(`unknown ${what} ${JSON.stringify(unknown)} (${all.join(", ")})`);
-    return all.filter((n) => previous.includes(n) || names.includes(n));
-  };
+import { SITE_NAMES, TEMPLATE_NAMES, type Site } from "./choices.ts";
+
+const parseSites = (value: string, previous: Site[] = []): Site[] => {
+  const names = value
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s !== "");
+  const unknown = names.find((n) => !SITE_NAMES.some((site) => site === n));
+  if (unknown !== undefined) throw new InvalidArgumentError(`unknown upload site ${JSON.stringify(unknown)} (${SITE_NAMES.join(", ")})`);
+  return SITE_NAMES.filter((n) => previous.includes(n) || names.includes(n));
+};
 
 new Command("create-mekuru")
   .description(
-    "Creates a Mekuru Movie Maker video project. In a terminal, it asks for what the options do not give; " +
+    "Creates a Mekuru Movie Maker video project from a VOICEVOX sample or an empty script. In a terminal, it asks for what the options do not give; " +
       "with --yes (or when the input is not a terminal), it uses the defaults.",
   )
   .version(VERSION)
   .argument("[folder]", "the folder of the project (default: my-video)")
-  .option("--engine <engines>", `the speech engines, separated by commas: ${ENGINE_NAMES.join(", ")} (default: none)`, parseList("engine", ENGINE_NAMES))
-  .option("--upload <sites>", `where to upload the video, separated by commas: ${SITE_NAMES.join(", ")} (default: none)`, parseList("upload site", SITE_NAMES))
+  .addOption(new Option("--template <template>", "the project template (default: sample)").choices(TEMPLATE_NAMES))
+  .option("--upload <sites>", `where to upload the video, separated by commas: ${SITE_NAMES.join(", ")} (default: none)`, parseSites)
   .option("-f, --force", "write into a folder that is not empty")
   .option("-y, --yes", "do not ask")
   .showHelpAfterError("(add --help for more information)")
-  .action(async (dir: string | undefined, { engine, ...opts }: Omit<Args, "dir" | "engines"> & { engine?: Engine[] }) => {
-    process.exitCode = await run({ ...opts, dir, engines: engine });
+  .action(async (dir: string | undefined, opts: Omit<Args, "dir">) => {
+    process.exitCode = await run({ ...opts, dir });
   })
   .parseAsync()
   .then(() => process.exit());

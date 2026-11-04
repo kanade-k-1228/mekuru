@@ -1,5 +1,5 @@
 import { basename, resolve } from "node:path";
-import { ENGINE_NAMES, SITE_NAMES } from "./choices.ts";
+import { SITE_NAMES } from "./choices.ts";
 export const packageName = (dir: string): string => {
   const name = basename(resolve(dir))
     .toLowerCase()
@@ -9,7 +9,6 @@ export const packageName = (dir: string): string => {
 };
 
 const MARKER = /\s*<!--\s*#if\s+(.+?)\s*-->\s*$/;
-const NAMES: readonly string[] = [...ENGINE_NAMES, ...SITE_NAMES];
 
 export const keepLines = (text: string, chosen: readonly string[]): string =>
   text
@@ -18,8 +17,8 @@ export const keepLines = (text: string, chosen: readonly string[]): string =>
       const m = MARKER.exec(line);
       if (!m) return [line];
       const names = m[1].split(/\s+/);
-      const unknown = names.find((n) => !NAMES.includes(n));
-      if (unknown !== undefined) throw new Error(`the template has #if ${unknown}: not an engine or an upload site`);
+      const unknown = names.find((n) => !SITE_NAMES.some((site) => site === n));
+      if (unknown !== undefined) throw new Error(`the template has #if ${unknown}: not an upload site`);
       return names.some((n) => chosen.includes(n)) ? [line.slice(0, m.index)] : [];
     })
     .join("\n");

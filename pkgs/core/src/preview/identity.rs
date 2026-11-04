@@ -18,9 +18,8 @@ impl Node {
         attrs.sort();
         let fingerprint = sha256_hex(
             format!(
-                "{:?}|{attrs:?}|{:?}|{:?}",
+                "{:?}|{attrs:?}|{:?}",
                 n.name.as_str(),
-                n.text,
                 children.iter().map(|c| &c.fingerprint).collect::<Vec<_>>()
             )
             .as_bytes(),

@@ -401,7 +401,7 @@ impl Ctx<'_> {
     pub(super) fn leaf(&self, tag: &Tag, at: &Attrs, style: &mut Style, diags: &mut Vec<Diag>) -> Option<Leaf> {
         Some(match tag.name.as_str() {
             "text" => {
-                at.require("text", diags)?;
+                let text = at.require("text", diags)?;
                 let size = at.num("size", diags).unwrap_or(48.0);
                 let stroke = at.color("stroke", diags);
                 let style_t = TextStyle {
@@ -422,7 +422,7 @@ impl Ctx<'_> {
                     line_height: at.num("line-height", diags).unwrap_or(1.4),
                 };
                 Leaf::Text(TextSpec {
-                    text: tag.text.clone(),
+                    text: text.value.clone(),
                     x: 0.0,
                     y: 0.0,
                     width: None,

@@ -25,7 +25,6 @@ pub fn parse(src: &str) -> (Document, Vec<Diag>) {
         name_span: Span::default(),
         head: Span::default(),
         attrs: vec![],
-        text: String::new(),
         children: vec![],
         span: Span::new(0, src.len()),
     });
@@ -118,16 +117,11 @@ impl Builder<'_> {
                 vec![]
             }
         };
-        let text = match (name, n.attribute("text")) {
-            ("text", Some(t)) => t.to_string(),
-            _ => String::new(),
-        };
         Tag {
             name: name.to_string(),
             name_span: self.name_span(n),
             head: self.start_tag(n),
             attrs: self.attrs(n),
-            text,
             children,
             span: self.span(n),
         }
@@ -303,7 +297,7 @@ mod tests {
             .descendants()
             .into_iter()
             .filter(|t| t.name == "text")
-            .map(|t| t.text.clone())
+            .map(|t| t.attribute("text").unwrap_or("").to_owned())
             .collect();
         (texts, diags)
     }

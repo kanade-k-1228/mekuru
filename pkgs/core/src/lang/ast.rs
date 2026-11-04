@@ -59,9 +59,6 @@ pub struct Tag {
     pub name_span: Span,
     pub head: Span,
     pub attrs: Vec<Attr>,
-    /// The string a `<text>` shows: its `text` attribute as written, with `\n` breaking the line; other tags
-    /// have none.
-    pub text: String,
     pub children: Vec<Tag>,
     pub span: Span,
 }
@@ -76,7 +73,8 @@ impl Tag {
     }
 
     pub fn label(&self) -> String {
-        std::iter::once(self.text.clone()).chain(self.children.iter().map(Tag::label)).collect()
+        let text = if self.name == "text" { self.attribute("text").unwrap_or("") } else { "" };
+        std::iter::once(text.to_owned()).chain(self.children.iter().map(Tag::label)).collect()
     }
 }
 

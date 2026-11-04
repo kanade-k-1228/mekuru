@@ -44,7 +44,7 @@ bun run --cwd pkgs/viewer dev
 
 開発サーバーは `http://localhost:5173` からポート3333へ API を転送します。
 
-型設定はルートとビューアの2つです。生成プロジェクト用は `pkgs/create/template/tsconfig.json` に置きます。Project References・増分ビルド・パッケージごとの JS/型定義生成は使いません。型チェックはビルド前にも実行できます。`bun run test` はネイティブサーバーの統合テスト前に実行ファイルと UI をビルドします。
+型設定はルートとビューアの2つです。生成プロジェクト用は `pkgs/create/template/sample/tsconfig.json` と `pkgs/create/template/empty/tsconfig.json` に置きます。各テンプレートには生成するファイル一式を置き、create は選んだディレクトリをコピーします。Project References・増分ビルド・パッケージごとの JS/型定義生成は使いません。型チェックはビルド前にも実行できます。`bun run test` はネイティブサーバーの統合テスト前に実行ファイルと UI をビルドします。
 
 ## リリース
 

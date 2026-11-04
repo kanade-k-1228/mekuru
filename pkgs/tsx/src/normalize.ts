@@ -1,5 +1,4 @@
 const TIMES = new Set(["len", "fadein", "fadeout", "from", "to", "delay"]);
-const LENGTHS = new Set(["x", "y", "w", "h", "min-w", "max-w", "min-h", "max-h", "gap"]);
 const RATIOS = new Set(["opacity", "volume"]);
 const COLORS = new Set(["fill", "stroke", "color", "background"]);
 
@@ -58,7 +57,6 @@ const attr = (tag: string, key: string, v: unknown): [string, string] | undefine
   if (key === "at") return tag === "hold" ? ["at", frames(v)] : at(v);
   if (typeof v === "boolean") return key === "grow" ? [key, v ? "1" : "0"] : v ? [key, "true"] : undefined;
   if (TIMES.has(key)) return [key, frames(v)];
-  if (LENGTHS.has(key)) return [key, str(v)];
   if (RATIOS.has(key)) return [key, ratio(v)];
   if (COLORS.has(key)) return [key, color(v)];
   if (key === "padding") return [key, (Array.isArray(v) ? v : [v]).map(str).join(" ")];

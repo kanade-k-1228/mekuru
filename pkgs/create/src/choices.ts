@@ -1,13 +1,9 @@
-export const ENGINES = {
-  voicevox: { name: "VOICEVOX", hint: "free: the app, or the engine in Docker" },
-  aivisspeech: { name: "AivisSpeech", hint: "free: the app, or the engine in Docker" },
-  sharevox: { name: "SHAREVOX", hint: "free: the app (no longer updated)" },
-  voisona: { name: "VoiSona Talk", hint: "the app on Windows or macOS, with its REST API on; 田中傘 is free" },
-  coeiroink: { name: "COEIROINK", hint: "free: the app (v2)" },
-  "style-bert-vits2": { name: "Style-Bert-VITS2", hint: "free: its API server" },
+export const TEMPLATES = {
+  sample: { name: "VOICEVOX sample", hint: "speech sample and a Docker command to start the server" },
+  empty: { name: "Empty project", hint: "a blank script, with no speech server needed" },
 } as const;
-export type Engine = keyof typeof ENGINES;
-export const ENGINE_NAMES = Object.keys(ENGINES) as Engine[];
+export type Template = keyof typeof TEMPLATES;
+export const TEMPLATE_NAMES = Object.keys(TEMPLATES) as Template[];
 
 const DOCS = "https://github.com/kanade-k-1228/mekuru/blob/main/docs/reference/Upload.jp.md";
 const MULTILINE = "# 複数行は「description: |」として、次の行から字下げして書く";
