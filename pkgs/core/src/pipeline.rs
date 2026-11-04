@@ -91,12 +91,7 @@ pub fn audio_tracks(ctx: &RenderCtx) -> Result<Vec<Track>> {
     let made: HashMap<String, Pcm> = todo
         .into_par_iter()
         .map(|(k, (c, base))| {
-            let dst = cache.pcm(&k);
-            let p = if dst.exists() {
-                Pcm::open(&dst)?
-            } else {
-                pcm::stretch(base, c.src, c.len * c.rate, c.rate, &dst)?
-            };
+            let p = pcm::stretch(base, c.src, c.len * c.rate, c.rate, &cache.pcm(&k))?;
             Ok((k, p))
         })
         .collect::<Result<_>>()?;

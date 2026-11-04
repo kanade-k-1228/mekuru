@@ -127,6 +127,5 @@ fn prepare_pcm(p: &Path, cache: &Cache) -> anyhow::Result<Pcm> {
         anyhow::bail!("file not found: {}", p.display());
     }
     let key = sha256_hex(format!("{stamp:?}").as_bytes());
-    let dst = cache.pcm(&key);
-    if dst.exists() { Pcm::open(&dst) } else { pcm::convert(p, &dst) }
+    pcm::convert(p, &cache.pcm(&key))
 }

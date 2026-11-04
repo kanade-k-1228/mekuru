@@ -13,19 +13,6 @@ pub const BYTES_PER_FRAME: u64 = 4;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Pcm {
     pub path: PathBuf,
-    pub frames: u64,
-}
-
-impl Pcm {
-    pub fn open(path: &Path) -> Result<Pcm> {
-        let len = std::fs::metadata(path)
-            .with_context(|| format!("missing audio cache {}", path.display()))?
-            .len();
-        Ok(Pcm {
-            path: path.to_path_buf(),
-            frames: len / BYTES_PER_FRAME,
-        })
-    }
 }
 
 pub fn convert(src: &Path, dst: &Path) -> Result<Pcm> {
@@ -40,34 +27,35 @@ pub fn stretch(base: &Pcm, from: f64, len: f64, rate: f64, dst: &Path) -> Result
     })
 }
 
+/// The PCM at `dst`, which `make` writes unless an earlier run left it there.
 fn write<T>(dst: &Path, make: impl FnOnce(&Path) -> Result<T>) -> Result<Pcm> {
-    if let Some(dir) = dst.parent() {
-        std::fs::create_dir_all(dir)?;
+    if !dst.exists() {
+        if let Some(dir) = dst.parent() {
+            std::fs::create_dir_all(dir)?;
+        }
+        let name = dst.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+        let n = std::process::id()
+            ^ (std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.subsec_nanos()));
+        let tmp = TempFile(dst.with_file_name(format!(".{name}.{n:x}.tmp")));
+        make(tmp.as_ref())?;
+        std::fs::rename(tmp.as_ref(), dst)?;
     }
-    let name = dst.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    let n = std::process::id()
-        ^ (std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_or(0, |d| d.subsec_nanos()));
-    let tmp = TempFile(dst.with_file_name(format!(".{name}.{n:x}.tmp")));
-    make(tmp.as_ref())?;
-    std::fs::rename(tmp.as_ref(), dst)?;
-    Pcm::open(dst)
+    Ok(Pcm { path: dst.to_path_buf() })
 }
 
 pub struct PcmReader {
     file: File,
-    pub frames: u64,
+    frames: u64,
     buf: Vec<u8>,
 }
 
 impl PcmReader {
     pub fn open(p: &Pcm) -> Result<PcmReader> {
-        Ok(PcmReader {
-            file: File::open(&p.path).with_context(|| format!("cannot open {}", p.path.display()))?,
-            frames: p.frames,
-            buf: vec![],
-        })
+        let file = File::open(&p.path).with_context(|| format!("cannot open {}", p.path.display()))?;
+        let frames = file.metadata()?.len() / BYTES_PER_FRAME;
+        Ok(PcmReader { file, frames, buf: vec![] })
     }
 
     pub fn read(&mut self, start: u64, n: usize, out: &mut Vec<f32>) -> Result<()> {
