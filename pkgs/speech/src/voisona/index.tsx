@@ -1,4 +1,4 @@
-import { defineEngine, type EngineProps } from "@mekuru/speech";
+import { defineEngine, type EngineProps } from "../engine.ts";
 import { client } from "./client.ts";
 
 export interface VoisonaProps extends EngineProps {

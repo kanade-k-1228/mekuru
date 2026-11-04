@@ -146,7 +146,7 @@ const Tutorial: FC = () => (
             <Zundamon text="日本語フォントを入れて、VOICEVOX を起動するのだ。" />
             <Zundamon text="ずんだもんのノーマルスタイルで、台本を読み上げるのだ。" />
             <Zundamon text="接続先の設定は、この手順を確認してね。VOICEVOX は起動したまま使うのだ。">
-              <Label x={640} y={820} size={34} color={COLOR.blue} text="pkgs/voicevox/README.jp.md" />
+              <Label x={640} y={820} size={34} color={COLOR.blue} text="pkgs/speech/README.jp.md" />
             </Zundamon>
             <Zundamon text="Windows の人は、WSL の中で動かしてね。">
               <Label x={1020} y={600} color={COLOR.blue} size={48} text="Windows → WSL" />
@@ -360,8 +360,8 @@ const Tutorial: FC = () => (
               <CodeMark code={READ} from={2} w={1000} />
             </Zundamon>
             <Zundamon text="字幕はそのままで、読み上げだけが、指定した読み方になります。" />
-            <Zundamon text="接続先などの設定は、音声エンジンごとの日本語 README を見てね。">
-              <Label x={640} y={760} size={34} color={COLOR.blue} text="pkgs/voicevox/README.jp.md" />
+            <Zundamon text="接続先などの設定は、音声エンジンの日本語 README を見てね。">
+              <Label x={640} y={760} size={34} color={COLOR.blue} text="pkgs/speech/README.jp.md" />
             </Zundamon>
           </seq>
         </stack>

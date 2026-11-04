@@ -16,14 +16,14 @@ Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/types"` in `tsconfig.json`
 
 ## Compose a narrator
 
-This example also uses `@mekuru/voisona` and `@mekuru/audio`. First export a PSD containing a `face [select]` group with `mekuru-psd`. Replace `src` with the exported folder.
+This example also uses `@mekuru/speech` and `@mekuru/audio`. First export a PSD containing a `face [select]` group with `mekuru-psd`. Replace `src` with the exported folder.
 
 ```tsx
 import type { At, FC, Node } from "@mekuru/types";
 import { portrait, Subtitle } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
-import { Voisona } from "@mekuru/voisona";
+import { Voisona } from "@mekuru/speech/voisona";
 
 import type { LayerProps } from "./assets/character/tsuzumi/portrait";
 

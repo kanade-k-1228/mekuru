@@ -1,4 +1,4 @@
-import { cached, type Engine } from "@mekuru/speech";
+import { cached, type Engine } from "../engine.ts";
 import type { StyleBertVits2Props } from "./index.tsx";
 
 interface ModelInfo {

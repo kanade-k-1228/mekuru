@@ -5,9 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { toXml, type Node } from "@mekuru/types";
 import { wav } from "../../audio/test/fixture.ts";
-import { Coeiroink } from "../../coeiroink/src/index.tsx";
-import { StyleBertVits2 } from "../../style-bert-vits2/src/index.tsx";
-import { Voicevox } from "../../voicevox/src/index.tsx";
+import { Coeiroink } from "../src/coeiroink/index.tsx";
+import { StyleBertVits2 } from "../src/style-bert-vits2/index.tsx";
+import { Voicevox } from "../src/voicevox/index.tsx";
 
 const ENV = ["MEKURU_VOICEVOX_URL", "MEKURU_COEIROINK_URL", "MEKURU_STYLE_BERT_VITS2_URL"];
 const before = { cwd: process.cwd(), env: ENV.map((key) => process.env[key]) };

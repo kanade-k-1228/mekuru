@@ -7,10 +7,14 @@
     "directory": "pkgs/speech"
   },
   "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/speech/README.md",
-  "description": "What the speech components of Mekuru Movie Maker (@mekuru/voicevox, @mekuru/coeiroink, ...) share: the text of a line, the cache of synthesized audio and the <audio> it becomes",
+  "description": "The speech components of Mekuru Movie Maker: lines read by VOICEVOX, COEIROINK, Style-Bert-VITS2 or VoiSona Talk, cached as WAV, and the API for adding another engine",
   "type": "module",
   "exports": {
-    ".": "./src/index.tsx"
+    ".": "./src/index.tsx",
+    "./voicevox": "./src/voicevox/index.tsx",
+    "./coeiroink": "./src/coeiroink/index.tsx",
+    "./style-bert-vits2": "./src/style-bert-vits2/index.tsx",
+    "./voisona": "./src/voisona/index.tsx"
   },
   "files": [
     "src"

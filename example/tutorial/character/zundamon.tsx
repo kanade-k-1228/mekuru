@@ -1,6 +1,6 @@
 import type { FC } from "@mekuru/types";
 import { Audio } from "@mekuru/audio";
-import { Voicevox, zunda } from "@mekuru/voicevox";
+import { Voicevox, zunda } from "@mekuru/speech/voicevox";
 import { portrait, type PortraitOptions } from "@mekuru/narrator";
 import { READING, Subtitle, type Line } from "../parts";
 import type { LayerProps } from "../../assets/character/zundamon/portrait";
