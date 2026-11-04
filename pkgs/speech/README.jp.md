@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-Mekuru Movie Maker の読み上げ部品を実装するためのユーティリティです。既存のエンジンを使う場合は、それぞれのセットアップと使用方法を参照してください: [VOICEVOX](../voicevox/README.jp.md)・[COEIROINK](../coeiroink/README.jp.md)・[Style-Bert-VITS2](../style-bert-vits2/README.jp.md)・[VoiSona Talk](../voisona/README.jp.md)。
+Mekuru Movie Maker の読み上げ部品を実装するためのユーティリティです。既存のエンジンを使う場合は、それぞれのセットアップと使用方法を参照してください: [VOICEVOX](../voicevox/README.jp.md)・[COEIROINK](../coeiroink/README.jp.md)・[Style-Bert-VITS2](../style-bert-vits2/README.jp.md)・[VoiSona Talk](../voisona/README.jp.md)。どのエンジンにも共通の[テキストと時間の属性](#テキストと時間)と[キャッシュ](#キャッシュとプレビュー)はここで説明します。
 
 ## セットアップ
 
@@ -40,29 +40,35 @@ export const createSpeech = (synthesize: Synthesize) =>
 
 ## 詳しい使い方
 
+### テキストと時間
+
+`<Voicevox>`・`<Coeiroink>`・`<StyleBertVits2>`・`<Voisona>` や `defineSpeech()` で作った部品など、どの読み上げ部品も声の設定のほかに次の属性（`SpeechProps`）を受け取ります。
+
+- `children`: セリフ。文字列・数値・フラグメント・`<br />`。空の読み上げはエラー。
+- `name`: タイムラインの話者名。既定: 話者。どの属性かは各エンジンの README を参照。`prepare()` では `who`。
+- `reading`: 読みの辞書。例: `{ Mekuru: "めくる" }`。長いキーを優先し、表示は変えない。
+- `gap`: セリフの後の無音（フレーム）。既定: `Math.round(0.3 * fps)`（30 fps で9）。
+- `gain-db`: 再生音量の調整（dB）。キャッシュする WAV は変えない。既定: 調整なし。
+- `len`: 無音を含む全体のフレーム数。既定: 音声の長さを切り上げた値 + `gap`。話速は変えない。
+- `id`・`at`: 生成する `<dur>` の識別名と開始時刻。[時間の属性](../../docs/reference/Syntax.jp.md#時間の属性)を参照。
+
+ルビ `｜表示《よみ》` は「よみ」を読み、タイムラインには「表示」を残します。半角 `|` と `漢字《かんじ》` も使用できます。`<br />` は空白になります。文字や `<br />` を返す同期・非同期の部品も使えます。ほかの要素は入れられません。セリフの連続再生は `<seq>`、字幕との同時表示は `<stack>`、口パクは[立ち絵の `Talk`](../narrator/README.jp.md) を使います。
+
+### キャッシュとプレビュー
+
+- 音声はエンジン・声の設定・読み上げテキストをキーに `.mekuru/cache/tts/` へ保存。キャッシュ済みならエンジン停止中も使用できます。
+- 接続先や再生設定の変更では再合成しません。同名のモデルを更新した場合などは、該当する WAV を削除して再生成します。
+- キャッシュがなければ、`writeXml()` は合成中に無音の下書きを出し、完了後に XML を更新します。動画の書き出し前に `await` してください。下書きの長さは1文字0.15秒と `gap` の合計（`len` 指定時はその値）です。下書きの外で呼ぶ `toXml()` は合成を待ちます。
+
 ### prepare(kind, props, who, voice, synthesize)
 
 - `kind`: キャッシュのキーに使うエンジンの識別名。
-- `props`: セリフと時間の設定を含む `SpeechProps`。
+- `props`: セリフと時間の設定を含む [`SpeechProps`](#テキストと時間)。
 - `who`: `props.name` が省略されたときの話者名。
 - `voice`: 合成する声を決めるシリアライズ可能な設定。キャッシュのキーに含みます。
 - `synthesize`: `(text: string, output: string) => Promise<void>`。完成した WAV を `output` に書き出します。
 
 キャッシュのキーは `kind`・`voice`・変換後のテキストです。`voice` に合成結果を決める設定を含め、接続先を変えても音声を再利用する場合は接続情報を除きます。
-
-`SpeechProps` のフィールド:
-
-- `children`: セリフ。文字列・数値・フラグメント・`<br />` に対応します。読み上げる内容が空の場合はエラーです。
-- `name`: タイムラインの話者名。既定は `who`。
-- `reading`: 読みの辞書。長いキーを優先し、読み上げるテキストだけを変えます。
-- `gap`: セリフの後の無音（フレーム）。既定は `Math.round(0.3 * fps)`。
-- `gain-db`: 再生時の音量（dB）。キャッシュする WAV は変えません。
-- `len`: 全体の長さ（フレーム）。省略時は、音声の長さをフレームに切り上げて `gap` を足します。
-- `id`・`at`: 外側の `<dur>` に渡します。[時間の属性](../../docs/reference/Syntax.jp.md#時間の属性)を参照してください。
-
-`｜表示《よみ》` のルビは「よみ」を合成に、「表示」をラベルに使います。半角の `|` も使え、漢字なら `漢字《かんじ》` のように区切りを省けます。`<br />` は空白になります。文字や `<br />` を返す同期・非同期の部品も使えます。それ以外の要素はエラーです。
-
-キャッシュがなければ、`writeXml()` は無音の下書きを出し、合成後に更新します。見積もりは1文字0.15秒と `gap` の合計（`len` 指定時はその値）。下書きの外で呼ぶ `toXml()` は合成を待ちます。
 
 ### 共有する音声素材
 
@@ -73,31 +79,28 @@ export const createSpeech = (synthesize: Synthesize) =>
 - `<Audio source={line.audio} id="line" />`: 素材を既存の `<dur><audio /></dur>` に展開します。
 - `readAudio(src, { gap?, len?, label?, volume? })`: 既存の WAV から同じ素材を作ります。`gap` の既定値は 0。相対パスは構築開始時のプロジェクトが基準です。
 
-独自エンジンは `prepare()` で `{ audio, display }` を作り、`defineSpeech()` で JSX と `.prepare()` を提供します。旧 `line()` はこの構成に、旧 `line.len` は `line.audio.len` に移行してください。
+独自エンジンは `prepare()` で `{ audio, display }` を作り、`defineSpeech()` で JSX と `.prepare()` を提供します。
 
 下書きでは見積もりの素材を返して合成を予約し、完成版では実際の WAV と長さを返します。どちらも同じ部品で表示できます。キャッシュ基準・進捗・実行中の合成は一回の構築に属し、import 時点の作業フォルダには依存しません。
 
 ### その他のエクスポート
 
 - `await subtitleText(children)`: ルビを表示文字に変換し、空白と `<br />` を保持した Node を返します。純粋な文字処理の入口 `@mekuru/speech/text` からも使えます。読み上げと同じ入力形式を使います。字幕の配置・装飾には [@mekuru/narrator](../narrator/README.jp.md) の `Subtitle` を使えます。
-- `joinWavs(parts)`: フォーマットチャンクが同一の WAV バッファを連結します。空でない配列を渡します。リサンプリングや音声形式の変換は行いません。
 
 ### defineEngine(engine)
 
 同梱のエンジンと同じく、HTTP API を持つエンジンの部品を作ります（例: [VOICEVOX](../voicevox/src/index.tsx)）。
 
 ```tsx
-import { defineEngine, type SpeechProps } from "@mekuru/speech";
+import { defineEngine, type EngineProps } from "@mekuru/speech";
 
-interface MySpeechProps extends SpeechProps {
+interface MySpeechProps extends EngineProps {
   speaker: number;
-  url?: string;
 }
 
 export const MySpeech = defineEngine<MySpeechProps>({
   kind: "my-engine",
   name: "My engine",
-  env: "MY_ENGINE_URL",
   defaultUrl: "http://127.0.0.1:8000",
   help: "  - start My engine",
   concurrency: 1,
@@ -107,10 +110,11 @@ export const MySpeech = defineEngine<MySpeechProps>({
 });
 ```
 
-- 接続先は `url` 属性、なければ環境変数 `env`、なければ `defaultUrl` です。接続先ごとに `create(call, url)` で読み上げ関数を作り、同時に `concurrency` 本まで合成します。
-- `call(path, init)` は接続先にリクエストを送ります（タイムアウトは5分）。接続できなければ `help` を、HTTP エラーなら `name`・パス・ステータスをエラーに含めます。
+- 属性は `EngineProps`（`SpeechProps` に `url` と `max-chars` を加えたもの）を拡張します。
+- 接続先は `url` 属性、なければ `kind` から決まる環境変数 `MEKURU_<KIND>_URL`（この例では `MEKURU_MY_ENGINE_URL`）、なければ `defaultUrl` です。接続先ごとに `create(call, url)` で読み上げ関数を作り、同時に `concurrency` 本まで合成します。
+- `call(path, init)` は接続先にリクエストを送ります（タイムアウトは5分）。接続できなければ `help` に続けて `url` や環境変数の設定方法と WSL2 から Windows の接続先へつなぐ方法を、HTTP エラーなら `name`・パス・ステータスをエラーに含めます。
 - 読み上げ関数は `voice`（`SpeechProps` と `url` 以外の属性。キャッシュのキーにもなる）とテキストを受け取り、WAV のバイト列を返します。
-- `maxChars` を指定すると、`max-chars` 属性（既定は `maxChars`）より長いセリフを句読点の近くで分割して順に読み、結合します。
+- `max-chars` 属性（既定は `maxChars`。どちらもなければ制限なし）より長いセリフは、句読点の近くで分割して順に読み、結合します。
 - `who(props)` は `name` を省略したときの話者名です。
 - `cached(load)` は話者一覧など、読み上げ関数が接続先ごとに一度だけ読むものを保持します。読み込みに失敗したら次のセリフで読み直します。戻り値の関数に `true` を渡すと必ず読み直します。
 
@@ -118,4 +122,4 @@ export const MySpeech = defineEngine<MySpeechProps>({
 
 `@mekuru/types` の `isDraft()`・`waitFor()` を使い、合成の Promise を登録します。下書きでは `<dur len={estimatedFrames}><audio draft label="..." /></dur>`、完成版では生成済みの `src` を持つ音声を返します。`label` がある音声はタイムラインの読み上げ行に出ます。`waitFor()` が完成版の更新を予約するのは `writeXml()` の中だけです。
 
-`Audio` と `readAudio` は `@mekuru/audio`、`joinWavs` は `@mekuru/audio/wav` が提供します。
+`Audio` と `readAudio` は `@mekuru/audio`、`joinWavs(parts)` は `@mekuru/audio/wav` が提供します。`joinWavs` はフォーマットチャンクが同一の WAV バッファの空でない配列を連結します。リサンプリングや音声形式の変換は行いません。

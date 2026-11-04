@@ -2,7 +2,7 @@
 
 [日本語](README.jp.md)
 
-Utilities for implementing Mekuru Movie Maker speech components. For an existing engine, use its own setup and usage guide: [VOICEVOX](../voicevox/README.md), [COEIROINK](../coeiroink/README.md), [Style-Bert-VITS2](../style-bert-vits2/README.md), or [VoiSona Talk](../voisona/README.md).
+Utilities for implementing Mekuru Movie Maker speech components. For an existing engine, use its own setup and usage guide: [VOICEVOX](../voicevox/README.md), [COEIROINK](../coeiroink/README.md), [Style-Bert-VITS2](../style-bert-vits2/README.md), or [VoiSona Talk](../voisona/README.md). The [text and timing props](#text-and-timing) and the [cache](#cache-and-preview) they share are described here.
 
 ## Setup
 
@@ -40,29 +40,35 @@ Pass your WAV-writing callback to `createSpeech()` and use the returned componen
 
 ## Detailed usage
 
+### Text and timing
+
+Every speech component, such as `<Voicevox>`, `<Coeiroink>`, `<StyleBertVits2>`, `<Voisona>` or one made with `defineSpeech()`, takes these props (`SpeechProps`) besides its voice settings:
+
+- `children`: Dialogue: strings, numbers, fragments, or `<br />`. Empty speech is an error.
+- `name`: Timeline speaker label. Default: the speaker; each engine's README says which prop that is, and `prepare()` uses `who`.
+- `reading`: Pronunciation dictionary, e.g. `{ Mekuru: "めくる" }`. Longer keys win; displayed text is unchanged.
+- `gap`: Trailing silence in frames. Default: `Math.round(0.3 * fps)` (9 at 30 fps).
+- `gain-db`: Playback gain in dB; does not change the cached WAV. Default: no adjustment.
+- `len`: Total frames, including the gap. Default: rounded-up audio duration + `gap`. Does not change speaking speed.
+- `id`, `at`: Identifier and start timing for the generated `<dur>`; see [timing](../../docs/reference/Syntax.md#timing-attributes).
+
+Ruby `｜表示《よみ》` reads `よみ` and keeps `表示` in the timeline. ASCII `|` and `漢字《かんじ》` also work. `<br />` becomes a space. Synchronous and asynchronous components returning text or `<br />` also work; other nested elements are rejected. Use `<seq>` for successive lines and `<stack>` for speech with subtitles. For lip sync, wrap a line in a [portrait's `Talk`](../narrator/README.md).
+
+### Cache and preview
+
+- Audio is cached in `.mekuru/cache/tts/` by engine, voice settings, and spoken text. Cached lines work without a running engine.
+- Connection URLs and playback settings do not invalidate audio. Remove the cached WAV to regenerate speech after changing a server or updating a model under the same name.
+- On a cache miss, `writeXml()` writes a silent draft while synthesizing, then replaces it with completed XML. Await it before video export. The draft lasts 0.15 seconds per spoken character plus `gap`, or `len` if set. Outside draft mode, `toXml()` waits for synthesis.
+
 ### prepare(kind, props, who, voice, synthesize)
 
 - `kind`: Engine identifier used in the cache key.
-- `props`: `SpeechProps`, including dialogue text and timing options.
+- `props`: [`SpeechProps`](#text-and-timing), including dialogue text and timing options.
 - `who`: Default speaker label when `props.name` is omitted.
 - `voice`: Serializable settings that determine the synthesized voice; part of the cache key.
 - `synthesize`: `(text: string, output: string) => Promise<void>`; writes the completed WAV to `output`.
 
 The cache key contains `kind`, `voice`, and processed text. Include all synthesis settings in `voice`; omit connection details when a server change should reuse audio.
-
-`SpeechProps` fields:
-
-- `children`: Dialogue text; strings, numbers, fragments, and `<br />` are supported. Empty speech is an error.
-- `name`: Timeline label; defaults to `who`.
-- `reading`: Pronunciation dictionary. Longer keys take priority; only spoken text changes.
-- `gap`: Silence after the line, in frames. Default: `Math.round(0.3 * fps)`.
-- `gain-db`: Playback gain in dB; does not change the cached WAV.
-- `len`: Explicit total duration in frames; otherwise, audio duration rounded up to frames plus `gap`.
-- `id`, `at`: Passed to the surrounding `<dur>`; see [timing syntax](../../docs/reference/Syntax.md#timing-attributes).
-
-Ruby such as `｜表示《よみ》` uses `よみ` for synthesis and `表示` for the label. ASCII `|` also works; kanji can use `漢字《かんじ》` without a separator. `<br />` becomes a space. Synchronous and asynchronous components returning text or `<br />` are supported; other elements are rejected.
-
-On a cache miss, `writeXml()` writes a silent draft, then replaces it after synthesis. Its estimate is 0.15 seconds per spoken character plus `gap`, unless `len` is set. Outside draft mode, `toXml()` waits for synthesis.
 
 ### Shared audio sources
 
@@ -73,31 +79,28 @@ On a cache miss, `writeXml()` writes a silent draft, then replaces it after synt
 - `<Audio source={line.audio} id="line" />`: Emits existing `<dur><audio /></dur>` elements.
 - `readAudio(src, { gap?, len?, label?, volume? })`: Creates the same source from an existing WAV. The default gap is zero; relative paths use the project root captured at build start.
 
-Custom engines use `prepare()` to create `{ audio, display }` and `defineSpeech()` to expose a JSX component with a `.prepare()` method. Migrate `line()` callers to this composition and read duration from `line.audio.len` instead of the removed `line.len` getter.
+Custom engines use `prepare()` to create `{ audio, display }` and `defineSpeech()` to expose a JSX component with a `.prepare()` method.
 
 Draft preparation returns an estimated source and queues synthesis; the final pass returns the WAV and its actual duration. Both use the same presentation components. Cache roots, progress, and in-flight synthesis belong to the build, independent of the working directory at import time.
 
 ### Other exports
 
 - `await subtitleText(children)`: Converts ruby notation to display text and preserves whitespace and `<br />`. Also available from the text-only entry point `@mekuru/speech/text`, using the same input format as speech. For subtitle placement and styling, use `Subtitle` from [@mekuru/narrator](../narrator/README.md).
-- `joinWavs(parts)`: Joins a nonempty array of WAV buffers with identical format chunks. It does not resample or convert audio formats.
 
 ### defineEngine(engine)
 
 Makes the component for an engine with an HTTP API, like the bundled ones (see [VOICEVOX](../voicevox/src/index.tsx)):
 
 ```tsx
-import { defineEngine, type SpeechProps } from "@mekuru/speech";
+import { defineEngine, type EngineProps } from "@mekuru/speech";
 
-interface MySpeechProps extends SpeechProps {
+interface MySpeechProps extends EngineProps {
   speaker: number;
-  url?: string;
 }
 
 export const MySpeech = defineEngine<MySpeechProps>({
   kind: "my-engine",
   name: "My engine",
-  env: "MY_ENGINE_URL",
   defaultUrl: "http://127.0.0.1:8000",
   help: "  - start My engine",
   concurrency: 1,
@@ -107,10 +110,11 @@ export const MySpeech = defineEngine<MySpeechProps>({
 });
 ```
 
-- The server is the `url` prop, else the `env` environment variable, else `defaultUrl`. Each server gets its own `create(call, url)` reader and runs `concurrency` lines at a time.
-- `call(path, init)` sends a request to the server with a five-minute timeout. If the server cannot be reached, the error shows `help`; an HTTP error shows `name`, the path and the status.
+- The props extend `EngineProps`, which adds `url` and `max-chars` to `SpeechProps`.
+- The server is the `url` prop, else the environment variable `MEKURU_<KIND>_URL` named after `kind` (`MEKURU_MY_ENGINE_URL` here), else `defaultUrl`. Each server gets its own `create(call, url)` reader and runs `concurrency` lines at a time.
+- `call(path, init)` sends a request to the server with a five-minute timeout. If the server cannot be reached, the error shows `help`, then how to set `url` or the environment variable and how to reach a server on Windows from WSL2; an HTTP error shows `name`, the path and the status.
 - The reader gets `voice`, the props other than `SpeechProps` and `url`, which is also the cache key, and returns WAV bytes.
-- With `maxChars`, lines longer than the `max-chars` prop (default `maxChars`) are split near punctuation, read part by part and joined.
+- Lines longer than the `max-chars` prop (default `maxChars`; no limit when neither is set) are split near punctuation, read part by part and joined.
 - `who(props)` is the speaker's name when `name` is not set.
 - `cached(load)` keeps what a reader loads once per server, such as the speaker list. A failed load is retried on the next line, and calling the result with `true` loads it again.
 
@@ -118,4 +122,4 @@ export const MySpeech = defineEngine<MySpeechProps>({
 
 For custom preparation, use `isDraft()` and `waitFor()` from `@mekuru/types`: register the synthesis promise and return `<dur len={estimatedFrames}><audio draft label="..." /></dur>` for the draft, then audio with a completed `src` on the final pass. `label` selects the timeline's speech track. `waitFor()` schedules the final pass only within `writeXml()`.
 
-`Audio` and `readAudio` are provided by `@mekuru/audio`; `joinWavs` is provided by `@mekuru/audio/wav`.
+`Audio` and `readAudio` are provided by `@mekuru/audio`; `joinWavs(parts)`, which joins a nonempty array of WAV buffers with identical format chunks without resampling or converting them, is provided by `@mekuru/audio/wav`.

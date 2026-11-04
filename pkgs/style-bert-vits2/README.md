@@ -81,23 +81,9 @@ import { StyleBertVits2, amitaro } from "@mekuru/style-bert-vits2";
 
 Omitted synthesis options use the server's defaults, except `language` and `max-chars`. Check `/docs` for values. Long lines are split near punctuation, synthesized in order, and joined into one WAV; `gap` follows the complete line. HTTP 422 usually calls for checking the model, language, style, speaker, or text limit.
 
-### Text and timing
+### Text, timing and cache
 
-- `children`: Dialogue: strings, numbers, fragments, or `<br />`. Empty speech is an error.
-- `name`: Timeline speaker label. Default: `speaker` / `model` (uses `model` when `speaker` is omitted).
-- `reading`: Pronunciation dictionary, e.g. `{ Mekuru: "めくる" }`. Longer keys win; displayed text is unchanged.
-- `gap`: Trailing silence in frames. Default: `Math.round(0.3 * fps)` (9 at 30 fps).
-- `gain-db`: Playback gain in dB. Default: no adjustment.
-- `len`: Total frames, including the gap. Default: rounded-up audio duration + `gap`. Does not change speaking speed.
-- `id`, `at`: Identifier and start timing for the generated `<dur>`; see [timing](../../docs/reference/Syntax.md#timing-attributes).
-
-Ruby `｜表示《よみ》` reads `よみ` and keeps `表示` in the timeline. ASCII `|` and `漢字《かんじ》` also work. `<br />` becomes a space; other nested elements are rejected. Use `<seq>` for successive lines and `<stack>` for speech with subtitles. For lip sync, wrap a line in a [portrait's `Talk`](../narrator/README.md).
-
-### Cache and preview
-
-- Audio is cached in `.mekuru/cache/tts/` by engine, voice settings, and spoken text. Cached lines work without a running engine.
-- Connection URLs and playback settings do not invalidate audio. Remove the cached WAV to regenerate speech after changing a server or updating a model under the same name.
-- `writeXml()` writes a silent draft while synthesizing, then replaces it with completed XML. Await it before video export.
+`<StyleBertVits2>` takes the [text and timing props](../speech/README.md#text-and-timing) and [caches audio](../speech/README.md#cache-and-preview) like every speech component. `name` defaults to `speaker`, or `model` when `speaker` is omitted.
 
 ### Connection
 

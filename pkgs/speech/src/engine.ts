@@ -1,21 +1,22 @@
 import { joinWavs } from "@mekuru/audio/wav";
 import { defineSpeech, prepare, type SpeechProps } from "./index.tsx";
 
-interface EngineProps extends SpeechProps {
+/** The props of every component made with `defineEngine()`. */
+export interface EngineProps extends SpeechProps {
+  /** Base URL of the server. */
   url?: string;
+  /** Lines longer than this are split, read part by part and joined. */
   "max-chars"?: number;
 }
 
 /** A speech engine behind an HTTP server. */
 export interface Engine<P extends EngineProps> {
-  /** Engine name in the cache key. */
+  /** Engine name in the cache key and in `MEKURU_<KIND>_URL` (`-` becomes `_`), the environment variable with the server URL when `url` is not set. */
   kind: string;
   /** Engine name in error messages. */
   name: string;
-  /** Environment variable with the server URL, used when `url` is not set. */
-  env: string;
   defaultUrl: string;
-  /** How to start the server, shown when it is not reachable. */
+  /** How to start the server, shown when it is not reachable (before how to set `url`). */
   help: string;
   /** Lines synthesized at once by one server. */
   concurrency: number;
@@ -87,12 +88,17 @@ const splitText = (text: string, max: number): string[] => {
 };
 
 export const defineEngine = <P extends EngineProps>(engine: Engine<P>) => {
+  const env = `MEKURU_${engine.kind.toUpperCase().replaceAll("-", "_")}_URL`;
+  const help =
+    `${engine.help}\n` +
+    `  - if it runs elsewhere, set \`url="${engine.defaultUrl.replace(/\/\/[^/:]+/, "//<host>")}"\` on the component or the ${env} environment variable\n` +
+    `  - from WSL2, with ${engine.name} on Windows: turn on mirrored networking (\`networkingMode=mirrored\` in .wslconfig)`;
   const servers = new Map<string, { read: ReturnType<Engine<P>["create"]>; queue: ReturnType<typeof limit> }>();
   const server = (url: string | undefined) => {
-    const at = (url ?? process.env[engine.env] ?? engine.defaultUrl).replace(/\/+$/, "");
+    const at = (url ?? process.env[env] ?? engine.defaultUrl).replace(/\/+$/, "");
     let found = servers.get(at);
     if (!found) {
-      found = { read: engine.create(httpClient(at, engine.name, engine.help), at), queue: limit(engine.concurrency) };
+      found = { read: engine.create(httpClient(at, engine.name, help), at), queue: limit(engine.concurrency) };
       servers.set(at, found);
     }
     return found;

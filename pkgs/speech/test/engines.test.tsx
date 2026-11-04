@@ -18,6 +18,7 @@ beforeAll(async () => {
   process.chdir(dir);
   for (const key of ENV) delete process.env[key];
   process.env.MEKURU_COEIROINK_URL = "http://coeiroink.test:2/";
+  process.env.MEKURU_STYLE_BERT_VITS2_URL = "http://sbv2.test:4";
 });
 
 afterAll(async () => {
@@ -47,7 +48,7 @@ const serve = (json: Record<string, unknown> = {}) => {
 const say = (line: Node) => toXml(<mekuru>{line}</mekuru>);
 
 const SBV2 =
-  "http://127.0.0.1:5000/voice?model_name=amitaro&language=JP&speaker_name=あみたろ&style=Happy&style_weight=5&sdp_ratio=0.2&noise=0.6&noisew=0.8&length=1.1&assist_text=楽しい&assist_text_weight=0.5";
+  "http://sbv2.test:4/voice?model_name=amitaro&language=JP&speaker_name=あみたろ&style=Happy&style_weight=5&sdp_ratio=0.2&noise=0.6&noisew=0.8&length=1.1&assist_text=楽しい&assist_text_weight=0.5";
 
 const cases: { name: string; line: Node; json?: Record<string, unknown>; label: string; sent: unknown[][] }[] = [
   {
@@ -124,7 +125,7 @@ const cases: { name: string; line: Node; json?: Record<string, unknown>; label: 
     ],
   },
   {
-    name: "Style-Bert-VITS2 checks the model and reads a long line part by part",
+    name: "Style-Bert-VITS2 checks the model and reads a long line part by part, at the server of its environment variable",
     line: (
       <StyleBertVits2
         model="amitaro"
@@ -144,7 +145,7 @@ const cases: { name: string; line: Node; json?: Record<string, unknown>; label: 
     ),
     json: { "/models/info": { 0: { model_path: "model_assets/amitaro/amitaro.safetensors", spk2id: { あみたろ: 0 }, style2id: { Neutral: 0, Happy: 1 } } } },
     label: "あみたろ: あいう。えおか。",
-    sent: [["GET http://127.0.0.1:5000/models/info"], [`POST ${SBV2.replace("?", "?text=あいう。&")}`], [`POST ${SBV2.replace("?", "?text=えおか。&")}`]],
+    sent: [["GET http://sbv2.test:4/models/info"], [`POST ${SBV2.replace("?", "?text=あいう。&")}`], [`POST ${SBV2.replace("?", "?text=えおか。&")}`]],
   },
 ];
 
@@ -176,6 +177,9 @@ test("errors name the engine, and an unreachable server says how to start it", a
   mock.restore();
   spyOn(globalThis, "fetch").mockRejectedValue(new Error("connection refused"));
   await expect(say(<Coeiroink speaker={1}>だめ</Coeiroink>)).rejects.toThrow(
-    "COEIROINK is not reachable at http://coeiroink.test:2 (connection refused).\n  - start COEIROINK v2",
+    "COEIROINK is not reachable at http://coeiroink.test:2 (connection refused).\n" +
+      "  - start COEIROINK v2 (its engine listens on port 50032 once the app has started)\n" +
+      '  - if it runs elsewhere, set `url="http://<host>:50032"` on the component or the MEKURU_COEIROINK_URL environment variable\n' +
+      "  - from WSL2, with COEIROINK on Windows: turn on mirrored networking (`networkingMode=mirrored` in .wslconfig)",
   );
 });
