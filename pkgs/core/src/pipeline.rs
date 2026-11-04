@@ -102,19 +102,15 @@ pub fn audio_tracks(ctx: &RenderCtx) -> Result<Vec<Track>> {
         })
         .collect::<Result<_>>()?;
     let mut out = vec![];
-    for c in &clips {
-        let Some(base) = pcm(c) else { continue };
-        let (pcm, src) = match made.get(&key(c, base)) {
+    for c in clips {
+        let Some(base) = pcm(&c) else { continue };
+        let (pcm, src) = match made.get(&key(&c, base)) {
             Some(p) if (c.rate - 1.0).abs() > EPS => (p.clone(), 0.0),
             _ => (base.clone(), c.src),
         };
         out.push(Track {
+            clip: AudioClip { src, ..c },
             pcm,
-            at: c.at,
-            len: c.len,
-            src,
-            gain: c.gain,
-            env: c.env.clone(),
         });
     }
     Ok(out)

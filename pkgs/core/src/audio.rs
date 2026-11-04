@@ -1,18 +1,15 @@
 use crate::media::pcm::{BYTES_PER_FRAME, CHANNELS, Pcm, PcmReader, RATE};
-use crate::schedule::Fade;
+use crate::schedule::{AudioClip, Fade};
 use anyhow::Result;
 use std::collections::HashMap;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
+/// A clip in seconds, with `src` its start in `pcm`.
 #[derive(Clone, Debug)]
 pub struct Track {
+    pub clip: AudioClip,
     pub pcm: Pcm,
-    pub at: f64,
-    pub len: f64,
-    pub src: f64,
-    pub gain: f32,
-    pub env: Vec<Fade>,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -56,7 +53,7 @@ pub fn mix_wav(tracks: &[Track], from: f64, frames: u64, out: &Path) -> Result<M
         let n = (BLOCK as u64).min(frames - b0) as usize;
         acc[..n * CHANNELS].fill(0.0);
         let (bt0, bt1) = (from + b0 as f64 / rate, from + (b0 + n as u64) as f64 / rate);
-        for tr in tracks {
+        for Track { clip: tr, pcm } in tracks {
             if tr.at >= bt1 || tr.at + tr.len <= bt0 || tr.gain <= 0.0 {
                 continue;
             }
@@ -65,9 +62,9 @@ pub fn mix_wav(tracks: &[Track], from: f64, frames: u64, out: &Path) -> Result<M
             if s_hi <= s_lo {
                 continue;
             }
-            let reader = match readers.get_mut(&tr.pcm.path) {
+            let reader = match readers.get_mut(&pcm.path) {
                 Some(r) => r,
-                None => readers.entry(tr.pcm.path.clone()).or_insert(PcmReader::open(&tr.pcm)?),
+                None => readers.entry(pcm.path.clone()).or_insert(PcmReader::open(pcm)?),
             };
             let pos = tr.src + (from + s_lo as f64 / rate - tr.at);
             let run = s_hi - s_lo;
