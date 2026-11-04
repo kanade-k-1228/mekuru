@@ -88,7 +88,7 @@ const YOUTUBE_TERM: CodeAt = { x: 70, y: 210, size: 30 };
 const NICO_TERM: CodeAt = { x: 70, y: 500, size: 30 };
 
 const Tutorial: FC = () => (
-  <mekuru size="1920x1080" fps={30} font="Rounded Mplus 1c">
+  <mekuru size="1920x1080" fps={30} lang="ja">
     <rect w="100%" h="100%" fill="#FFFFFF" />
     <repeat fadein={30} fadeout={60}>
       <audio src="assets/bgm.mp3" volume={0.06} />
@@ -136,14 +136,14 @@ const Tutorial: FC = () => (
           <column x={80} y={170} gap={20}>
             <Point text="Bun 1.4 以上 — 台本を動かす" />
             <Point text="ffmpeg（libx264 付き）/ ffprobe — 書き出し" />
-            <Point text="日本語フォント — Rounded Mplus 1c など" />
+            <Point text="フォント — Noto Sans・Noto Sans CJK" />
             <Point text="VOICEVOX — ずんだもんの読み上げ" />
           </column>
           <Terminal at={TOOLS_TERM} w={760} text={"$ bun --version\n$ ffmpeg -version\n$ ffprobe -version"} />
           <seq>
             <Zundamon text="まずは道具をそろえます。" />
             <Zundamon text="Bun は 1.4 以上、ffmpeg は動画をエンコードできるものを用意します。" />
-            <Zundamon text="日本語フォントを入れて、VOICEVOX を起動するのだ。" />
+            <Zundamon text="フォントを入れて、VOICEVOX を起動するのだ。" />
             <Zundamon text="ずんだもんのノーマルスタイルで、台本を読み上げるのだ。" />
             <Zundamon text="接続先の設定は、この手順を確認してね。VOICEVOX は起動したまま使うのだ。">
               <Label x={640} y={820} size={34} color={COLOR.blue} text="pkgs/speech/README.jp.md" />

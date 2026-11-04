@@ -4,7 +4,7 @@ VOICEVOX のずんだもんが、プロジェクト作成から書き出しま�
 
 ## example 動画を作る
 
-リポジトリ直下で `bun install` を実行し、Bun 1.4 以上、libx264 付き ffmpeg・ffprobe、日本語フォントを用意します。コンパイラは `bun run build` でビルドできます。
+リポジトリ直下で `bun install` を実行し、Bun 1.4 以上、libx264 付き ffmpeg・ffprobe、フォント（Noto Sans・Noto Sans CJK）を用意します。コンパイラは `bun run build` でビルドできます。
 
 VOICEVOX を起動します。既定の接続先は `http://127.0.0.1:50021`、音声は「ずんだもん / ノーマル」です。別の接続先は `MEKURU_VOICEVOX_URL` で指定できます。
 

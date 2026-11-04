@@ -13,6 +13,7 @@ const text: TextOp = {
   font: "sans-serif",
   fontSrc: null,
   fontRevision: null,
+  lang: "ja",
   size: 32,
   color: "#123456ff",
   bold: true,
@@ -33,4 +34,5 @@ test("HTML text preserves whitespace, styles and escaped content between SVG run
   expect(html).toContain("text-align:right");
   expect(html).toContain("-webkit-text-stroke:6px #ffffffff");
   expect(html).toContain("matrix(1,0,0,1,10,20)");
+  expect(html).toContain('lang="ja"');
 });

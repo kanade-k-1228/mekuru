@@ -101,6 +101,7 @@ fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &m
                 font,
                 font_src,
                 font_revision,
+                lang: fonts.lang.clone(),
                 size: st.size,
                 color: color(st.color),
                 bold: st.bold,

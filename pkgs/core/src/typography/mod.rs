@@ -42,5 +42,6 @@ pub(crate) fn font_book(st: &Settings, base: &Path, root: &Tag) -> Arc<FontBook>
         .collect();
     extra.sort();
     extra.dedup();
-    FontBook::shared(&fonts, &extra)
+    let lang = st.lang.clone().unwrap_or_else(font::system_lang);
+    FontBook::shared(&lang, &fonts, &extra)
 }

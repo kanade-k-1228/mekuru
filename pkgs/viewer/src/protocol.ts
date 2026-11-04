@@ -65,6 +65,8 @@ export interface TextOp {
   font: string;
   fontSrc: string | null;
   fontRevision: string | null;
+  /** BCP 47 tag; picks Chinese, Japanese or Korean glyph forms like export. */
+  lang: string;
   size: number;
   color: string;
   bold: boolean;

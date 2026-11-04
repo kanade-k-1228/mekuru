@@ -1,6 +1,6 @@
 # my-video
 
-[Mekuru Movie Maker](https://github.com/kanade-k-1228/mekuru) の動画プロジェクト。台本は `src/main.tsx`。Bun 1.4 以上・libx264 付き ffmpeg・ffprobe・日本語フォントが必要です。
+[Mekuru Movie Maker](https://github.com/kanade-k-1228/mekuru) の動画プロジェクト。台本は `src/main.tsx`。Bun 1.4 以上・libx264 付き ffmpeg・ffprobe・フォント（既定: Noto Sans。日本語には Noto Sans CJK も）が必要です。
 
 ```sh
 bun install

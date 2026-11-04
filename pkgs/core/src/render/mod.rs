@@ -218,7 +218,7 @@ impl<'a> FrameRenderer<'a> {
                 let paths = text::text_paths(&self.ctx.project.fonts, text, s);
                 if paths.is_none() && !text.text.trim().is_empty() {
                     self.warnings
-                        .push("no usable font found; text is not drawn (install a Japanese font or set `font` on `<mekuru>`)".into());
+                        .push("no usable font found; text is not drawn (install Noto Sans or set `font` on `<mekuru>`)".into());
                 }
                 paths?
             }

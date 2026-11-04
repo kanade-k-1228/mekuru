@@ -13,11 +13,11 @@ curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.s
 ```
 
 - [Bun](https://bun.sh/) 1.4 or later; packages run directly from TypeScript source.
-- [ffmpeg / ffprobe](https://ffmpeg.org/) with libx264, and Japanese fonts (default: Rounded Mplus 1c).
+- [ffmpeg / ffprobe](https://ffmpeg.org/) with libx264, and fonts (default: Noto Sans; add Noto Sans CJK for Chinese, Japanese or Korean).
 - A speech engine for the selected voice.
 - On Windows, run Mekuru in WSL.
 
-Automatic installation supports apt on Ubuntu/Debian (including WSL) and [Homebrew](https://brew.sh/) on macOS. apt requires administrator privileges. If Bun is missing, it is installed with its official installer. Set up a speech engine and Japanese fonts separately.
+Automatic installation supports apt on Ubuntu/Debian (including WSL) and [Homebrew](https://brew.sh/) on macOS. apt requires administrator privileges. If Bun is missing, it is installed with its official installer. Set up a speech engine and fonts separately.
 
 Compatible existing tools are reused. An outdated Bun or ffmpeg without libx264 produces an error with update instructions. `MEKURU_FFMPEG` and `MEKURU_FFPROBE` overrides are respected.
 

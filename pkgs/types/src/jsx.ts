@@ -92,6 +92,7 @@ export interface IntrinsicElements {
       size?: `${number}x${number}`;
       fps?: number;
       font?: string;
+      lang?: string;
       preset?: string;
       crf?: number;
       "audio-bitrate"?: string;

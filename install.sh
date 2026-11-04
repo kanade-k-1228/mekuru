@@ -120,7 +120,7 @@ main() {
   fi
   log 'Next: bun create @mekuru my-video'
   log 'Then: cd my-video && bun install && bun preview'
-  log 'Also prepare a speech engine and Japanese fonts (default: Rounded Mplus 1c).'
+  log 'Also prepare a speech engine and fonts (default: Noto Sans; Noto Sans CJK for Chinese, Japanese or Korean).'
 }
 
 main "$@"
