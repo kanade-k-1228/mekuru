@@ -33,7 +33,6 @@ pub struct Stats {
 pub(super) struct Drawing {
     pub id: String,
     ops: Arc<Vec<Op>>,
-    bytes: usize,
 }
 
 pub struct Session {
@@ -84,15 +83,12 @@ impl Session {
             {
                 return base.preview.version;
             }
-            // Each hash is 64 ASCII characters: quotes + colon add three bytes.
-            let resource_bytes = 2 + used.len().saturating_sub(1) + used.values().map(|d| 67 + d.bytes).sum::<usize>();
             let next = Published {
                 preview: SharedPreview {
                     version: request.version,
                     scene: Arc::new(scene),
                 },
                 resources: Arc::new(used.into_iter().map(|(k, d)| (k, d.ops)).collect()),
-                resource_bytes,
             };
             update = Some(next.update(self.published.as_ref()));
             self.candidate = Some(next);
@@ -134,7 +130,6 @@ impl Session {
             let bytes = serde_json::to_vec(&ops).expect("drawing JSON");
             let drawing = Drawing {
                 id: sha256_hex(&bytes),
-                bytes: bytes.len(),
                 ops: Arc::new(ops),
             };
             self.drawings
