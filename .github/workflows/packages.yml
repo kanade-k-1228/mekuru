@@ -32,13 +32,13 @@ jobs:
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          no-cache: ${{ env.RELEASE }}
+          no-cache: ${{ startsWith(github.ref, 'refs/tags/') }}
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
-          lookup-only: ${{ env.RELEASE }}
+          lookup-only: ${{ startsWith(github.ref, 'refs/tags/') }}
           # Only main saves: PR caches would push main's out of the 10 GB limit.
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: bun ci
@@ -57,7 +57,7 @@ jobs:
           toolchain: '1.89.0'
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
-          lookup-only: ${{ env.RELEASE }}
+          lookup-only: ${{ startsWith(github.ref, 'refs/tags/') }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: cargo check --workspace --all-targets --locked
 
@@ -83,13 +83,13 @@ jobs:
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          no-cache: ${{ env.RELEASE }}
+          no-cache: ${{ startsWith(github.ref, 'refs/tags/') }}
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
-          lookup-only: ${{ env.RELEASE }}
+          lookup-only: ${{ startsWith(github.ref, 'refs/tags/') }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
           key: ${{ matrix.target }}
       - run: bun ci
@@ -152,7 +152,7 @@ jobs:
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
-          no-cache: ${{ env.RELEASE }}
+          no-cache: ${{ startsWith(github.ref, 'refs/tags/') }}
       - run: bun ci
       - run: bun scripts/release.ts stamp "$GITHUB_REF_NAME"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
