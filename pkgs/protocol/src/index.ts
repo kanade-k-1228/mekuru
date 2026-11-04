@@ -4,11 +4,6 @@ export interface Diagnostic {
   line: number;
   message: string;
 }
-export interface Compilation {
-  preview: PreviewDto | null;
-  resources: Resources;
-  diagnostics: Diagnostic[];
-}
 /** Compilation status; it never contains drawing data. */
 export interface StateDto {
   path: string;
@@ -21,21 +16,6 @@ export interface StateDto {
 
 export type Keyed<T> = T & { key: string };
 export type Resources = Record<string, DrawOp[]>;
-export interface WorkerRequest {
-  version: number;
-  xml: string;
-  /** Last scene accepted by the CLI, never an intermediate discarded result. */
-  baseVersion: number | null;
-}
-export interface WorkerCompilation {
-  version: number;
-  /** null on compilation failure; unchanged scenes retain the acknowledged version. */
-  previewVersion: number | null;
-  diagnostics: Diagnostic[];
-  update: PreviewUpdate | null;
-  stats: { drawHits: number; drawMisses: number; compileMs: number; diffMs: number };
-}
-export type PreviewUpdate = Omit<SnapshotEvent, "state"> | Omit<PatchEvent, "state">;
 export interface CollectionPatch<T> {
   upsert: T[];
   remove: string[];
@@ -155,30 +135,4 @@ export interface TimelineClip {
 export interface TimelineDto {
   nodes: TimelineNode[];
   clips: TimelineClip[];
-}
-
-export interface FrameRate {
-  num: number;
-  den: number;
-}
-export interface FrameInterval {
-  startFrame: number;
-  endFrame: number;
-}
-export interface TimelineEntry extends FrameInterval {
-  id: string;
-  parent: string | null;
-  sourceId: string | null;
-  kind: "seq" | "par" | "repeat" | "view" | "video" | "audio";
-  repeat: { fromFrame: number; periodFrames: number; untilFrame: number }[];
-}
-export interface ResolvedTimeline {
-  fps: FrameRate;
-  frames: number;
-  estimated: boolean;
-  entries: TimelineEntry[];
-}
-export interface TimelineCompilation {
-  timeline: ResolvedTimeline | null;
-  diagnostics: Diagnostic[];
 }

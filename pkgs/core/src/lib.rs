@@ -13,7 +13,6 @@ pub mod render;
 pub mod schedule;
 pub mod server;
 pub mod settings;
-pub mod timeline;
 pub mod typography;
 pub mod util;
 

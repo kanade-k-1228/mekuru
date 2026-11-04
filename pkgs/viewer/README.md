@@ -4,7 +4,7 @@
 
 The browser preview and timeline UI for Mekuru Movie Maker, built with React, Jotai, and Vite. This is a private workspace package bundled with [@mekuru/core](../core/README.md).
 
-For development, start `mekuru-server` on port 3333, then run these commands from the repository root with Bun 1.4 or later:
+For development, start `mekuru-compiler <xml> --serve` on port 3333, then run these commands from the repository root with Bun 1.4 or later:
 
 ```sh
 bun install

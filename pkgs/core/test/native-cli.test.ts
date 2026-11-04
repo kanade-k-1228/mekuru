@@ -8,7 +8,7 @@ import { startServer } from "../../../scripts/fixtures/native-server.ts";
 test("native serve rejects invalid options and reports a missing XML file", async () => {
   for (const args of [
     ["missing.xml", "--serve", "--port", "65536"],
-    ["missing.xml", "--serve", "--emit-preview"],
+    ["missing.xml", "--serve", "--preview"],
     ["missing.xml", "--run", "echo test"],
     ["missing.xml", "--serve", "--no-open"],
   ]) {

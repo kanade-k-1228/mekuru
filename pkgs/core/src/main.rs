@@ -6,15 +6,15 @@ use mekuru_compiler::pipeline::{self, RenderCtx, RenderOptions};
 use mekuru_compiler::prepare::prepare;
 use mekuru_compiler::progress::{Progress, Stage};
 use std::cell::Cell;
-use std::io::{BufRead, IsTerminal, Write};
-use std::path::{Path, PathBuf};
+use std::io::{IsTerminal, Write};
+use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "mekuru-compiler", version, about, args_override_self = true)]
 struct Cli {
     script: PathBuf,
     /// Watch XML and serve the embedded browser viewer from this process.
-    #[arg(long, conflicts_with_all = ["emit_preview", "preview_worker", "emit_timeline", "output", "scale", "fps", "from", "to", "preset", "crf", "no_audio", "preview"])]
+    #[arg(long, conflicts_with_all = ["output", "scale", "fps", "from", "to", "preset", "crf", "no_audio", "preview"])]
     serve: bool,
     /// Run a script command in the project folder while serving.
     #[arg(long, requires = "serve")]
@@ -47,13 +47,6 @@ struct Cli {
     no_audio: bool,
     #[arg(long)]
     preview: bool,
-    #[arg(long)]
-    emit_preview: bool,
-    /// Serve versioned preview requests as JSON Lines over stdin/stdout.
-    #[arg(long, conflicts_with_all = ["emit_preview", "emit_timeline"])]
-    preview_worker: bool,
-    #[arg(long, conflicts_with_all = ["emit_preview", "preview_worker", "output", "scale", "fps", "from", "to", "preset", "crf", "no_audio", "preview"])]
-    emit_timeline: bool,
 }
 
 fn main() {
@@ -106,38 +99,8 @@ fn run(cli: Cli) -> Result<()> {
         crf,
         no_audio,
         preview,
-        emit_preview,
-        preview_worker,
-        emit_timeline,
         ..
     } = cli;
-    if preview_worker {
-        let mut worker = mekuru_compiler::preview::Session::default();
-        let mut out = std::io::BufWriter::new(std::io::stdout().lock());
-        for line in std::io::stdin().lock().lines() {
-            let request = serde_json::from_str(&line?)?;
-            let result = worker.compile(&script, root.as_deref(), request);
-            serde_json::to_writer(&mut out, &result)?;
-            out.write_all(b"\n")?;
-            out.flush()?;
-        }
-        return Ok(());
-    }
-    if emit_preview || emit_timeline {
-        let source = if script == Path::new("-") {
-            std::io::read_to_string(std::io::stdin())?
-        } else {
-            std::fs::read_to_string(&script)?
-        };
-        if emit_timeline {
-            let result = mekuru_compiler::timeline::compile(&script, root.as_deref(), source);
-            serde_json::to_writer(std::io::stdout().lock(), &result)?;
-            return Ok(());
-        }
-        let result = mekuru_compiler::preview::compile(&script, root.as_deref(), source);
-        serde_json::to_writer(std::io::stdout().lock(), &result)?;
-        return Ok(());
-    }
     let project = Project::load(&script, root.as_deref())?;
     let cache = project.cache();
     let printer = Printer::new();

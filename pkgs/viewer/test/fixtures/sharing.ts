@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 import type { FixtureCompilation } from "./preview.ts";
-import type { CollectionPatch, Keyed, PatchEvent, PreviewEvent, Resources, PreviewDto, SnapshotEvent, StateDto } from "@mekuru/protocol";
+import type { CollectionPatch, Keyed, PatchEvent, Resources, PreviewDto, SnapshotEvent, StateDto } from "@mekuru/protocol";
 
 export interface SharedPreview {
   preview: PreviewDto;
@@ -20,9 +20,6 @@ export const sharePreview = (result: FixtureCompilation, previous: SharedPreview
 };
 
 const same = isDeepStrictEqual;
-export const sameScene = (before: SharedPreview, after: SharedPreview): boolean => {
-  return same({ ...before.preview, version: 0 }, { ...after.preview, version: 0 });
-};
 export const collectionPatch = <T extends Keyed<unknown>>(before: T[], after: T[]): CollectionPatch<T> => {
   const old = new Map(before.map((e) => [e.key, e]));
   const next = new Set(after.map((e) => e.key));
@@ -57,51 +54,5 @@ export const patch = (state: StateDto, before: SharedPreview, after: SharedPrevi
     nodes: collectionPatch(a.timeline.nodes, b.timeline.nodes),
     clips: collectionPatch(a.timeline.clips, b.timeline.clips),
     resources: Object.fromEntries(Object.entries(after.resources).filter(([key]) => !Object.hasOwn(before.resources, key))),
-  };
-};
-export const serializeEvent = (event: PreviewEvent) => JSON.stringify(event);
-// Account for the full event without serializing unchanged path data on each edit.
-const resourceLengths = new WeakMap<object, number>();
-const resourceLength = (ops: Resources[string]) => {
-  let length = resourceLengths.get(ops);
-  if (length === undefined) {
-    length = Buffer.byteLength(JSON.stringify(ops));
-    resourceLengths.set(ops, length);
-  }
-  return length;
-};
-/** The selected event is serialized once, then broadcast verbatim to all viewers. */
-export const previewEvent = (state: StateDto, before: SharedPreview | null, after: SharedPreview): string => {
-  if (!before) return serializeEvent(snapshot(state, after));
-  const delta = serializeEvent(patch(state, before, after));
-  const entries = Object.entries(after.resources);
-  const fullSize =
-    Buffer.byteLength(serializeEvent({ ...snapshot(state, after), resources: {} })) +
-    entries.reduce((size, [key, ops]) => size + Buffer.byteLength(JSON.stringify(key)) + 1 + resourceLength(ops), 0) +
-    Math.max(0, entries.length - 1);
-  return Buffer.byteLength(delta) < fullSize ? delta : serializeEvent(snapshot(state, after));
-};
-
-/** Independent test oracle for the Rust transport; production never generates diffs in JS. */
-export const workerResponse = (result: FixtureCompilation, before: SharedPreview | null): import("@mekuru/protocol").WorkerCompilation => {
-  const after = result.preview ? sharePreview(result, before) : null;
-  const unchanged = before && after && sameScene(before, after);
-  const event =
-    after && !unchanged
-      ? JSON.parse(
-          previewEvent(
-            { path: "fixture", version: result.version, previewVersion: result.version, status: "ready", error: null, diagnostics: result.diagnostics },
-            before,
-            after,
-          ),
-        )
-      : null;
-  if (event) delete event.state;
-  return {
-    version: result.version,
-    diagnostics: result.diagnostics,
-    previewVersion: after ? (unchanged ? before.preview.version : result.version) : null,
-    update: event,
-    stats: { ...result.stats, diffMs: 0 },
   };
 };
