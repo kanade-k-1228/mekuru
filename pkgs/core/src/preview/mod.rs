@@ -9,7 +9,10 @@ use crate::{
     ir::*,
     media::Fps,
     prepare,
-    render::{shapes, transform_paths, vector::PaintedPath, video_bounds},
+    render::{
+        shapes::{self, PaintedPath},
+        transform_paths, video_bounds,
+    },
     schedule::{Schedule, SrcMap},
 };
 use std::{collections::BTreeMap, fmt::Write, path::Path};

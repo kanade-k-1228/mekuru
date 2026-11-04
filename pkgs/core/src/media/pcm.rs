@@ -1,6 +1,6 @@
 use super::args;
+use crate::util::TempFile;
 use crate::util::proc::run_checked;
-use crate::util::temp::TempFile;
 use anyhow::{Context, Result};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};

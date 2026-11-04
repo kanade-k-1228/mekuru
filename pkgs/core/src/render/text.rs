@@ -1,5 +1,5 @@
 use crate::ir::TextSpec;
-use crate::render::vector::PaintedPath;
+use crate::render::shapes::PaintedPath;
 use crate::settings::Align;
 use crate::typography::{font::FontBook, layout::layout};
 use tiny_skia::{LineCap, LineJoin, Stroke, Transform};

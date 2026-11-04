@@ -1,5 +1,5 @@
 //! Preview identity is independent of sequential IR IDs and drawing hashes.
-use crate::util::hash::sha256_hex;
+use crate::util::sha256_hex;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone)]

@@ -100,8 +100,8 @@ impl Project {
         self.script.base_dir.join(format!("{stem}.mp4"))
     }
 
-    pub fn cache(&self) -> prepare::cache::Cache {
-        prepare::cache::Cache {
+    pub fn cache(&self) -> prepare::Cache {
+        prepare::Cache {
             root: self.script.base_dir.join(".mekuru"),
         }
     }

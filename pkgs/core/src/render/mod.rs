@@ -1,6 +1,5 @@
 pub mod shapes;
 pub mod text;
-pub mod vector;
 
 use crate::ir::{ElemId, ElemKind, ImageSpec, VideoSpec, ViewOp};
 use crate::media::Fps;
@@ -9,10 +8,10 @@ use crate::media::video::VideoReader;
 use crate::settings::Settings;
 use crate::{Project, prepare::Prepared, schedule::Schedule};
 use anyhow::Result;
+use shapes::{PaintedPath, rasterize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tiny_skia::{Color, FilterQuality, Pixmap, PixmapPaint, Point, Transform};
-use vector::{PaintedPath, rasterize};
 
 #[derive(Clone, Copy)]
 pub struct RenderCtx<'a> {
@@ -219,7 +218,7 @@ impl<'a> FrameRenderer<'a> {
             ViewOp::Circle(c) => shapes::circle_paths(c, s),
             ViewOp::Poly(l) => shapes::poly_paths(l, s),
             ViewOp::Text(text) => {
-                let paths = text::draw::text_paths(&self.ctx.project.fonts, text, s);
+                let paths = text::text_paths(&self.ctx.project.fonts, text, s);
                 if paths.is_none() && !text.text.trim().is_empty() {
                     self.warnings
                         .push("no usable font found; text is not drawn (install a Japanese font or set `font` on `<mekuru>`)".into());
