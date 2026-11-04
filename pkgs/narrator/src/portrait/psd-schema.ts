@@ -1,5 +1,7 @@
+/** The `[kind]` a top-level PSD layer declares. */
+export const kinds = ["fixed", "toggle", "select", "blink", "lip"] as const;
+export type PortraitKind = (typeof kinds)[number];
 /** Generated assets only. Layers are ordered from back to front. */
-export type PortraitKind = "fixed" | "toggle" | "select" | "blink" | "lip";
 export interface PsdLayer {
   name: string;
   kind: PortraitKind;
@@ -13,7 +15,6 @@ export interface PsdManifest {
 }
 export const selectable = (kind: PortraitKind): boolean => kind !== "fixed" && kind !== "toggle";
 export const animated = (kind: PortraitKind): boolean => kind === "blink" || kind === "lip";
-export const assetFiles = (m: PsdManifest): string[] => m.layers.flatMap((l) => l.options.flatMap((o) => o.frames));
 const reserved = new Set(["id", "at", "len", "children", "source", "key", "ref", "__proto__", "constructor", "prototype"]);
 export function assetName(name: string, prop = false): string {
   if (
@@ -38,14 +39,7 @@ export function validateManifest(value: unknown): asserts value is PsdManifest {
   const names = new Set<string>();
   const paths = new Set<string>();
   for (const l of m.layers) {
-    if (
-      !l ||
-      typeof l.name !== "string" ||
-      names.has(l.name.toLowerCase()) ||
-      !["fixed", "toggle", "select", "blink", "lip"].includes(l.kind) ||
-      !Array.isArray(l.options) ||
-      !l.options.length
-    )
+    if (!l || typeof l.name !== "string" || names.has(l.name.toLowerCase()) || !kinds.includes(l.kind) || !Array.isArray(l.options) || !l.options.length)
       throw new Error("Invalid or duplicate PSD portrait layer");
     assetName(l.name, l.kind !== "fixed");
     names.add(l.name.toLowerCase());

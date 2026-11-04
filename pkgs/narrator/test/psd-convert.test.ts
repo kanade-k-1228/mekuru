@@ -131,8 +131,18 @@ test("missing/ambiguous paths, invalid mappings, parent effects and unsupported 
     await save([pixel("body", [0, 0, 0, 255], { blendMode: "multiply" })]);
     await expect(convertPsd(input, output, fixed(["body"]))).rejects.toThrow("Unsupported PSD feature");
     await save(source());
-    for (const map of [null, {}, { layers: [] }, { layers: [{ name: "x", kind: "select", initial: "missing", options: [] }] }])
-      await expect(convertPsd(input, output, map)).rejects.toThrow();
+    const select = (initial: string | null, frames: string[][]) => ({ layers: [{ name: "x", kind: "select", initial, options: [{ name: "a", frames }] }] });
+    for (const [map, message] of [
+      [null, "with layers"],
+      [{ layers: [] }, "with layers"],
+      [{ layers: [{ name: "x", kind: "bogus" }] }, "a name and a kind"],
+      [{ layers: [{ name: "body", kind: "toggle", initial: "yes", source: ["body"] }] }, "true or false"],
+      [{ layers: [{ name: "x", kind: "select", initial: null, options: [] }] }, "Empty group"],
+      [select("missing", [["body"]]), "option name as initial"],
+      [select("a", [["body"], ["body"]]), "exactly one frame"],
+      [{ layers: [...mapping().layers, { name: "Body", kind: "fixed", initial: true, source: ["body"] }] }, "duplicate PSD"],
+    ] as [unknown, string][])
+      await expect(convertPsd(input, output, map)).rejects.toThrow(message);
     await expect(access(output)).rejects.toThrow();
     await convertPsd(input, output, mapping());
     const before = await readFile(output);
