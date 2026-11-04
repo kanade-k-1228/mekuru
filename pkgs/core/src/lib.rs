@@ -73,7 +73,7 @@ impl Project {
         let (doc, mut diags) = lang::xml::parse(&source);
         let base = project_root(path, root);
         let fonts = typography::font_book(&doc.settings, &base, &doc.root);
-        let script = lang::expand::lower(&doc, &base, &fonts, &mut diags, preview);
+        let script = layout::lower(&doc, &base, &fonts, &mut diags, preview);
         let index = LineIndex::new(&source);
         Project {
             path: path.to_path_buf(),

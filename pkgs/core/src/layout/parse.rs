@@ -19,7 +19,7 @@ const TEXT: &[&str] = &[
 ];
 const LINE: &[&str] = &["p", "closed", "fill", "stroke", "stroke-width", "head", "dashed", "dotted"];
 
-pub fn keys(tag: &str) -> Vec<&'static str> {
+fn keys(tag: &str) -> Vec<&'static str> {
     let mut k: Vec<&'static str> = match tag {
         "audio" => vec!["id", "at", "delay", "fadein", "fadeout", "label", "draft"],
         "hold" => vec!["id", "at", "fadein", "fadeout", "slot", "z", "opacity"],
@@ -42,17 +42,11 @@ pub fn keys(tag: &str) -> Vec<&'static str> {
     k
 }
 
-pub struct Ctx<'a> {
-    pub settings: &'a Settings,
-    pub base_dir: &'a Path,
-    pub fonts: &'a FontBook,
-    pub preview: bool,
-}
-
-pub struct Lowered {
-    pub nodes: Vec<Node>,
-    pub elems: Vec<Elem>,
-    pub names: Vec<(String, Target, Span)>,
+pub(super) struct Ctx<'a> {
+    pub(super) settings: &'a Settings,
+    pub(super) base_dir: &'a Path,
+    pub(super) fonts: &'a FontBook,
+    pub(super) preview: bool,
 }
 
 impl Flow {
