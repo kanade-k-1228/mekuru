@@ -64,9 +64,7 @@
         "create-mekuru": "./src/index.ts",
       },
       "dependencies": {
-        "@clack/core": "^1.5.1",
         "@clack/prompts": "^1.8.1",
-        "@mekuru/platform": "workspace:^",
         "commander": "^15.0.0",
       },
     },
