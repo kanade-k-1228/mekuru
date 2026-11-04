@@ -78,14 +78,12 @@ pub struct Hold {
 
 #[derive(Clone, Debug)]
 pub struct Node {
-    pub source_id: Option<String>,
     pub id: NodeId,
     pub parent: Option<NodeId>,
     pub kind: NodeKind,
     pub tag: &'static str,
     pub t: Time,
     pub head: Span,
-    pub span: Span,
     pub order: Vec<Target>,
     pub hold: Option<Hold>,
 }

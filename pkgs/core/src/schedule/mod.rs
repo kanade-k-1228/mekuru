@@ -619,7 +619,6 @@ impl<'a> Solver<'a> {
             self.diags.push(Diag::new("W555", Span::default(), "the video is empty (total length is 0)"));
         }
         Schedule {
-            repeats,
             total,
             nodes,
             elems,
@@ -634,7 +633,7 @@ impl<'a> Solver<'a> {
         for x in targets(s) {
             let (start, end) = self.targets[self.ix(x)].interval;
             let (order, chain): (u32, &[Repeat]) = match x {
-                Target::Node(n) => (s.nodes[n].span.lo, s.nodes[n].parent.map_or(&[], |p| repeats[p].as_slice())),
+                Target::Node(n) => (s.nodes[n].head.lo, s.nodes[n].parent.map_or(&[], |p| repeats[p].as_slice())),
                 Target::Elem(e) => (s.elems[e].site.lo, &repeats[s.elems[e].node]),
             };
             if let Some(name) = &self.time(x).slot

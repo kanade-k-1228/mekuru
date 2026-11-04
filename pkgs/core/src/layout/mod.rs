@@ -162,14 +162,12 @@ impl Out {
     fn node(&mut self, n: &VNode, parent: Option<usize>, flow: Flow, hold: Option<Hold>) -> usize {
         let id = self.nodes.len();
         self.nodes.push(Node {
-            source_id: n.times.id.clone(),
             id,
             parent,
             kind: flow.kind(),
             tag: flow.name(),
             t: n.times.time(n.dur),
             head: n.head,
-            span: n.span,
             order: vec![],
             hold,
         });
