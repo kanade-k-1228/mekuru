@@ -1,8 +1,8 @@
 use crate::typography::font::FontBook;
-pub(crate) mod delta;
+pub mod delta;
 mod identity;
 mod session;
-pub use session::{Request, Response, Session};
+pub use session::{Session, Stats};
 
 use crate::{
     Project,
@@ -20,25 +20,6 @@ use tiny_skia::{LineCap, LineJoin, PathSegment, Transform};
 
 mod dto;
 pub use dto::*;
-
-pub fn compile(path: &Path, root: Option<&Path>, xml: String) -> Compilation {
-    let mut worker = Session::default();
-    let response = worker.compile(
-        path,
-        root,
-        Request {
-            version: 1,
-            xml,
-            base_version: None,
-        },
-    );
-    let published = worker.scene();
-    Compilation {
-        preview: published.as_ref().map(|p| p.preview.clone()),
-        resources: published.map(|p| (*p.resources).clone()).unwrap_or_default(),
-        diagnostics: response.diagnostics,
-    }
-}
 
 fn file_src(path: &Path, root: &Path) -> String {
     path.strip_prefix(root).unwrap_or(path).to_string_lossy().replace('\\', "/")
@@ -150,13 +131,13 @@ fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &m
     ops.extend(transform_paths(paths, t).into_iter().map(path_op));
 }
 
-fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, worker: &mut Session) -> Preview {
+fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, session: &mut Session) -> Preview {
     let script = &p.script;
     let st = &script.settings;
     let fps = st.rate();
     let s = |f: f64| fps.secs(f);
     let i = |f: i64| fps.secs(f as f64);
-    let keys = worker.identities.update(&p.syntax);
+    let keys = session.identities.update(&p.syntax);
     let mut counts = std::collections::HashMap::<String, usize>::new();
     let elem_keys: Vec<_> = script
         .elems
@@ -181,7 +162,7 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, worker: &m
         match &e.kind {
             ElemKind::View(view) => {
                 for op in &view.ops {
-                    let drawing = worker.draw(op, &p.fonts, &script.base_dir);
+                    let drawing = session.draw(op, &p.fonts, &script.base_dir);
                     drawings.push(drawing.id);
                 }
             }

@@ -1,4 +1,9 @@
-use mekuru_compiler::preview::{self, Request, Session as PreviewSession};
+use mekuru_compiler::{
+    Project,
+    prepare::Prepared,
+    preview::{Session, delta::Published},
+    render::{FrameRenderer, RenderCtx, RenderTarget},
+};
 use serde_json::{Value, json};
 use std::{
     collections::HashMap,
@@ -6,21 +11,18 @@ use std::{
     process::Command,
 };
 
-fn wire(value: impl serde::Serialize) -> serde_json::Result<Value> {
-    serde_json::from_slice(&serde_json::to_vec(&value)?)
+fn wire(value: impl serde::Serialize) -> Value {
+    serde_json::to_value(value).unwrap()
 }
 
-fn run(worker: &mut PreviewSession, root: Option<&Path>, version: u64, base_version: Option<u64>, xml: &str) -> Value {
-    wire(worker.compile(
-        Path::new("-"),
-        root,
-        Request {
-            version,
-            xml: xml.into(),
-            base_version,
-        },
-    ))
-    .unwrap()
+/// One compile in a fresh session.
+fn single(path: &Path, root: Option<&Path>, xml: &str) -> Value {
+    let (diagnostics, scene) = Session::default().compile(path, root, xml.into(), 1);
+    json!({
+        "diagnostics": diagnostics,
+        "preview": scene.as_ref().map(|s| &s.preview),
+        "resources": scene.as_ref().map(|s| &s.resources),
+    })
 }
 
 fn apply_collection(before: &Value, delta: &Value) -> Value {
@@ -52,32 +54,34 @@ fn apply_collection(before: &Value, delta: &Value) -> Value {
     json!(order.into_iter().map(|k| entries.remove(&k).unwrap()).collect::<Vec<_>>())
 }
 
-struct Session {
-    worker: PreviewSession,
-    resources: HashMap<String, Value>,
+/// A viewer of one session: it gets what the server sends and checks the result against a fresh session.
+struct Viewer {
+    session: Session,
+    shown: Option<Published>,
     version: u64,
     scene: Value,
+    resources: HashMap<String, Value>,
 }
-impl Session {
+impl Viewer {
     fn new() -> Self {
         Self {
-            worker: PreviewSession::default(),
-            resources: HashMap::new(),
+            session: Session::default(),
+            shown: None,
             version: 0,
             scene: Value::Null,
+            resources: HashMap::new(),
         }
     }
     fn compile(&mut self, root: &Path, xml: &str) -> Value {
         self.version += 1;
-        let base_version = self.scene["version"].as_u64();
-        let mut result = run(&mut self.worker, Some(root), self.version, base_version, xml);
-        let update = &result["update"];
-        match update["type"].as_str() {
-            Some("snapshot") => {
-                self.scene = update["preview"].clone();
-                self.resources = serde_json::from_value(update["resources"].clone()).unwrap();
-            }
-            Some("patch") => {
+        let (diagnostics, next) = self.session.compile(Path::new("-"), Some(root), xml.into(), self.version);
+        let failed = next.is_none();
+        // Like the server: nothing when the scene is unchanged, else a snapshot or a patch on the shown scene.
+        let mut update = Value::Null;
+        if let Some(next) = next.filter(|next| self.shown.as_ref().is_none_or(|shown| shown.preview.scene != next.preview.scene)) {
+            if let Some(before) = &self.shown {
+                update = wire(next.patch(before));
+                update["type"] = json!("patch");
                 assert_eq!(self.scene["version"], update["baseVersion"]);
                 for (key, value) in update["scene"].as_object().unwrap() {
                     self.scene[key] = value.clone();
@@ -90,30 +94,38 @@ impl Session {
                 for (key, ops) in update["resources"].as_object().unwrap() {
                     self.resources.insert(key.clone(), ops.clone());
                 }
+            } else {
+                update = json!({ "type": "snapshot", "resources": next.resources });
+                self.scene = wire(&next.preview);
+                self.resources = serde_json::from_value(update["resources"].clone()).unwrap();
             }
-            None => {}
-            _ => panic!("unexpected worker update"),
+            self.shown = Some(next);
         }
-        // Keep the original full-scene assertions as an independent transport oracle.
-        result["resources"] = update["resources"].as_object().map_or(json!({}), |r| json!(r));
-        result["preview"] = if result["previewVersion"].is_null() {
+        let preview = if failed {
             Value::Null
         } else {
             let mut scene = self.scene.clone();
             scene.as_object_mut().unwrap().remove("version");
             scene
         };
-        let expanded = expand(result["preview"].clone(), &mut self.resources);
-        // A fresh session keeps the single-shot reference independent of the resident session's caches.
-        let reference = wire(preview::compile(Path::new("-"), Some(root), xml.into())).unwrap();
+        let expanded = expand(preview.clone(), &mut self.resources);
+        let reference = single(Path::new("-"), Some(root), xml);
         let mut reference_scene = reference["preview"].clone();
         if let Some(scene) = reference_scene.as_object_mut() {
             scene.remove("version");
         }
-        let mut resources = serde_json::from_value(reference["resources"].clone()).unwrap();
+        let mut resources = serde_json::from_value(reference["resources"].clone()).unwrap_or_default();
         assert_eq!(expanded, expand(reference_scene, &mut resources), "{xml}");
-        assert_eq!(result["diagnostics"], reference["diagnostics"], "{xml}");
-        result
+        let diagnostics = wire(&diagnostics);
+        assert_eq!(diagnostics, reference["diagnostics"], "{xml}");
+        let stats = &self.session.stats;
+        json!({
+            "preview": preview,
+            "update": update,
+            "resources": update["resources"].as_object().map_or(json!({}), |r| json!(r)),
+            "diagnostics": diagnostics,
+            "stats": { "drawHits": stats.draw_hits, "drawMisses": stats.draw_misses },
+        })
     }
 }
 
@@ -162,8 +174,8 @@ fn assert_success(r: &Value) {
 }
 
 #[test]
-fn edits_match_single_shot_and_only_changed_viewops_are_sent() {
-    let mut session = Session::new();
+fn edits_match_a_fresh_session_and_only_changed_viewops_are_sent() {
+    let mut session = Viewer::new();
     let root = Path::new(".");
     let base = document(r#"<dur len="30"><stack><text x="10" y="10">Alpha</text><text x="10" y="80">Bravo</text></stack></dur>"#);
     let a = session.compile(root, &base);
@@ -195,7 +207,7 @@ fn edits_match_single_shot_and_only_changed_viewops_are_sent() {
 
 #[test]
 fn insertion_deletion_reordering_duplicate_elements_repeats_references_and_draft_speech() {
-    let mut session = Session::new();
+    let mut session = Viewer::new();
     let root = Path::new(".");
     let a = r#"<dur len="30"><rect w="20" h="20"/></dur>"#;
     let b = r#"<dur len="60"><circle w="30" h="30"/></dur>"#;
@@ -212,16 +224,13 @@ fn insertion_deletion_reordering_duplicate_elements_repeats_references_and_draft
 }
 
 #[test]
-fn discarded_responses_and_evicted_cache_entries_never_lose_resources() {
-    let mut worker = PreviewSession::new(1); // Every drawing exceeds this cache budget.
+fn evicted_cache_entries_never_lose_resources() {
+    let mut session = Session::new(1); // Every drawing exceeds this cache budget.
     let xml = document(r#"<dur len="30"><text>Cache</text></dur>"#);
-    let a = run(&mut worker, None, 1, None, &xml);
-    let b = run(&mut worker, None, 2, None, &xml); // CLI discarded a, so acknowledges no scene.
-    assert_eq!(a["update"]["resources"], b["update"]["resources"]);
-    let c = run(&mut worker, None, 3, Some(2), &xml);
-    assert!(c["update"].is_null());
-    assert_eq!(c["previewVersion"], 2);
-    assert_eq!(c["stats"]["drawMisses"], 1);
+    let (_, a) = session.compile(Path::new("-"), None, xml.clone(), 1);
+    let (_, b) = session.compile(Path::new("-"), None, xml, 2);
+    assert_eq!(session.stats.draw_misses, 1);
+    assert_eq!(wire(a.unwrap().resources), wire(b.unwrap().resources));
 }
 
 struct Temp(PathBuf);
@@ -241,7 +250,7 @@ impl Drop for Temp {
 #[test]
 fn file_metadata_invalidates_image_and_font_caches() {
     let dir = Temp::new("assets");
-    let mut session = Session::new();
+    let mut session = Viewer::new();
     let image = dir.0.join("a.png");
     image::RgbaImage::from_pixel(20, 10, image::Rgba([255, 0, 0, 255])).save(&image).unwrap();
     let xml = document(r#"<dur len="30"><image src="a.png"/></dur>"#);
@@ -298,7 +307,7 @@ fn file_metadata_invalidates_image_and_font_caches() {
 }
 
 #[test]
-fn media_probe_changes_and_hold_edits_match_single_shot() {
+fn media_probe_changes_and_hold_edits_match_a_fresh_session() {
     let dir = Temp::new("media");
     let output = Command::new("ffmpeg")
         .args(["-v", "error", "-y", "-f", "lavfi", "-i", "color=c=blue:s=32x32:r=30:d=2", "-c:v", "mpeg4"])
@@ -308,7 +317,7 @@ fn media_probe_changes_and_hold_edits_match_single_shot() {
         eprintln!("ffmpeg unavailable; skipping media fixture");
         return;
     }
-    let mut session = Session::new();
+    let mut session = Viewer::new();
     let xml = document(
         r#"<stack><video id="v" src="a.mp4"><hold at="10"><dur len="20"><text>Wait</text></dur></hold></video><dur len="10" at="v:20"><text>After</text></dur></stack>"#,
     );
@@ -332,7 +341,7 @@ fn media_probe_changes_and_hold_edits_match_single_shot() {
 
 #[test]
 fn cached_drawings_keep_analysis_warnings_on_current_source_lines() {
-    let mut session = Session::new();
+    let mut session = Viewer::new();
     let xml = document(r#"<dur len="30"><text anchor="c">Warning</text></dur>"#);
     let first = session.compile(Path::new("."), &xml);
     let next = session.compile(Path::new("."), &xml.replace("<dur", "<!-- new source line -->\n<dur"));
@@ -345,40 +354,90 @@ fn cached_drawings_keep_analysis_warnings_on_current_source_lines() {
 }
 
 #[test]
-fn deltas_use_only_acknowledged_scenes_and_reset_unknown_bases() {
-    let mut worker = PreviewSession::default();
+fn patches_carry_only_what_changed_since_the_shown_scene() {
+    let mut viewer = Viewer::new();
+    let root = Path::new(".");
     let xml = document(&(0..100).map(|i| format!(r#"<dur len="30"><text>Caption {i}</text></dur>"#)).collect::<String>());
-    let first = run(&mut worker, None, 1, None, &xml);
-    assert_eq!(first["update"]["type"], "snapshot");
-    let dropped = run(&mut worker, None, 2, Some(1), &xml.replace("Caption 50<", "Discarded<"));
-    assert_eq!(dropped["update"]["type"], "patch");
-    let latest_xml = xml.replace("Caption 50<", "Published<");
-    let latest = run(&mut worker, None, 3, Some(1), &latest_xml);
-    assert_eq!(latest["update"]["baseVersion"], 1);
-    assert_eq!(latest["update"]["version"], 3);
-    assert_eq!(latest["update"]["resources"].as_object().unwrap().len(), 1);
-    assert_eq!(latest["update"]["elements"]["upsert"].as_array().unwrap().len(), 1);
-    assert!(latest["update"]["elements"]["order"].is_null());
-    let unchanged = run(&mut worker, None, 4, Some(3), &latest_xml);
-    assert!(unchanged["update"].is_null());
-    assert_eq!(unchanged["previewVersion"], 3);
-    let failed = run(&mut worker, None, 5, Some(3), "<mekuru>");
-    assert!(failed["previewVersion"].is_null());
-    assert!(failed["update"].is_null());
-    let recovered = run(&mut worker, None, 6, Some(3), &latest_xml);
-    assert_eq!(recovered["previewVersion"], 3);
-    assert!(recovered["update"].is_null());
-    let unknown = run(&mut worker, None, 7, Some(999), &latest_xml);
-    assert_eq!(unknown["update"]["type"], "snapshot");
-    assert_eq!(unknown["update"]["resources"].as_object().unwrap().len(), 100);
-    let restarted = run(&mut PreviewSession::default(), None, 8, Some(7), &latest_xml);
-    assert_eq!(restarted["update"]["type"], "snapshot");
-    assert_ne!(
-        restarted["update"]["preview"]["elements"][0]["key"],
-        unknown["update"]["preview"]["elements"][0]["key"]
-    );
-    // Even a replacement of the entire scene is a patch on the acknowledged scene.
-    let replaced = run(&mut worker, None, 9, Some(7), &document(r#"<dur len="30"><text>Only one</text></dur>"#));
-    assert_eq!(replaced["update"]["type"], "patch");
-    assert_eq!(replaced["update"]["baseVersion"], 7);
+    assert_eq!(viewer.compile(root, &xml)["update"]["type"], "snapshot");
+    let edited = xml.replace("Caption 50<", "Edited<");
+    let patch = viewer.compile(root, &edited)["update"].clone();
+    assert_eq!(patch["type"], "patch");
+    assert_eq!(patch["baseVersion"], 1);
+    assert_eq!(patch["version"], 2);
+    assert_eq!(patch["resources"].as_object().unwrap().len(), 1);
+    assert_eq!(patch["elements"]["upsert"].as_array().unwrap().len(), 1);
+    assert!(patch["elements"]["order"].is_null());
+    // Unchanged, failed and recovered compiles send only the status.
+    assert!(viewer.compile(root, &edited)["update"].is_null());
+    assert!(viewer.compile(root, "<mekuru>")["update"].is_null());
+    assert!(viewer.compile(root, &edited)["update"].is_null());
+    // A new session (after a panic) keys every element anew; the patch still applies to the shown scene.
+    viewer.session = Session::default();
+    let restarted = viewer.compile(root, &edited)["update"].clone();
+    assert_eq!(restarted["baseVersion"], 2);
+    assert_eq!(restarted["elements"]["remove"].as_array().unwrap().len(), 100);
+    assert_eq!(restarted["resources"], json!({}));
+    let replaced = viewer.compile(root, &document(r#"<dur len="30"><text>Only one</text></dur>"#))["update"].clone();
+    assert_eq!(replaced["type"], "patch");
+}
+
+const STATIC: &str = r##"<mekuru size="16x16" fps="30"><dur len="30"><rect w="16" h="16" fill="#ff0000"/></dur></mekuru>"##;
+
+#[test]
+fn preview_and_renderer_agree_on_a_static_scene() {
+    let path = Path::new("fixture.xml");
+    let project = Project::from_source(path, None, STATIC.into());
+    assert!(!project.has_errors(), "{:?}", project.diags);
+    let prepared = Prepared::default();
+    let schedule = project.schedule(&prepared);
+    let ctx = RenderCtx {
+        project: &project,
+        prepared: &prepared,
+        sched: &schedule,
+    };
+    let mut renderer = FrameRenderer::new(ctx, RenderTarget::new(&project.script.settings, 1.0, None)).unwrap();
+    assert!(renderer.render(0.0).unwrap());
+    assert!(renderer.canvas().data().as_chunks::<4>().0.iter().all(|pixel| *pixel == [255, 0, 0, 255]));
+    assert!(!renderer.render(1.0).unwrap());
+    let result = single(path, None, STATIC);
+    assert_eq!(result["diagnostics"], json!([]));
+    let preview = &result["preview"];
+    assert_eq!(preview["width"], 16);
+    assert_eq!(preview["height"], 16);
+    assert_eq!(preview["fps"], 30.0);
+    assert_eq!(preview["duration"], 1.0);
+    assert!(!preview["elements"].as_array().unwrap().is_empty());
+    assert!(preview["timeline"]["nodes"].is_array());
+    assert!(preview["timeline"]["clips"].is_array());
+}
+
+#[test]
+fn preview_emits_text_styles_and_transform_without_glyph_paths() {
+    let xml = r##"<mekuru><dur len="30"><text x="20" y="30" w="200" size="32" color="#123456" stroke="#ffffff" stroke-width="3" weight="bold" align="right" line-height="1.5" rotate="15">日本語&lt;b&gt;<br/>次の行</text></dur></mekuru>"##;
+    let result = single(Path::new("fixture.xml"), None, xml);
+    assert_eq!(result["diagnostics"], json!([]));
+    let ops: Vec<_> = result["preview"]["elements"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|e| e["drawings"].as_array().unwrap())
+        .flat_map(|id| result["resources"][id.as_str().unwrap()].as_array().unwrap())
+        .collect();
+    assert_eq!(ops.len(), 1);
+    let text = ops[0];
+    assert_eq!(text["kind"], "text");
+    assert_eq!(text["text"], "日本語<b>\n次の行");
+    assert_eq!(text["x"], 20.0);
+    assert_eq!(text["y"], 30.0);
+    assert_eq!(text["width"], 200.5);
+    assert_eq!(text["size"], 32.0);
+    assert_eq!(text["color"], "#123456ff");
+    assert_eq!(text["stroke"], "#ffffffff");
+    assert_eq!(text["strokeWidth"], 3.0);
+    assert_eq!(text["bold"], true);
+    assert_eq!(text["align"], "right");
+    assert_eq!(text["lineHeight"], 1.5);
+    assert_eq!(text["transform"].as_array().unwrap().len(), 6);
+    assert!(text["d"].is_null());
+    assert!(!text["font"].as_str().unwrap().is_empty());
 }

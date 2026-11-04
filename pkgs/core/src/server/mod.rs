@@ -5,8 +5,8 @@ mod socket;
 mod watch;
 
 use crate::preview::{
-    Diagnostic, Request, Session,
-    delta::{Patch, Published, Resources, SharedPreview, Update},
+    Diagnostic, Session,
+    delta::{Patch, Published, Resources, Versioned},
 };
 use anyhow::{Context, Result};
 use axum::{
@@ -58,7 +58,7 @@ enum Event<'a> {
     },
     Snapshot {
         state: &'a PreviewState,
-        preview: Option<&'a SharedPreview>,
+        preview: Option<&'a Versioned>,
         resources: &'a Resources,
     },
     Patch {
@@ -87,7 +87,7 @@ impl Live {
         Event::Snapshot {
             state: &self.state,
             preview: self.scene.as_ref().map(|s| &s.preview),
-            resources: self.scene.as_ref().map_or(&Resources::new(), |s| &*s.resources),
+            resources: self.scene.as_ref().map_or(&Resources::new(), |s| &s.resources),
         }
         .json()
     }
@@ -189,30 +189,19 @@ impl App {
 
 /// A bounded queue retains only the newest pending XML. Compilation stays off Tokio's I/O threads.
 fn compile(app: App, path: PathBuf) {
-    let mut worker = Session::default();
+    let mut session = Session::default();
     while let Some((version, xml)) = app.queue.take() {
-        let base_version = app.live.lock().unwrap().scene.as_ref().map(|s| s.preview.version);
         let started = Instant::now();
         let mut result = None;
         for _ in 0..2 {
-            let attempt = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                worker.compile(
-                    &path,
-                    Some(&app.root),
-                    Request {
-                        version,
-                        xml: xml.clone(),
-                        base_version,
-                    },
-                )
-            }));
+            let attempt = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| session.compile(&path, Some(&app.root), xml.clone(), version)));
             match attempt {
-                Ok(response) => {
-                    result = Some(response);
+                Ok(compiled) => {
+                    result = Some(compiled);
                     break;
                 }
                 Err(_) => {
-                    worker = Session::default();
+                    session = Session::default();
                 }
             }
             if app.cancel.is_cancelled() || app.live.lock().unwrap().state.version != version {
@@ -223,33 +212,36 @@ fn compile(app: App, path: PathBuf) {
         if app.cancel.is_cancelled() || live.state.version != version {
             continue;
         }
-        let Some(result) = result else {
+        let Some((diagnostics, scene)) = result else {
             live.state.status = "error";
             live.state.diagnostics.clear();
             live.compile_error = Some("preview compilation panicked twice".into());
             app.status(&mut live);
             continue;
         };
-        live.state.diagnostics = result.diagnostics;
-        live.state.status = if result.preview_version.is_some() { "ready" } else { "error" };
-        live.compile_error = result
-            .preview_version
+        live.state.diagnostics = diagnostics;
+        live.state.status = if scene.is_some() { "ready" } else { "error" };
+        live.compile_error = scene
             .is_none()
             .then(|| live.state.diagnostics.iter().map(Diagnostic::to_string).collect::<Vec<_>>().join("\n"));
         live.refresh_error();
-        if let Some(version) = result.preview_version {
-            live.state.preview_version = version;
-            live.scene = worker.scene();
-        }
-        let state = &live.state;
-        match &result.update {
-            Some(Update::Snapshot { preview, resources }) => app.send(Event::Snapshot {
-                state,
-                preview: Some(preview),
-                resources,
-            }),
-            Some(Update::Patch(patch)) => app.send(Event::Patch { state, patch }),
+        // Viewers have `live.scene`: send a patch on it, a snapshot when there is none, or only the status when nothing changed.
+        match scene.filter(|next| live.scene.as_ref().is_none_or(|shown| shown.preview.scene != next.preview.scene)) {
             None => app.status(&mut live),
+            Some(next) => {
+                live.state.preview_version = version;
+                let patch = live.scene.as_ref().map(|before| next.patch(before));
+                live.scene = Some(next);
+                match patch {
+                    Some(patch) => app.send(Event::Patch {
+                        state: &live.state,
+                        patch: &patch,
+                    }),
+                    None => {
+                        let _ = app.events.send(live.snapshot().into());
+                    }
+                }
+            }
         }
         eprintln!("preview {} in {:.1}ms", live.state.status, started.elapsed().as_secs_f64() * 1000.0);
         for d in &live.state.diagnostics {
@@ -324,10 +316,10 @@ pub async fn start(opts: Options) -> Result<Server> {
         app: app.clone(),
         tasks: vec![watcher],
     };
-    let worker_app = app.clone();
+    let compiler = app.clone();
     std::thread::Builder::new()
         .name("preview-compiler".into())
-        .spawn(move || compile(worker_app, path))?;
+        .spawn(move || compile(compiler, path))?;
     if let Some(command) = opts.run {
         server.tasks.push(script::start(command, app.clone()));
     }
@@ -352,16 +344,8 @@ async fn http(State(app): State<App>, request: HttpRequest<Body>) -> Response {
             .unwrap();
     }
     let path = request.uri.path();
-    if path == "/api/state" || path == "/api/preview" {
-        let live = app.live.lock().unwrap();
-        let json = if path == "/api/state" {
-            serde_json::to_string(&live.state).expect("preview state JSON")
-        } else {
-            if live.scene.is_none() {
-                return files::empty(StatusCode::NOT_FOUND);
-            }
-            live.snapshot()
-        };
+    if path == "/api/preview" {
+        let json = app.live.lock().unwrap().snapshot();
         return Response::builder()
             .header("content-type", "application/json")
             .header("cache-control", "no-store")
