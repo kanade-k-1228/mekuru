@@ -6,7 +6,7 @@
 
 ## セットアップ
 
-`bun create @mekuru --upload youtube,niconico` で投稿コマンドと `configs/` を生成できます。既存のプロジェクトには [@mekuru/youtube](../../pkgs/youtube/README.jp.md)・[@mekuru/niconico](../../pkgs/niconico/README.jp.md) を追加します。
+`bun create @mekuru --upload youtube,niconico` で投稿コマンドと `configs/` を生成できます。既存のプロジェクトには [@mekuru/upload](../../pkgs/upload/README.jp.md) を追加します。
 
 - YouTube: `mekuru-youtube`。既定の設定は `configs/youtube.yaml`。
 - ニコニコ動画: `mekuru-niconico`。既定の設定は `configs/niconico.yaml`。

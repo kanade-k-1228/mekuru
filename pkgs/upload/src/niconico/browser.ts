@@ -1,8 +1,7 @@
 import { mkdirSync } from "node:fs";
-import { configDir } from "@mekuru/platform";
 import { dirname, join } from "node:path";
-import { chromium, type BrowserContext, type Locator, type Page } from "playwright-core";
-import { descriptionOf, type Settings } from "./settings.ts";
+import type { BrowserContext, Locator, Page } from "playwright-core";
+import { configDir, descriptionOf, type Settings } from "../common.ts";
 
 export const UPLOAD_URL = "https://garage.nicovideo.jp/niconico-garage/video/upload";
 
@@ -14,6 +13,8 @@ const POSTED_TIMEOUT = 2 * 60_000;
 const launch = async (headless: boolean): Promise<BrowserContext> => {
   const dir = join(configDir(), "niconico-browser");
   mkdirSync(dir, { recursive: true, mode: 0o700 });
+  // Playwright is large: load it only to open the browser
+  const { chromium } = await import("playwright-core");
   try {
     return await chromium.launchPersistentContext(dir, {
       headless,
@@ -26,7 +27,7 @@ const launch = async (headless: boolean): Promise<BrowserContext> => {
     if (/Executable doesn't exist/i.test(message)) {
       throw new Error("no browser for Playwright: install it with `bunx playwright-core install chromium` (or set MEKURU_BROWSER to a Chrome or Chromium)");
     }
-    if (/in use|ProcessSingleton|SingletonLock/i.test(message)) throw new Error(`the browser profile ${dir} is in use by another @mekuru/niconico`);
+    if (/in use|ProcessSingleton|SingletonLock/i.test(message)) throw new Error(`the browser profile ${dir} is in use by another mekuru-niconico`);
     throw e;
   }
 };
@@ -90,7 +91,7 @@ export const upload = async (file: string, s: Settings, options: UploadOptions &
   }
   if (isSignInPage(page.url())) {
     await context.close();
-    throw new Error("not signed in to niconico: run `@mekuru/niconico login` first");
+    throw new Error("not signed in to niconico: run `mekuru-niconico login` first");
   }
   try {
     console.error("choosing the file");
@@ -103,7 +104,7 @@ export const upload = async (file: string, s: Settings, options: UploadOptions &
       FIELD_TIMEOUT,
     );
     await title.fill(s.title);
-    const description = descriptionOf(s);
+    const description = descriptionOf(s.description);
     if (description) {
       const box = await field(
         page,

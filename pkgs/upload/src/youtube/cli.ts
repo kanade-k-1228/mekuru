@@ -1,28 +1,18 @@
-import { openBrowser } from "@mekuru/platform";
-import { resolve } from "node:path";
-import { accessToken, configDir } from "./auth.ts";
-import { readSettings, videoResource, type VideoResource } from "./settings.ts";
+#!/usr/bin/env bun
+import { command, configDir, readUploads, run } from "../common.ts";
+import { accessToken } from "./auth.ts";
+import { videoResource, YOUTUBE, type VideoResource, type YouTubeSettings } from "./settings.ts";
 import { setThumbnail, uploadVideo } from "./upload.ts";
 
-export const DEFAULT = "configs/youtube.yaml";
-
-export const main = async (configs: string[], { dryRun = false }: { dryRun?: boolean }): Promise<void> => {
-  const uploads = await Promise.all(
-    (configs.length ? configs : [DEFAULT]).map(async (config) => {
-      const settings = await readSettings(config);
-      const file = resolve(settings.video ?? "video.mp4");
-      const thumbnail = settings.thumbnail === undefined ? undefined : resolve(settings.thumbnail);
-      for (const f of [file, thumbnail]) if (f && !(await Bun.file(f).exists())) throw new Error(`${f} does not exist (in ${config})`);
-      return { config, file, thumbnail, video: videoResource(settings) };
-    }),
-  );
+const main = async (configs: string[], { dryRun = false }: { dryRun?: boolean }): Promise<void> => {
+  const uploads = (await readUploads<YouTubeSettings>(configs, YOUTUBE)).map((u) => ({ ...u, video: videoResource(u.settings) }));
   if (dryRun) {
     for (const { config, file, thumbnail, video } of uploads) console.log(JSON.stringify({ config, file, thumbnail, ...video }, null, 2));
     console.log(`(the sign-in is kept in ${configDir()})`);
     return;
   }
 
-  const token = await accessToken(openBrowser);
+  const token = await accessToken();
   for (const { config, file, thumbnail, video } of uploads) {
     if (uploads.length > 1) console.log(`${config}:`);
     await uploadOne(file, thumbnail, video, token);
@@ -53,3 +43,14 @@ const uploadOne = async (file: string, thumbnail: string | undefined, video: Vid
     }
   }
 };
+
+run(
+  command(
+    "mekuru-youtube",
+    YOUTUBE,
+    "Uploads videos to YouTube, one for each YAML file with its settings: the video file, the title, description, tags, ... " +
+      "The paths are relative to the current folder (the project). The first time, it opens the browser to sign in to Google.",
+  )
+    .option("--dry-run", "show what it would upload, without signing in or uploading")
+    .action(main),
+);

@@ -2,9 +2,10 @@ import { afterEach, beforeEach, expect, mock, spyOn, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { accessToken } from "../src/auth.ts";
-import { readSettings, videoResource } from "../src/settings.ts";
-import { uploadVideo } from "../src/upload.ts";
+import { readSettings } from "../src/common.ts";
+import { accessToken } from "../src/youtube/auth.ts";
+import { videoResource, YOUTUBE } from "../src/youtube/settings.ts";
+import { uploadVideo } from "../src/youtube/upload.ts";
 
 let root: string;
 let previous: string | undefined;
@@ -115,10 +116,10 @@ test("video upload reads consecutive chunks from the Bun file", async () => {
 test("Bun YAML preserves upload settings and validation", async () => {
   const file = join(root, "youtube.yaml");
   await Bun.write(file, "title: 動画\ndescription:\n  - first\n  - second\ncategory: 27\nmadeForKids: false\npublishAt: 2026-11-01T18:00:00+09:00\n");
-  expect(videoResource(await readSettings(file))).toEqual({
+  expect(videoResource(await readSettings(file, YOUTUBE))).toEqual({
     snippet: { title: "動画", description: "first\nsecond", categoryId: "27", tags: undefined },
     status: { privacyStatus: "private", publishAt: "2026-11-01T18:00:00+09:00", selfDeclaredMadeForKids: false },
   });
   await Bun.write(file, "title: Test\nunknown: value\n");
-  await expect(readSettings(file)).rejects.toThrow('unknown setting "unknown"');
+  await expect(readSettings(file, YOUTUBE)).rejects.toThrow('unknown setting "unknown"');
 });

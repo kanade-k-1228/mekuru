@@ -28,7 +28,6 @@ export interface Uploaded {
 export const uploadVideo = async (file: string, video: VideoResource, token: string, options: UploadOptions = {}): Promise<Uploaded> => {
   const { progress } = options;
   const data = Bun.file(file);
-  if (!(await data.exists())) throw new Error(`${file} does not exist`);
   const total = data.size;
   if (total === 0) throw new Error(`${file} is empty`);
   const type = data.type;

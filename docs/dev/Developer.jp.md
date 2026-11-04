@@ -11,7 +11,7 @@
 - [pkgs/speech](../../pkgs/speech/README.jp.md): 読み上げ部品の実装用 API
 - `pkgs/voicevox`・`coeiroink`・`style-bert-vits2`・`voisona`: 音声エンジンとの連携
 - [pkgs/narrator](../../pkgs/narrator/README.jp.md): 自作ナレータの立ち絵・口パク・字幕・PSD 素材準備
-- `pkgs/youtube`・`niconico`: 投稿コマンド
+- [pkgs/upload](../../pkgs/upload/README.jp.md): YouTube・ニコニコ動画への投稿コマンド
 - [example](../../example/README.md): チュートリアルと解説動画
 - [scripts/release.ts](../../scripts/release.ts): リリースの版設定・梱包・依存関係の設定
 
@@ -111,4 +111,4 @@ TSX の `fps()` は `<mekuru>` の展開中だけ使えます。音声の速度�
 
 ## パッケージの責務
 
-`types` はJSX・XMLと構築コンテキスト、`core` はネイティブコンパイラとプレビューサーバー、`audio` は音声素材とWAV処理、`speech` は合成の準備とキャッシュを担当します。各エンジンは固有のHTTP API、`narrator` は立ち絵・字幕、`platform` はOS共通処理を担当します。プレビューの通信契約の型は [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts) にあり、ネイティブサーバーがそれを Rust で実装します。
+`types` はJSX・XMLと構築コンテキスト、`core` はネイティブコンパイラとプレビューサーバー、`audio` は音声素材とWAV処理、`speech` は合成の準備とキャッシュを担当します。各エンジンは固有のHTTP API、`narrator` は立ち絵・字幕、`upload` は投稿コマンドを担当します。プレビューの通信契約の型は [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts) にあり、ネイティブサーバーがそれを Rust で実装します。

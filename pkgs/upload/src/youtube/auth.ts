@@ -1,10 +1,28 @@
+import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
-import { configDir } from "@mekuru/platform";
-export { configDir } from "@mekuru/platform";
 import { join } from "node:path";
+import { configDir } from "../common.ts";
 
 const SCOPE = "https://www.googleapis.com/auth/youtube.upload";
 const SIGN_IN_TIMEOUT = 5 * 60_000;
+
+const openBrowser = (url: string): void => {
+  const wsl = process.platform === "linux" && (!!process.env.WSL_INTEROP || existsSync("/proc/sys/fs/binfmt_misc/WSLInterop"));
+  const tries: string[][] = wsl
+    ? [["wslview"], ["cmd.exe", "/c", "start", ""]]
+    : process.platform === "darwin"
+      ? [["open"]]
+      : process.platform === "win32"
+        ? [["cmd", "/c", "start", ""]]
+        : [["xdg-open"]];
+  for (const [cmd, ...args] of tries) {
+    const target = cmd.startsWith("cmd") ? url.replaceAll("&", "^&") : url;
+    try {
+      Bun.spawn([cmd, ...args, target], { stdin: "ignore", stdout: "ignore", stderr: "ignore", cwd: wsl ? "/mnt/c" : undefined }).unref();
+      break;
+    } catch {}
+  }
+};
 
 interface Client {
   client_id: string;
@@ -96,7 +114,7 @@ const signIn = async (client: Client, open: (url: string) => void): Promise<{ ac
   }
 };
 
-export const accessToken = async (open: (url: string) => void): Promise<string> => {
+export const accessToken = async (open = openBrowser): Promise<string> => {
   const dir = configDir();
   const client = await readClient(join(dir, "youtube-client.json"));
   const tokenFile = join(dir, "youtube-token.json");
