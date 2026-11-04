@@ -1,15 +1,23 @@
 use mekuru_compiler::{
     Project,
     ir::{Elem, ElemKind, Target, ViewOp},
-    schedule::{ElemTime, MediaDb, MediaInfo, Schedule},
+    media::probe::MediaProbe,
+    prepare::{MediaAsset, Prepared},
+    schedule::{ElemTime, Schedule},
 };
 use std::path::Path;
 
-struct Media;
-
-impl MediaDb for Media {
-    fn info(&self, e: &Elem) -> Option<MediaInfo> {
-        e.kind.media().map(|_| MediaInfo { len: 10.0, has_audio: true })
+/// Every media file lasts ten seconds and has sound.
+fn media(p: &Project) -> Prepared {
+    let probe = MediaProbe {
+        duration: 10.0,
+        video: None,
+        has_audio: true,
+    };
+    let media = p.script.elems.iter().filter(|e| e.kind.media().is_some());
+    Prepared {
+        media: media.map(|e| (e.id, MediaAsset { probe, pcm: None })).collect(),
+        diags: vec![],
     }
 }
 
@@ -20,7 +28,7 @@ fn project(body: &str) -> Project {
 fn compile(body: &str) -> (Project, Schedule) {
     let p = project(body);
     assert!(!p.has_errors(), "{:?}", p.diags);
-    let sched = p.schedule(&Media);
+    let sched = p.schedule(&media(&p));
     (p, sched)
 }
 

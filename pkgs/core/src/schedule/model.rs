@@ -1,13 +1,4 @@
 use super::*;
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct MediaInfo {
-    pub len: f64,
-    pub has_audio: bool,
-}
-
-pub trait MediaDb {
-    fn info(&self, e: &Elem) -> Option<MediaInfo>;
-}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SrcSeg {

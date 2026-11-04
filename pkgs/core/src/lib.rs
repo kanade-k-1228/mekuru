@@ -88,8 +88,8 @@ impl Project {
         has_errors(&self.diags)
     }
 
-    pub fn schedule(&self, media: &dyn schedule::MediaDb) -> schedule::Schedule {
-        schedule::schedule(&self.script, media)
+    pub fn schedule(&self, prepared: &prepare::Prepared) -> schedule::Schedule {
+        schedule::schedule(&self.script, prepared)
     }
 
     pub fn default_output(&self) -> PathBuf {

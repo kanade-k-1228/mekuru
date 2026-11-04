@@ -5,6 +5,8 @@ use crate::ir::*;
 use crate::lang::diag::Diag;
 use crate::lang::span::Span;
 use crate::media::Fps;
+use crate::media::probe::MediaProbe;
+use crate::prepare::Prepared;
 use graph::Graph;
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 
@@ -25,9 +27,11 @@ struct Clock {
     to: f64,
 }
 
-fn clock(e: &Elem, info: Option<MediaInfo>, fps: Fps) -> Option<Clock> {
+fn clock(e: &Elem, probe: Option<MediaProbe>, fps: Fps) -> Option<Clock> {
     let (from, to, len) = match &e.kind {
-        ElemKind::Video(VideoSpec { media: m, .. }) | ElemKind::Audio(AudioSpec { media: m }) => (m.from as f64, m.to, info.map_or(0.0, |i| fps.of(i.len))),
+        ElemKind::Video(VideoSpec { media: m, .. }) | ElemKind::Audio(AudioSpec { media: m }) => {
+            (m.from as f64, m.to, probe.map_or(0.0, |p| fps.of(p.duration)))
+        }
         ElemKind::DraftAudio | ElemKind::View(_) => return None,
     };
     Some(Clock {
@@ -89,16 +93,16 @@ fn targets(s: &Script) -> impl Iterator<Item = Target> + '_ {
     (0..s.nodes.len()).map(Target::Node).chain((0..s.elems.len()).map(Target::Elem))
 }
 
-pub fn schedule(s: &Script, m: &dyn MediaDb) -> Schedule {
+pub fn schedule(s: &Script, prepared: &Prepared) -> Schedule {
     let fps = s.settings.rate();
     let media = s
         .elems
         .iter()
         .map(|element| {
-            let info = m.info(element);
-            let clock = clock(element, info, fps);
+            let probe = prepared.media.get(&element.id).map(|m| m.probe);
+            let clock = clock(element, probe, fps);
             MediaTiming {
-                info,
+                probe,
                 clock,
                 paces: paces(element, clock),
             }
@@ -137,7 +141,7 @@ pub fn schedule(s: &Script, m: &dyn MediaDb) -> Schedule {
 }
 
 struct MediaTiming {
-    info: Option<MediaInfo>,
+    probe: Option<MediaProbe>,
     clock: Option<Clock>,
     paces: Vec<(f64, f64, f64)>,
 }
@@ -588,7 +592,7 @@ impl<'a> Solver<'a> {
             if let Some(c) = self.media[eid].clock.filter(|_| !self.targets[i].dropped) {
                 let segs = self.segments(eid, c, start, end);
                 let volume = e.kind.media().map_or(0.0, |m| m.volume);
-                let audible = volume > 0.0 && (matches!(e.kind, ElemKind::Audio(_)) || self.media[eid].info.is_some_and(|i| i.has_audio));
+                let audible = volume > 0.0 && (matches!(e.kind, ElemKind::Audio(_)) || self.media[eid].probe.is_some_and(|p| p.has_audio));
                 if audible {
                     let env = et.fades();
                     for g in segs.iter().filter(|g| g.rate > 0.0 && g.t1 - g.t0 > EPS) {

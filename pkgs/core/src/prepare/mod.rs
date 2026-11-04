@@ -5,7 +5,6 @@ use crate::lang::diag::Diag;
 use crate::media::pcm::{self, Pcm};
 use crate::media::probe::{self, MediaProbe};
 use crate::progress::{Progress, Stage};
-use crate::schedule::{MediaDb, MediaInfo};
 use crate::util::hash::sha256_hex;
 use cache::Cache;
 use rayon::prelude::*;
@@ -22,15 +21,6 @@ pub struct MediaAsset {
 pub struct Prepared {
     pub media: HashMap<ElemId, MediaAsset>,
     pub diags: Vec<Diag>,
-}
-
-impl MediaDb for Prepared {
-    fn info(&self, e: &crate::ir::Elem) -> Option<MediaInfo> {
-        self.media.get(&e.id).map(|m| MediaInfo {
-            len: m.probe.duration,
-            has_audio: m.probe.has_audio,
-        })
-    }
 }
 
 fn file_stamp(p: &Path) -> Option<(u64, i64)> {
