@@ -41,6 +41,21 @@ const httpClient =
     return res;
   };
 
+/** Remembers what `load` returns. A failed load is forgotten so the next call tries again; `fresh` loads again anyway. */
+export const cached = <T>(load: () => Promise<T>) => {
+  let value: Promise<T> | undefined;
+  return (fresh = false): Promise<T> => {
+    if (fresh || !value) {
+      const loading = load();
+      value = loading;
+      loading.catch(() => {
+        if (value === loading) value = undefined;
+      });
+    }
+    return value;
+  };
+};
+
 const limit = (concurrency: number) => {
   let running = 0;
   const waiting: (() => void)[] = [];

@@ -1,4 +1,4 @@
-import type { Engine } from "@mekuru/speech";
+import { cached, type Engine } from "@mekuru/speech";
 import type { CoeiroinkProps } from "./index.tsx";
 
 interface Style {
@@ -9,19 +9,14 @@ interface Style {
 }
 
 export const client: Engine<CoeiroinkProps>["create"] = (call) => {
-  let styles: Promise<Style[]> | undefined;
-
-  const list = async (again = false): Promise<Style[]> => {
-    if (again) styles = undefined;
-    styles ??= call("/v1/speakers").then(async (res) => {
-      const speakers = (await res.json()) as { speakerName: string; speakerUuid: string; styles: { styleName: string; styleId: number }[] }[];
-      return speakers.flatMap((s) => s.styles.map((st) => ({ speaker: s.speakerName, uuid: s.speakerUuid, style: st.styleName, id: st.styleId })));
-    });
-    return styles.catch((e: unknown) => {
-      styles = undefined;
-      throw e;
-    });
-  };
+  const list = cached(async (): Promise<Style[]> => {
+    const speakers = (await (await call("/v1/speakers")).json()) as {
+      speakerName: string;
+      speakerUuid: string;
+      styles: { styleName: string; styleId: number }[];
+    }[];
+    return speakers.flatMap((s) => s.styles.map((st) => ({ speaker: s.speakerName, uuid: s.speakerUuid, style: st.styleName, id: st.styleId })));
+  });
 
   const find = async (speaker: number | string): Promise<Style> => {
     const [name, style] = String(speaker)

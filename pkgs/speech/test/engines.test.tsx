@@ -156,6 +156,20 @@ for (const { name, line, json, label, sent } of cases) {
   });
 }
 
+test("a speaker list that failed to load is loaded again for the next line", async () => {
+  const line = (
+    <Voicevox speaker="四国めたん" url="http://voicevox.test:3">
+      まだ
+    </Voicevox>
+  );
+  spyOn(globalThis, "fetch").mockRejectedValue(new Error("connection refused"));
+  await expect(say(line)).rejects.toThrow("VOICEVOX is not reachable at http://voicevox.test:3");
+  mock.restore();
+  const requests = serve({ "/speakers": [{ name: "四国めたん", styles: [{ name: "ノーマル", id: 2 }] }], "/audio_query": {} });
+  expect(await say(line)).toContain('label="四国めたん: まだ"');
+  expect(requests[0]).toEqual(["GET http://voicevox.test:3/speakers"]);
+});
+
 test("errors name the engine, and an unreachable server says how to start it", async () => {
   spyOn(globalThis, "fetch").mockResolvedValue(new Response("x".repeat(400), { status: 422 }));
   await expect(say(<Voicevox speaker={1}>だめ</Voicevox>)).rejects.toThrow(/^VOICEVOX \/audio_query: HTTP 422 x{300}$/);
