@@ -102,9 +102,9 @@ const Tutorial: FC = () => (
               <Shot x={70} y={110} src="assets/lesson.png" w={780} />
               <Shot x={560} y={420} src="assets/viewer.png" w={600} />
               <seq>
-                <Zundamon face="笑顔" text="こんにちは。ぼくはずんだもんなのだ。" />
-                <Zundamon face="指差し" text="今日は、Mekuru で解説動画を作る手順を紹介します。" />
-                <Zundamon face="困り" text="解説動画って、セリフに合わせて絵を並べるだけなのに、編集ソフトだと意外と大変ですよね。" />
+                <Zundamon face="smile" text="こんにちは。ぼくはずんだもんなのだ。" />
+                <Zundamon text="今日は、Mekuru で解説動画を作る手順を紹介します。" />
+                <Zundamon face="worry" text="解説動画って、セリフに合わせて絵を並べるだけなのに、編集ソフトだと意外と大変ですよね。" />
               </seq>
             </stack>
             <stack>
@@ -115,8 +115,8 @@ const Tutorial: FC = () => (
               <Keyword x={1065} y={150} anchor="t" size={84} text="動画" />
               <Shot x={900} y={385} src="assets/lesson.png" w={330} />
               <seq>
-                <Zundamon face="ドヤ" text="そこで Mekuru！ テキストで書いた台本から、そのまま動画を作れます。" />
-                <Zundamon face="指差し" text="セリフは音声合成で読み上げて、動画の長さも、セリフに合わせて自動で決まります。">
+                <Zundamon face="smug" text="そこで Mekuru！ テキストで書いた台本から、そのまま動画を作れます。" />
+                <Zundamon text="セリフは音声合成で読み上げて、動画の長さも、セリフに合わせて自動で決まります。">
                   <Label x={708} y={650} size={44} text="長さは自動！" />
                 </Zundamon>
               </seq>
@@ -124,8 +124,8 @@ const Tutorial: FC = () => (
             <stack>
               <Shot x={70} y={70} src="assets/lesson.png" w={1120} />
               <seq>
-                <Zundamon face="笑顔" text="今回は、ぼくが一人で話す、こんな動画を作ってみましょう。" />
-                <Zundamon face="ウインク" text="コードを打ちながら見る人は、こまめに止めてね。" />
+                <Zundamon face="smile" text="今回は、ぼくが一人で話す、こんな動画を作ってみましょう。" />
+                <Zundamon face="wink" text="コードを打ちながら見る人は、こまめに止めてね。" />
               </seq>
             </stack>
           </seq>
@@ -142,7 +142,7 @@ const Tutorial: FC = () => (
           <Terminal at={TOOLS_TERM} w={760} text={"$ bun --version\n$ ffmpeg -version\n$ ffprobe -version"} />
           <seq>
             <Zundamon text="まずは道具をそろえます。" />
-            <Zundamon face="指差し" text="Bun は 1.4 以上、ffmpeg は動画をエンコードできるものを用意します。" />
+            <Zundamon text="Bun は 1.4 以上、ffmpeg は動画をエンコードできるものを用意します。" />
             <Zundamon text="日本語フォントを入れて、VOICEVOX を起動するのだ。" />
             <Zundamon text="ずんだもんのノーマルスタイルで、台本を読み上げるのだ。" />
             <Zundamon text="接続先の設定は、この手順を確認してね。VOICEVOX は起動したまま使うのだ。">
@@ -151,7 +151,7 @@ const Tutorial: FC = () => (
             <Zundamon text="Windows の人は、WSL の中で動かしてね。">
               <Label x={1020} y={600} color={COLOR.blue} size={48} text="Windows → WSL" />
             </Zundamon>
-            <Zundamon face="笑顔" text="ターミナルでこの三つを実行して、バージョンが出たら OK です！">
+            <Zundamon face="smile" text="ターミナルでこの三つを実行して、バージョンが出たら OK です！">
               <TermMark term={TOOLS_TERM} from={1} to={3} w={740} />
             </Zundamon>
           </seq>
@@ -173,7 +173,7 @@ const Tutorial: FC = () => (
           />
           <seq>
             <Zundamon text="次は、プロジェクトを作ります。" />
-            <Zundamon face="指差し" text="選ぶ画面になったら、音声エンジンに VOICEVOX を選びます。">
+            <Zundamon text="選ぶ画面になったら、音声エンジンに VOICEVOX を選びます。">
               <TermMark term={PICK} from={3} w={440} />
             </Zundamon>
             <Zundamon text="上下で移動、スペースで選んで、エンターで決定です。">
@@ -183,7 +183,7 @@ const Tutorial: FC = () => (
                 <Label x={0} y={160} anchor="tl" color={COLOR.blue} size={44} text="Enter 決定" />
               </column>
             </Zundamon>
-            <Zundamon face="ウインク" text="投稿先も選べるけど、動画を作るだけなら、選ばなくて大丈夫！">
+            <Zundamon face="wink" text="投稿先も選べるけど、動画を作るだけなら、選ばなくて大丈夫！">
               <TermMark term={PICK} from={5} to={6} w={740} />
             </Zundamon>
             <Zundamon text="同じ選択は、オプションでまとめて指定することもできます。">
@@ -211,10 +211,10 @@ const Tutorial: FC = () => (
             <Zundamon text="プロジェクトができると、道具がそろっているかのチェック結果が出ます。">
               <TermMark term={INSTALL_TERM} from={3} to={5} w={1110} />
             </Zundamon>
-            <Zundamon face="困り" text="VOICEVOX につながらない場合は、アプリの起動と接続先を確認してください。">
+            <Zundamon face="worry" text="VOICEVOX につながらない場合は、アプリの起動と接続先を確認してください。">
               <TermMark term={INSTALL_TERM} from={5} w={1110} />
             </Zundamon>
-            <Zundamon face="指差し" text="問題なければ、フォルダに移って、bun install です。">
+            <Zundamon text="問題なければ、フォルダに移って、bun install です。">
               <TermMark term={INSTALL_TERM} from={7} to={8} w={400} />
             </Zundamon>
             <Zundamon text="ここから先のコマンドは、全部このフォルダの中で実行します。">
@@ -228,13 +228,13 @@ const Tutorial: FC = () => (
           <Code at={IMPORTS} text={'import { Zundamon, ZundamonPortrait } from "./character/zundamon";'} />
           <seq>
             <Zundamon text="エディタでプロジェクトを開きます。まず、サンプルの部品を追加しましょう。" />
-            <Zundamon face="指差し" text="台本は src の main.tsx。動画の中身は、ここに書いていきます。">
+            <Zundamon text="台本は src の main.tsx。動画の中身は、ここに書いていきます。">
               <TreeMark tree={FILES} from={3} w={500} />
             </Zundamon>
             <Zundamon text="先に example で bun run portrait を実行します。tutorial の character を src に、assets をプロジェクト直下にコピーしてね。">
               <TreeMark tree={FILES} from={5} to={6} w={740} />
             </Zundamon>
-            <Zundamon face="笑顔" text="ずんだもんの声と立ち絵の部品は、この import で読み込みます。">
+            <Zundamon face="smile" text="ずんだもんの声と立ち絵の部品は、この import で読み込みます。">
               <CodeMark code={IMPORTS} from={1} w={1110} />
             </Zundamon>
           </seq>
@@ -247,7 +247,7 @@ const Tutorial: FC = () => (
               <Code at={SCRIPT} text={FIRST_SCRIPT.trimEnd()} />
               <seq>
                 <Zundamon text="それでは、main.tsx をこのコードに置き換えて、保存してね。" />
-                <Zundamon face="指差し" text="最初の rect が背景、text が見出しです。">
+                <Zundamon text="最初の rect が背景、text が見出しです。">
                   <CodeMark code={SCRIPT} from={6} w={760} />
                   <Label x={1110} y={350} anchor="l" text="背景" />
                   <CodeMark code={SCRIPT} from={8} to={9} w={870} />
@@ -278,8 +278,8 @@ const Tutorial: FC = () => (
                   <Label x={330} y={250} anchor="l" size={44} color={COLOR.blue} text="同時に" />
                   <Label x={290} y={420} anchor="l" size={44} color={COLOR.blue} text="順番に" />
                 </Zundamon>
-                <Zundamon face="指差し" text="見出しを出したまま、ぼくのセリフを上から順番に読み上げます。" />
-                <Zundamon face="ドヤ" text="秒数は書かなくて大丈夫。場面の長さは、セリフの長さで決まるんです！">
+                <Zundamon text="見出しを出したまま、ぼくのセリフを上から順番に読み上げます。" />
+                <Zundamon face="smug" text="秒数は書かなくて大丈夫。場面の長さは、セリフの長さで決まるんです！">
                   <Label x={640} y={760} size={52} text="場面の長さ ＝ セリフの長さ" />
                 </Zundamon>
               </seq>
@@ -294,11 +294,11 @@ const Tutorial: FC = () => (
             <Zundamon text="保存したら、ターミナルで bun preview を実行します。">
               <TermMark term={PREVIEW_TERM} from={1} w={520} />
             </Zundamon>
-            <Zundamon face="指差し" text="ブラウザでビューアが開きます。上が動画のプレビューで、">
+            <Zundamon text="ブラウザでビューアが開きます。上が動画のプレビューで、">
               <Mark x={VIEWER.x} y={VIEWER.y} w={VIEWER.w} h={VIEWER.h * 0.56} />
               <Label x={1090} y={VIEWER.y + 150} text="プレビュー" />
             </Zundamon>
-            <Zundamon face="指差し" text="下がタイムラインです。">
+            <Zundamon text="下がタイムラインです。">
               <Mark x={VIEWER.x} y={VIEWER.y + VIEWER.h * 0.56} w={VIEWER.w} h={VIEWER.h * 0.17} />
               <Label x={1090} y={VIEWER.y + 370} text="タイムライン" />
             </Zundamon>
@@ -321,9 +321,9 @@ const Tutorial: FC = () => (
           </column>
           <seq>
             <Zundamon text="ビューアを開いたまま、エディタに戻って、最初のセリフを長くしてみます。" />
-            <Zundamon face="笑顔" text="保存すると、プレビューが勝手に更新されます。" />
+            <Zundamon face="smile" text="保存すると、プレビューが勝手に更新されます。" />
             <Zundamon text="新しいセリフは、まず見積もりの長さで出て、合成が終わると、ほんとの長さになります。" />
-            <Zundamon face="ウインク" text="タイムラインが伸びたのを確かめたら、セリフを元に戻しておいてね。" />
+            <Zundamon face="wink" text="タイムラインが伸びたのを確かめたら、セリフを元に戻しておいてね。" />
           </seq>
         </stack>
         <stack id="errors">
@@ -336,10 +336,10 @@ const Tutorial: FC = () => (
           </column>
           <Terminal at={CHECK_TERM} w={700} text={"$ bun run typecheck"} />
           <seq>
-            <Zundamon face="困り" text="もし更新されなかったら、ここをチェック！" />
-            <Zundamon face="はてな" text="保存したファイルは合ってる？ プレビューのターミナルは、動いてる？" />
+            <Zundamon face="worry" text="もし更新されなかったら、ここをチェック！" />
+            <Zundamon face="worry" text="保存したファイルは合ってる？ プレビューのターミナルは、動いてる？" />
             <Zundamon text="台本にエラーがあると、ビューアは前の画面のままで、上にエラーが出ます。" />
-            <Zundamon face="指差し" text="タグや属性の書き間違いは、型チェックでも見つけられます。">
+            <Zundamon text="タグや属性の書き間違いは、型チェックでも見つけられます。">
               <TermMark term={CHECK_TERM} from={1} w={660} />
             </Zundamon>
           </seq>
@@ -355,8 +355,8 @@ const Tutorial: FC = () => (
             <Zundamon text="次はセリフの間です。Voicevox.prepare の gap を変えてみましょう。">
               <CodeMark code={VOICE} from={2} w={238} />
             </Zundamon>
-            <Zundamon face="笑顔" text="30 fps の動画で 12 にすると、セリフの後に 0.4 秒の間が入ります。" />
-            <Zundamon face="指差し" text="読み方を直したい言葉は、parts.tsx の READING に足してね。">
+            <Zundamon face="smile" text="30 fps の動画で 12 にすると、セリフの後に 0.4 秒の間が入ります。" />
+            <Zundamon text="読み方を直したい言葉は、parts.tsx の READING に足してね。">
               <CodeMark code={READ} from={2} w={1000} />
             </Zundamon>
             <Zundamon text="字幕はそのままで、読み上げだけが、指定した読み方になります。" />
@@ -374,7 +374,7 @@ const Tutorial: FC = () => (
             <Zundamon text="立ち絵も出してみましょう。import に ZundamonPortrait を加えて、背景のすぐ後ろに、この一行を足します。">
               <CodeMark code={ADD} from={2} w={700} />
             </Zundamon>
-            <Zundamon face="指差し" text="x で横の位置を、h で高さを、画面に対する割合で決めています。">
+            <Zundamon text="x で横の位置を、h で高さを、画面に対する割合で決めています。">
               <Label x={FRAME.x + FRAME.w * 0.85} y={FRAME.y + 150} size={40} text="x=85%" />
               <line
                 p={`${FRAME.x + FRAME.w + 40}:${FRAME.y + FRAME.h},${FRAME.x + FRAME.w + 40}:${FRAME.y + FRAME.h * 0.55}`}
@@ -384,8 +384,8 @@ const Tutorial: FC = () => (
               />
               <Label x={FRAME.x + FRAME.w + 70} y={FRAME.y + FRAME.h * 0.78} anchor="l" size={40} text="h=45%" />
             </Zundamon>
-            <Zundamon face="笑顔" text="保存して、画面の右側に立ち絵が一つ出たら成功です。" />
-            <Zundamon face="ウインク" text="この立ち絵は、SD イラストをまとめたシンプルな PSD から展開しているのだ。" />
+            <Zundamon face="smile" text="保存して、画面の右側に立ち絵が一つ出たら成功です。" />
+            <Zundamon face="wink" text="この立ち絵は、SD イラストをまとめたシンプルな PSD から展開しているのだ。" />
           </seq>
         </stack>
         <stack id="second-scene">
@@ -396,13 +396,13 @@ const Tutorial: FC = () => (
           <Scene x={660} title="動画を作る流れ" />
           <seq>
             <Zundamon text="最後に、二つ目の場面を足します。最初の stack を閉じた、すぐ後ろに書きます。" />
-            <Zundamon face="指差し" text="column を使うと、見出しと説明を、縦に並べられます。">
+            <Zundamon text="column を使うと、見出しと説明を、縦に並べられます。">
               <CodeMark code={SECOND} from={2} to={5} w={1130} />
             </Zundamon>
             <Zundamon text="mekuru の直下に並べた場面は、順番に進みます。">
               <Label x={590} y={650} size={44} text="順番に進む" />
             </Zundamon>
-            <Zundamon face="笑顔" text="最後まで再生して、次の見出しに切り替わったら OK！" />
+            <Zundamon face="smile" text="最後まで再生して、次の見出しに切り替わったら OK！" />
           </seq>
         </stack>
         <stack id="review">
@@ -416,8 +416,8 @@ const Tutorial: FC = () => (
           </column>
           <seq>
             <Zundamon text="ここまでできたら、最初から最後まで、通して見てみましょう。" />
-            <Zundamon face="指差し" text="セリフの順番、字幕の読みやすさ、立ち絵と文字の重なりをチェックしてね。" />
-            <Zundamon face="笑顔" text="気になるところは、台本を直して保存すれば、すぐ確認できます。" />
+            <Zundamon text="セリフの順番、字幕の読みやすさ、立ち絵と文字の重なりをチェックしてね。" />
+            <Zundamon face="smile" text="気になるところは、台本を直して保存すれば、すぐ確認できます。" />
           </seq>
         </stack>
         <Jingle text="かきだし！" />
@@ -426,7 +426,7 @@ const Tutorial: FC = () => (
           <Terminal at={BUILD_TERM} w={1150} text={"$ bun run build\nwrote video.mp4 (1920x1080, 345 frames, 00:11) in 4.2s"} />
           <Terminal at={LIGHT_TERM} w={1000} text={"$ bun run build --preview\n# 半分の解像度・15fps（同じ video.mp4 に書き出す）"} />
           <seq>
-            <Zundamon face="決め" text="いよいよ書き出しです！ 別のターミナルで、bun run build を実行します。">
+            <Zundamon face="wink" text="いよいよ書き出しです！ 別のターミナルで、bun run build を実行します。">
               <TermMark term={BUILD_TERM} from={1} w={500} />
             </Zundamon>
             <Zundamon text="終わると video.mp4 ができます。プレイヤーで開いて、画面と音を確認してね。">
@@ -435,7 +435,7 @@ const Tutorial: FC = () => (
             <Zundamon text="軽く試したいときは、preview オプションで、半分の解像度で書き出せます。">
               <TermMark term={LIGHT_TERM} from={1} w={640} />
             </Zundamon>
-            <Zundamon face="困り" text="同じファイルに上書きされるので、最後は、オプションなしで書き出し直してね。">
+            <Zundamon face="worry" text="同じファイルに上書きされるので、最後は、オプションなしで書き出し直してね。">
               <TermMark term={LIGHT_TERM} from={2} w={960} />
             </Zundamon>
           </seq>
@@ -450,11 +450,11 @@ const Tutorial: FC = () => (
             }
           />
           <seq>
-            <Zundamon face="ウインク" text="投稿したい人は、もうひと手間！" />
+            <Zundamon face="wink" text="投稿したい人は、もうひと手間！" />
             <Zundamon text="YouTube を選んだ人は、youtube.yaml に、タイトルと説明文を書きます。">
               <CodeMark code={YAML} from={2} to={4} w={760} />
             </Zundamon>
-            <Zundamon face="指差し" text="説明文には、使った音声のクレジットも入れてね。">
+            <Zundamon text="説明文には、使った音声のクレジットも入れてね。">
               <CodeMark code={YAML} from={5} w={960} />
             </Zundamon>
             <Zundamon text="公開範囲は、まず非公開にしておくと安心です。">
@@ -478,7 +478,7 @@ const Tutorial: FC = () => (
             <Zundamon text="ニコニコ動画は、ブラウザでログインして、確認してから投稿します。">
               <TermMark term={NICO_TERM} from={2} to={3} w={960} />
             </Zundamon>
-            <Zundamon face="指差し" text="投稿したら、投稿先で、動画と公開範囲を確認しましょう。" />
+            <Zundamon text="投稿したら、投稿先で、動画と公開範囲を確認しましょう。" />
           </seq>
         </stack>
         <stack id="outro">
@@ -489,12 +489,12 @@ const Tutorial: FC = () => (
             <Point size={40} text="bun run build で video.mp4 に" />
           </column>
           <seq>
-            <Zundamon face="笑顔" text="これで、一人語りの動画ができました。" />
-            <Zundamon face="指差し" text="次は、セリフや見出しを、自分の内容に変えてみてね。" />
+            <Zundamon face="smile" text="これで、一人語りの動画ができました。" />
+            <Zundamon text="次は、セリフや見出しを、自分の内容に変えてみてね。" />
             <Zundamon text="今回のコードは、リポジトリの example にあります。">
               <Label x={420} y={790} size={36} color={COLOR.blue} text="github.com/kanade-k-1228/mekuru" />
             </Zundamon>
-            <Zundamon face="決め" text="それでは、また次の動画で。" />
+            <Zundamon face="wink" text="それでは、また次の動画で。" />
             <Exit />
           </seq>
         </stack>
