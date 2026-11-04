@@ -80,6 +80,6 @@ To use an existing Chrome or Chromium, set `MEKURU_BROWSER` to its executable pa
 
 ### Upload
 
-`--check` fills in the browser form and leaves the submit button for you to click. `bun run upload:niconico` submits automatically; add `--headed` to show the browser window.
+`--check` fills in the browser form and leaves the submit button for you to click. `bun run upload:niconico` submits automatically without showing the browser.
 
 The command uses Playwright to operate the upload page, so page changes may break it. On failure, it writes `.mekuru/niconico-error.png` and outputs the content for manual upload.

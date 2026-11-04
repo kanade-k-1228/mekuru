@@ -27,7 +27,7 @@ bunx mekuru-youtube             # the first upload opens a browser to sign in to
 bunx playwright-core install chromium
 bunx mekuru-niconico login      # save the sign-in for later uploads
 bunx mekuru-niconico --check    # fill in the form in a browser window; you post it
-bunx mekuru-niconico            # post automatically; --headed shows the browser
+bunx mekuru-niconico            # post automatically
 ```
 
 Set `MEKURU_BROWSER` to use an existing Chrome or Chromium executable.

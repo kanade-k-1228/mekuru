@@ -76,12 +76,11 @@ const ids = async (page: Page): Promise<Set<string>> => {
 
 export interface UploadOptions {
   check?: boolean;
-  headed?: boolean;
 }
 
 export const upload = async (file: string, s: Settings, options: UploadOptions & { thumbnail?: string } = {}): Promise<string | undefined> => {
-  const { check = false, headed = false } = options;
-  const context = await launch(!check && !headed);
+  const { check = false } = options;
+  const context = await launch(!check);
   const page = await firstPage(context);
   try {
     await page.goto(UPLOAD_URL, { waitUntil: "domcontentloaded" });
