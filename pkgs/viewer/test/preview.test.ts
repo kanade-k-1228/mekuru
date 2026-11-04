@@ -32,7 +32,7 @@ test("patches atomically, keeping unchanged elements, resources and timeline ref
 });
 
 test("reordering media retains stable identity even when sequential IR IDs change", () => {
-  const media = { ...element("e1", []), kind: "video" as const, media: { src: "a.mp4", gain: 1, map: { from: 0, end: 1, segments: [] } } };
+  const media = { ...element("e1", []), kind: "video" as const, media: { src: "a.mp4", revision: "r", gain: 1, map: { from: 0, end: 1, segments: [] } } };
   const a = sharePreview(compilation(1, [element("e0", ["A"]), media]), null);
   const s1 = applyEvent(empty, snapshot(state(), a));
   const first = present(s1);

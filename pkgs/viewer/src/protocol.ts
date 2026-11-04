@@ -83,7 +83,7 @@ export type DrawOp =
       color: string;
       stroke: { width: number; lineCap: "butt" | "round" | "square"; lineJoin: "miter" | "round" | "bevel"; dash: number[] } | null;
     }
-  | { kind: "image"; src: string; revision?: string; bounds: Bounds; transform: [number, number, number, number, number, number] | null };
+  | { kind: "image"; src: string; revision: string; bounds: Bounds; transform: [number, number, number, number, number, number] | null };
 export interface MediaMap {
   from: number;
   end: number;
@@ -99,7 +99,7 @@ export interface SceneElement {
   fades: Fade[];
   drawings: string[];
   bounds: Bounds | null;
-  media: { src: string; revision?: string; gain: number; map: MediaMap } | null;
+  media: { src: string; revision: string; gain: number; map: MediaMap } | null;
   repeat: [from: number, period: number, until: number][];
   hidden: [start: number, end: number][];
 }
