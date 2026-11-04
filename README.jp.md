@@ -4,24 +4,25 @@
 
 テキストで台本を記述して解説動画を作るツールです。場面の長さはセリフの音声に合わせて決まり、画像・字幕・撮影した動画を同じ時間軸で組み合わせられます。動画のカット・速度変更・一時停止にも対応します。
 
-## 必要なもの
+## はじめる
 
-次のコマンドでBunとffmpegを確認し、未導入ならインストールします。
+### 1. 必要なものを入れる
+
+次のコマンドで必要なものを入れます。
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.sh | bash
 ```
 
-- [Bun](https://bun.sh/) 1.4 以上。パッケージは TypeScript ソースを直接実行します。
-- libx264 付き [ffmpeg・ffprobe](https://ffmpeg.org/) とフォント（既定: Noto Sans。中国語・日本語・韓国語には Noto Sans CJK も）。
-- 使用する声の音声合成エンジン。
-- Windows では WSL で実行します。
+- [Bun](https://bun.sh/) 1.4 以上
+- libx264 付き [ffmpeg・ffprobe](https://ffmpeg.org/)
+- Noto Sans フォント（既定のフォント）
 
-自動導入はUbuntu/Debian（WSLを含む）のaptと、macOSの [Homebrew](https://brew.sh/) に対応します。aptには管理者権限が必要です。Bunがなければ公式インストーラで導入します。Noto Sans もなければ導入します。音声エンジンと、中国語・日本語・韓国語用の Noto Sans CJK は別途用意してください。
+> 自動導入は Ubuntu/Debian（WSL を含む）の apt と、macOS の [Homebrew](https://brew.sh/) に対応します。apt には管理者権限が必要です。Bun がなければ公式インストーラで導入します。
 
-条件を満たす既存ツールは再利用し、古いBunやlibx264のないffmpegは更新方法を案内して停止します。`MEKURU_FFMPEG`・`MEKURU_FFPROBE` による指定も利用できます。
+> 条件を満たす既存ツールは再利用し、古い Bun や libx264 のない ffmpeg は更新方法を案内して停止します。`MEKURU_FFMPEG`・`MEKURU_FFPROBE` による指定も利用できます。
 
-## はじめる
+### 2. プロジェクトを作る
 
 ```sh
 bun create @mekuru my-video
@@ -31,19 +32,30 @@ bun preview     # http://localhost:3333
 bun run build   # video.mp4
 ```
 
-作成時に音声合成エンジンを選び、`src/main.tsx` を編集します。`<seq>` は順番に、`<stack>` は同時に再生します。完成までの手順は [最初の動画を作るチュートリアル](example/README.md) を参照してください。
+### 3. 動画を編集する
 
-[@mekuru/types](pkgs/types/README.jp.md) が TSX の型・JSX ランタイム・XML 出力、[@mekuru/core](pkgs/core/README.jp.md) がネイティブコンパイラとプレビューサーバーを提供します。ビューアと OS 別バイナリは core に同梱され、生成プロジェクトには両パッケージが設定されます。
+```tsx
+// src/main.tsx
+import { writeXml } from "@mekuru/types";
+import { Voicevox, zunda } from "@mekuru/speech/voicevox";
 
-## 音声合成エンジン
+const Video = () => (
+  <mekuru size="1920x1080" fps={30} lang="ja">
+    <rect w="100%" h="100%" fill="#141C26" />
+    {/* <stack> の中は同時に、<seq> の中は順番に再生します */}
+    <stack>
+      <text x="50%" y="40%" anchor="center" size={90} text="はじめての動画" />
+      <seq>
+        <Voicevox {...zunda} text="こんにちは、ずんだもんなのだ。" />
+        <Voicevox {...zunda} text="タイトルは、セリフが終わるまで表示されるのだ。" />
+      </seq>
+    </stack>
+  </mekuru>
+);
 
-[@mekuru/speech](pkgs/speech/README.jp.md) がエンジンごとの部品を提供します。部品はエンジンごとのパスから import します。
+await writeXml(".mekuru/main.xml", <Video />);
+```
 
-| import 元                                                                      | 部品             | エンジン                        |
-| ------------------------------------------------------------------------------ | ---------------- | ------------------------------- |
-| [`@mekuru/speech/voicevox`](pkgs/speech/README.jp.md#voicevox)                 | `Voicevox`       | VOICEVOX・AivisSpeech・SHAREVOX |
-| [`@mekuru/speech/voisona`](pkgs/speech/README.jp.md#voisona-talk)              | `Voisona`        | VoiSona Talk                    |
-| [`@mekuru/speech/coeiroink`](pkgs/speech/README.jp.md#coeiroink)               | `Coeiroink`      | COEIROINK                       |
-| [`@mekuru/speech/style-bert-vits2`](pkgs/speech/README.jp.md#style-bert-vits2) | `StyleBertVits2` | Style-Bert-VITS2                |
+この例は VOICEVOX を使います。作成時に選び、アプリを起動しておいてください。完成までの手順は [最初の動画を作るチュートリアル](example/README.md) を参照してください。
 
-独自のナレータ（音声＋立ち絵＋字幕）の組み立てには [@mekuru/narrator](pkgs/narrator/README.jp.md) を参照してください。
+> [@mekuru/types](pkgs/types/README.jp.md) が TSX の型・JSX ランタイム・XML 出力、[@mekuru/core](pkgs/core/README.jp.md) がネイティブコンパイラとプレビューサーバーを提供します。ビューアと OS 別バイナリは core に同梱され、生成プロジェクトには両パッケージが設定されます。
