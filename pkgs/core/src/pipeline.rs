@@ -2,7 +2,7 @@ use crate::audio::{Track, mix_wav};
 use crate::encode::Encoder;
 use crate::media::args::EncodeArgs;
 use crate::media::pcm::{self, Pcm, RATE};
-use crate::progress::{Progress, Stage};
+use crate::progress::Progress;
 use crate::render::{FrameRenderer, RenderCtx, RenderTarget};
 use crate::schedule::{AudioClip, EPS, Fade};
 use crate::util::hash::sha256_hex;
@@ -144,7 +144,7 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
     let tmp = ctx.project.cache().tmp();
     std::fs::create_dir_all(&tmp)?;
     let wav: Option<TempFile> = if opts.audio {
-        progress(Progress::Stage { stage: Stage::Mix });
+        progress(Progress::Mix);
         let path = TempFile(tmp.join(format!("mix-{}.wav", std::process::id())));
         let samples = (seconds * RATE as f64).round() as u64;
         let mix = mix_wav(&audio_tracks(ctx)?, from, samples, path.as_ref())?;
@@ -158,7 +158,7 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
         None
     };
 
-    progress(Progress::Stage { stage: Stage::Render });
+    progress(Progress::Render);
     let preset = opts.preset.clone().unwrap_or_else(|| st.encode.preset.clone());
     let args = EncodeArgs {
         w: target.width,
@@ -191,7 +191,7 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
         }
     }
     stats.warnings.append(&mut renderer.warnings);
-    progress(Progress::Stage { stage: Stage::Finalize });
+    progress(Progress::Finalize);
     enc.finish()?;
     stats.elapsed = started.elapsed().as_secs_f64();
     Ok(stats)

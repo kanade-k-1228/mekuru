@@ -4,7 +4,6 @@ use crate::ir::{ElemId, ElemKind, Script};
 use crate::lang::diag::Diag;
 use crate::media::pcm::{self, Pcm};
 use crate::media::probe::{self, MediaProbe};
-use crate::progress::{Progress, Stage};
 use crate::util::{file_stamp, hash::sha256_hex};
 use cache::Cache;
 use rayon::prelude::*;
@@ -23,8 +22,7 @@ pub struct Prepared {
     pub diags: Vec<Diag>,
 }
 
-pub fn prepare(script: &Script, cache: &Cache, progress: &dyn Fn(Progress)) -> Prepared {
-    progress(Progress::Stage { stage: Stage::Prepare });
+pub fn prepare(script: &Script, cache: &Cache) -> Prepared {
     let mut out = inspect(script);
     let sources: std::collections::HashSet<_> = script
         .elems
