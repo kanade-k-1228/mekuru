@@ -4,7 +4,7 @@ use std::path::Path;
 use tiny_skia::Pixmap;
 
 pub fn dims(path: &Path) -> Result<(u32, u32)> {
-    use crate::util::lru::{FileStamp, Lru, file_stamp};
+    use crate::util::{FileStamp, file_stamp, lru::Lru};
     use std::sync::{LazyLock, Mutex};
     static CACHE: LazyLock<Mutex<Lru<FileStamp, (u32, u32)>>> = LazyLock::new(|| Mutex::new(Lru::new(1024 * 1024)));
     let key = file_stamp(path);

@@ -1,10 +1,5 @@
 //! Small, byte-budgeted caches. Values in use may outlive eviction through Arc.
-use std::{
-    collections::HashMap,
-    hash::Hash,
-    path::{Path, PathBuf},
-    time::SystemTime,
-};
+use std::{collections::HashMap, hash::Hash};
 
 pub struct Lru<K, V> {
     entries: HashMap<K, (V, usize, u64)>,
@@ -46,11 +41,6 @@ impl<K: Eq + Hash + Clone, V> Lru<K, V> {
         self.bytes += bytes;
         self.entries.insert(key, (value, bytes, self.clock));
     }
-}
-
-pub type FileStamp = (PathBuf, Option<(u64, Option<SystemTime>)>);
-pub fn file_stamp(path: &Path) -> FileStamp {
-    (path.to_path_buf(), std::fs::metadata(path).ok().map(|m| (m.len(), m.modified().ok())))
 }
 
 #[cfg(test)]

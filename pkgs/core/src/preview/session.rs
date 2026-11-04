@@ -3,10 +3,7 @@ use super::{
     identity::Identity,
     *,
 };
-use crate::util::{
-    hash::sha256_hex,
-    lru::{Lru, file_stamp},
-};
+use crate::util::{file_stamp, hash::sha256_hex, lru::Lru};
 use serde::Serialize;
 use std::{collections::HashMap, sync::Arc, time::Instant};
 

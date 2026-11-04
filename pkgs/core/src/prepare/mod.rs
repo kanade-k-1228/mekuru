@@ -5,7 +5,7 @@ use crate::lang::diag::Diag;
 use crate::media::pcm::{self, Pcm};
 use crate::media::probe::{self, MediaProbe};
 use crate::progress::{Progress, Stage};
-use crate::util::hash::sha256_hex;
+use crate::util::{file_stamp, hash::sha256_hex};
 use cache::Cache;
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -21,12 +21,6 @@ pub struct MediaAsset {
 pub struct Prepared {
     pub media: HashMap<ElemId, MediaAsset>,
     pub diags: Vec<Diag>,
-}
-
-fn file_stamp(p: &Path) -> Option<(u64, i64)> {
-    let m = std::fs::metadata(p).ok()?;
-    let mtime = m.modified().ok()?.duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_millis() as i64);
-    Some((m.len(), mtime))
 }
 
 pub fn prepare(script: &Script, cache: &Cache, progress: &dyn Fn(Progress)) -> Prepared {
@@ -114,8 +108,11 @@ pub fn inspect(script: &Script) -> Prepared {
 }
 
 fn prepare_pcm(p: &Path, cache: &Cache) -> anyhow::Result<Pcm> {
-    let (len, mtime) = file_stamp(p).ok_or_else(|| anyhow::anyhow!("file not found: {}", p.display()))?;
-    let key = sha256_hex(format!("{}|{len}|{mtime}", p.display()).as_bytes());
+    let stamp = file_stamp(p);
+    if stamp.1.is_none() {
+        anyhow::bail!("file not found: {}", p.display());
+    }
+    let key = sha256_hex(format!("{stamp:?}").as_bytes());
     let dst = cache.pcm(&key);
     if dst.exists() { Pcm::open(&dst) } else { pcm::convert(p, &dst) }
 }
