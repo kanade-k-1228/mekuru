@@ -65,8 +65,7 @@ pub enum Op {
     },
     Image {
         src: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        revision: Option<String>,
+        revision: String,
         bounds: [f32; 4],
         transform: Option<[f32; 6]>,
     },
@@ -83,8 +82,7 @@ pub struct Stroke {
 
 #[derive(Clone, PartialEq, Serialize)]
 pub struct Media {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub(super) revision: Option<String>,
+    pub(super) revision: String,
     pub(super) src: String,
     pub(super) gain: f32,
     pub(super) map: MediaMap,

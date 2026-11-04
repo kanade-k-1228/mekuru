@@ -37,23 +37,6 @@ pub fn compile(path: &Path, root: Option<&Path>, xml: String) -> Compilation {
     }
 }
 
-struct SceneCompilation {
-    preview: Option<Preview>,
-    diagnostics: Vec<Diagnostic>,
-}
-
-fn compile_internal(path: &Path, root: Option<&Path>, xml: String, worker: &mut Session) -> SceneCompilation {
-    let compilation = crate::analysis::Compilation::inspect(path, root, xml);
-    let preview = compilation
-        .resolved
-        .as_ref()
-        .map(|r| scene(&compilation.project, &r.prepared, &r.schedule, worker));
-    SceneCompilation {
-        preview,
-        diagnostics: compilation.diagnostics(),
-    }
-}
-
 fn file_src(path: &Path, root: &Path) -> String {
     path.strip_prefix(root).unwrap_or(path).to_string_lossy().replace('\\', "/")
 }
@@ -90,7 +73,6 @@ fn path_op(p: PaintedPath) -> Op {
             PathSegment::Close => d.push('Z'),
         }
     }
-    let [r, g, b, a] = p.color;
     let stroke = p.stroke.map(|s| Stroke {
         width: s.width,
         line_cap: match s.line_cap {
@@ -107,12 +89,13 @@ fn path_op(p: PaintedPath) -> Op {
     });
     Op::Path {
         d,
-        color: format!("#{r:02x}{g:02x}{b:02x}{a:02x}"),
+        color: color(p.color),
         stroke,
     }
 }
 
 fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &mut Vec<Op>) {
+    let transform = (!t.is_identity()).then_some([t.sx, t.ky, t.kx, t.sy, t.tx, t.ty]);
     let paths = match op {
         ViewOp::Transformed(m, inner) => return draw_op(inner, t.pre_concat(*m), fonts, base_dir, ops),
         ViewOp::Rect(r) => shapes::rect_paths(r, 1.0),
@@ -146,15 +129,15 @@ fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &m
                 line_height: st.line_height,
                 stroke: st.stroke.map(color),
                 stroke_width: st.stroke_width,
-                transform: (!t.is_identity()).then_some([t.sx, t.ky, t.kx, t.sy, t.tx, t.ty]),
+                transform,
             });
             vec![]
         }
         ViewOp::Image(img) => {
-            let transform = (!t.is_identity()).then_some([t.sx, t.ky, t.kx, t.sy, t.tx, t.ty]);
+            let src = file_src(&img.path, base_dir);
             ops.push(Op::Image {
-                revision: None,
-                src: file_src(&img.path, base_dir),
+                revision: session::revision(&base_dir.join(&src)),
+                src,
                 bounds: [img.x, img.y, img.w, img.h],
                 transform,
             });
@@ -207,7 +190,7 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, worker: &m
             _ => {}
         }
         let media = e.kind.media().zip(et.src.as_ref()).map(|(m, src)| Media {
-            revision: Some(session::revision(&m.path)),
+            revision: session::revision(&m.path),
             src: file_src(&m.path, &script.base_dir),
             gain: if prepared.media.get(&e.id).is_some_and(|m| m.probe.has_audio) {
                 m.volume
