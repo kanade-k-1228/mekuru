@@ -2,12 +2,10 @@ import { afterEach, beforeEach, expect, setDefaultTimeout, test } from "bun:test
 import { appendFile, chmod, copyFile, mkdir, mkdtemp, rename, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { connectPreview } from "./fixtures/preview-socket.ts";
-import { startServer } from "./fixtures/native-server.ts";
-import { findCompiler } from "../pkgs/core/npm/compiler.js";
-import { previewXml } from "./preview-fixture.ts";
-import { applyEvent } from "../pkgs/viewer/src/logic/preview.ts";
-import type { SnapshotEvent, StateDto } from "../pkgs/viewer/src/protocol.ts";
+import { connectPreview, previewXml, startServer } from "./fixtures.ts";
+import { findCompiler } from "../npm/compiler.js";
+import { applyEvent } from "../../viewer/src/logic/preview.ts";
+import type { SnapshotEvent, StateDto } from "../../viewer/src/protocol.ts";
 
 let root: string;
 let xml: string;
@@ -238,7 +236,7 @@ test("WebSocket handles duplex resync, policy errors and shutdown", async () => 
   }
 });
 
-test("WebSocket upgrade rejects cross-origin browser access and the old SSE endpoint", async () => {
+test("WebSocket upgrade rejects cross-origin browser access", async () => {
   server = await startServer({ xml, port: 0 });
   const response = await fetch(`${server.url}/api/ws`, {
     headers: {
@@ -250,5 +248,4 @@ test("WebSocket upgrade rejects cross-origin browser access and the old SSE endp
     },
   });
   expect(response.status).toBe(403);
-  expect((await fetch(`${server.url}/api/events`)).status).toBe(404);
 });

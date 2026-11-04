@@ -89,7 +89,7 @@ Preview text uses HTML/CSS from compiler-resolved positions, widths and styles; 
 
 Asset-only watching, incremental XML/layout/timing, and playback optimization are outside this path. Asset changes are validated on the next compile; restart the server after installing system fonts.
 
-`bun scripts/preview-latency.ts 500 10 ja` launches the native server and measures atomic file writing through receipt of a ready WebSocket message, including settling and compilation but excluding browser rendering. `MEKURU_COMPILER` selects the executable. Initial loading transfers a full snapshot.
+`bun pkgs/core/test/preview-latency.ts 500 10 ja` launches the native server and measures atomic file writing through receipt of a ready WebSocket message, including settling and compilation but excluding browser rendering. `MEKURU_COMPILER` selects the executable. Initial loading transfers a full snapshot.
 
 Tests cover a relocated binary with no Bun on PATH, embedded UI/assets, range requests, traversal rejection, snapshot/patch reconstruction, invalid XML recovery, chunked/atomic saves, newest-input coalescing, slow-subscriber resynchronization and `--run` shutdown. The CI platform matrix runs the real native server tests after embedding the viewer.
 

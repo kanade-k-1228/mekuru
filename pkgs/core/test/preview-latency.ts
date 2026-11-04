@@ -1,11 +1,8 @@
 /** Includes file writing, settling, compilation and WebSocket delivery. Run after building the compiler. */
-import { connectPreview } from "./fixtures/preview-socket.ts";
-import { previewXml } from "./preview-fixture.ts";
 import { mkdtemp, rename, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-
-import { startServer } from "./fixtures/native-server.ts";
+import { connectPreview, previewXml, startServer } from "./fixtures.ts";
 const count = Number(process.argv[2] ?? 500),
   edits = Number(process.argv[3] ?? 10);
 const language = process.argv[4] ?? "en";
