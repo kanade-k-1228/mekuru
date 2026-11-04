@@ -1,5 +1,5 @@
 import type { At, FC, Length, Node } from "@mekuru/types";
-import { psdPortrait, Subtitle as NarratorSubtitle } from "@mekuru/narrator";
+import { portrait, Subtitle as NarratorSubtitle } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
 import { Voicevox, zunda } from "@mekuru/voicevox";
@@ -112,8 +112,8 @@ const FACES = {
 } satisfies Record<string, LayerProps>;
 export type FaceName = keyof typeof FACES;
 
-const zundamon = psdPortrait<LayerProps>({ src: SRC, x: 1560, y: 1000, h: 960, z: 10 });
-const big = psdPortrait<LayerProps>({ src: SRC, x: 1510, y: 1140, h: 1150, z: 30, slot: "portrait:big" });
+const zundamon = portrait<LayerProps>({ src: SRC, x: 1560, y: 1000, h: 960, z: 10 });
+const big = portrait<LayerProps>({ src: SRC, x: 1510, y: 1140, h: 1150, z: 30, slot: "portrait:big" });
 export const ZundamonStand = zundamon.Stand;
 
 const voice = { ...zunda, name: "ずんだもん", gap: 6, reading: READING };

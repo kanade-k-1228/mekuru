@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "width": 600,
   "height": 900,
   "layers": [
@@ -9,38 +9,42 @@
       "options": [
         {
           "name": "normal",
-          "src": "face/normal.png"
+          "frames": [
+            "face/normal.png"
+          ]
         },
         {
           "name": "smile",
-          "src": "face/smile.png"
+          "frames": [
+            "face/smile.png"
+          ]
         },
         {
           "name": "wink",
-          "src": "face/wink.png"
+          "frames": [
+            "face/wink.png"
+          ]
         },
         {
           "name": "surprise",
-          "src": "face/surprise.png"
+          "frames": [
+            "face/surprise.png"
+          ]
         },
         {
           "name": "worry",
-          "src": "face/worry.png"
+          "frames": [
+            "face/worry.png"
+          ]
         },
         {
           "name": "smug",
-          "src": "face/smug.png"
+          "frames": [
+            "face/smug.png"
+          ]
         }
       ],
       "initial": "normal"
     }
-  ],
-  "files": [
-    "face/normal.png",
-    "face/smile.png",
-    "face/wink.png",
-    "face/surprise.png",
-    "face/worry.png",
-    "face/smug.png"
   ]
 }
