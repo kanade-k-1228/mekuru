@@ -37,11 +37,13 @@ Choose speech engines during setup, then edit `src/main.tsx`. `<seq>` plays elem
 
 ## Speech engines
 
-| Package                                                       | Engines                         |
-| ------------------------------------------------------------- | ------------------------------- |
-| [`@mekuru/voicevox`](pkgs/voicevox/README.md)                 | VOICEVOX, AivisSpeech, SHAREVOX |
-| [`@mekuru/voisona`](pkgs/voisona/README.md)                   | VoiSona Talk                    |
-| [`@mekuru/coeiroink`](pkgs/coeiroink/README.md)               | COEIROINK                       |
-| [`@mekuru/style-bert-vits2`](pkgs/style-bert-vits2/README.md) | Style-Bert-VITS2                |
+[@mekuru/speech](pkgs/speech/README.md) has a component for each engine, imported from the engine's path:
+
+| Import                                                                      | Component        | Engines                         |
+| --------------------------------------------------------------------------- | ---------------- | ------------------------------- |
+| [`@mekuru/speech/voicevox`](pkgs/speech/README.md#voicevox)                 | `Voicevox`       | VOICEVOX, AivisSpeech, SHAREVOX |
+| [`@mekuru/speech/voisona`](pkgs/speech/README.md#voisona-talk)              | `Voisona`        | VoiSona Talk                    |
+| [`@mekuru/speech/coeiroink`](pkgs/speech/README.md#coeiroink)               | `Coeiroink`      | COEIROINK                       |
+| [`@mekuru/speech/style-bert-vits2`](pkgs/speech/README.md#style-bert-vits2) | `StyleBertVits2` | Style-Bert-VITS2                |
 
 See [@mekuru/narrator](pkgs/narrator/README.md) to compose your own narrator from speech, a portrait, and subtitles.

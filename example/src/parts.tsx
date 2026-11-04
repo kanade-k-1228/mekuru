@@ -3,7 +3,7 @@ import { portrait, Subtitle as NarratorSubtitle } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
 import { subtitleText } from "@mekuru/speech";
-import { Voicevox, zunda } from "@mekuru/voicevox";
+import { Voicevox, zunda } from "@mekuru/speech/voicevox";
 import type { LayerProps } from "../tutorial/assets/character/zundamon/portrait";
 
 type Children = { children?: Node };

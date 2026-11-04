@@ -236,7 +236,7 @@ Paths are relative to the project folder. This example pauses for 60 frames at s
 - `label`: timeline description for `<audio>`.
 - `<video>` sizing follows `<image>`: preserve the source aspect ratio; without `w` or `h`, use the source dimensions, shrinking to fit if necessary.
 - `<audio>` takes no space, including in a `<row>`.
-- Speech components also produce `<audio>`: [VOICEVOX](../../pkgs/voicevox/README.md), [COEIROINK](../../pkgs/coeiroink/README.md), [Style-Bert-VITS2](../../pkgs/style-bert-vits2/README.md), and [VoiSona Talk](../../pkgs/voisona/README.md).
+- Speech components also produce `<audio>`: [VOICEVOX](../../pkgs/speech/README.md#voicevox), [COEIROINK](../../pkgs/speech/README.md#coeiroink), [Style-Bert-VITS2](../../pkgs/speech/README.md#style-bert-vits2), and [VoiSona Talk](../../pkgs/speech/README.md#voisona-talk).
 
 ```tsx
 // Excerpt from example/src/main.tsx

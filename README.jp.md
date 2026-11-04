@@ -37,11 +37,13 @@ bun run build   # video.mp4
 
 ## 音声合成エンジン
 
-| パッケージ                                                       | エンジン                        |
-| ---------------------------------------------------------------- | ------------------------------- |
-| [`@mekuru/voicevox`](pkgs/voicevox/README.jp.md)                 | VOICEVOX・AivisSpeech・SHAREVOX |
-| [`@mekuru/voisona`](pkgs/voisona/README.jp.md)                   | VoiSona Talk                    |
-| [`@mekuru/coeiroink`](pkgs/coeiroink/README.jp.md)               | COEIROINK                       |
-| [`@mekuru/style-bert-vits2`](pkgs/style-bert-vits2/README.jp.md) | Style-Bert-VITS2                |
+[@mekuru/speech](pkgs/speech/README.jp.md) がエンジンごとの部品を提供します。部品はエンジンごとのパスから import します。
+
+| import 元                                                                      | 部品             | エンジン                        |
+| ------------------------------------------------------------------------------ | ---------------- | ------------------------------- |
+| [`@mekuru/speech/voicevox`](pkgs/speech/README.jp.md#voicevox)                 | `Voicevox`       | VOICEVOX・AivisSpeech・SHAREVOX |
+| [`@mekuru/speech/voisona`](pkgs/speech/README.jp.md#voisona-talk)              | `Voisona`        | VoiSona Talk                    |
+| [`@mekuru/speech/coeiroink`](pkgs/speech/README.jp.md#coeiroink)               | `Coeiroink`      | COEIROINK                       |
+| [`@mekuru/speech/style-bert-vits2`](pkgs/speech/README.jp.md#style-bert-vits2) | `StyleBertVits2` | Style-Bert-VITS2                |
 
 独自のナレータ（音声＋立ち絵＋字幕）の組み立てには [@mekuru/narrator](pkgs/narrator/README.jp.md) を参照してください。

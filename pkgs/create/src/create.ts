@@ -1,7 +1,7 @@
 import { packageName, keepLines } from "./template.ts";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { ENGINE_NAMES, ENGINES, SITE_NAMES, SITES, type Engine, type Site } from "./choices.ts";
+import { ENGINE_NAMES, SITE_NAMES, SITES, type Engine, type Site } from "./choices.ts";
 
 const pkgDir = join(import.meta.dir, "..");
 const TEMPLATE = join(pkgDir, "template");
@@ -31,7 +31,7 @@ export const create = async (dir: string, { force = false, engines = [], upload 
     pkg.scripts[`upload:${site}`] = SITES[site].bin;
     await Bun.write(join(target, "configs", `${site}.yaml`), SITES[site].settings(pkg.name));
   }
-  const deps = [...Object.keys(pkg.devDependencies), ...selected.map((e) => ENGINES[e].pkg), ...sites.map((s) => SITES[s].pkg)];
+  const deps = [...Object.keys(pkg.devDependencies), ...(selected.length > 0 ? ["@mekuru/speech"] : []), ...sites.map((s) => SITES[s].pkg)];
   for (const name of deps) if (name.startsWith("@mekuru/")) pkg.devDependencies[name] = `^${VERSION}`;
   pkg.devDependencies = Object.fromEntries(Object.entries(pkg.devDependencies).sort(([a], [b]) => (a < b ? -1 : 1)));
   await Bun.write(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);

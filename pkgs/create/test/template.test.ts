@@ -13,9 +13,9 @@ test("generated projects include the selected engines and upload commands", asyn
       "@mekuru/audio",
       "@mekuru/core",
       "@mekuru/narrator",
+      "@mekuru/speech",
       "@mekuru/types",
       "@mekuru/upload",
-      "@mekuru/voicevox",
       "@types/bun",
       "typescript",
     ]);

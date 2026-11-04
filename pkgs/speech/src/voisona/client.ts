@@ -1,4 +1,4 @@
-import { cached, type Engine } from "@mekuru/speech";
+import { cached, type Engine } from "../engine.ts";
 import type { VoisonaProps } from "./index.tsx";
 
 const API = "/api/talk/v1";

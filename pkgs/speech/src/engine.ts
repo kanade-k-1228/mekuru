@@ -1,5 +1,5 @@
 import { joinWavs } from "@mekuru/audio/wav";
-import { defineSpeech, prepare, type SpeechProps } from "./index.tsx";
+import { defineSpeech, prepare, type SpeechProps } from "./speech.tsx";
 
 /** The props of every component made with `defineEngine()`. */
 export interface EngineProps extends SpeechProps {

@@ -12,7 +12,7 @@ bun install
 
 端末では未指定の項目を対話で選びます。作成後に ffmpeg を確認します。
 
-- `--engine <engines>`: 音声合成エンジンをカンマ区切りで指定（`voicevox,aivisspeech,sharevox,voisona,coeiroink,style-bert-vits2`）。そのパッケージを追加。既定: なし。
+- `--engine <engines>`: 音声合成エンジンをカンマ区切りで指定（`voicevox,aivisspeech,sharevox,voisona,coeiroink,style-bert-vits2`）。`@mekuru/speech` を追加。既定: なし。
 - `--upload <sites>`: `youtube,niconico` の投稿コマンドと YAML 設定を追加。既定: なし。
 - `--yes`: 対話せず既定値を使用。端末以外からの実行も同様。
 - `--force`: 空でないフォルダへの作成を許可。

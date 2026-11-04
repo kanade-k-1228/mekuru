@@ -47,8 +47,8 @@ const server = Bun.serve({
 
 let dir = "";
 const before = process.cwd();
-let Voisona: typeof import("../src/index.tsx").Voisona;
-type Props = import("../src/index.tsx").VoisonaProps;
+let Voisona: typeof import("../src/voisona/index.tsx").Voisona;
+type Props = import("../src/voisona/index.tsx").VoisonaProps;
 const say = (props: Props) =>
   toXml(
     <mekuru size="320x180">
@@ -60,7 +60,7 @@ beforeAll(async () => {
   dir = await mkdtemp(join(tmpdir(), "mekuru-voisona-"));
   process.chdir(dir);
   process.env.MEKURU_VOISONA_URL = `http://localhost:${server.port}`;
-  ({ Voisona } = await import("../src/index.tsx"));
+  ({ Voisona } = await import("../src/voisona/index.tsx"));
 });
 
 afterAll(async () => {

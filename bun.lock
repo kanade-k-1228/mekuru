@@ -19,7 +19,6 @@
         "@mekuru/speech": "workspace:*",
         "@mekuru/types": "workspace:*",
         "@mekuru/upload": "workspace:*",
-        "@mekuru/voicevox": "workspace:*",
         "@types/bun": "1.4.2",
         "ag-psd": "^31.0.3",
         "sharp": "^0.35.5",
@@ -34,13 +33,6 @@
       },
       "peerDependencies": {
         "@mekuru/types": "workspace:^",
-      },
-    },
-    "pkgs/coeiroink": {
-      "name": "@mekuru/coeiroink",
-      "version": "0.0.0",
-      "dependencies": {
-        "@mekuru/speech": "workspace:^",
       },
     },
     "pkgs/core": {
@@ -93,13 +85,6 @@
         "@mekuru/types": "workspace:^",
       },
     },
-    "pkgs/style-bert-vits2": {
-      "name": "@mekuru/style-bert-vits2",
-      "version": "0.0.0",
-      "dependencies": {
-        "@mekuru/speech": "workspace:^",
-      },
-    },
     "pkgs/types": {
       "name": "@mekuru/types",
       "version": "0.0.0",
@@ -136,23 +121,6 @@
         "@vitejs/plugin-react": "6.1.2",
         "tailwindcss": "4.3.3",
         "vite": "8.3.0",
-      },
-    },
-    "pkgs/voicevox": {
-      "name": "@mekuru/voicevox",
-      "version": "0.0.0",
-      "dependencies": {
-        "@mekuru/speech": "workspace:^",
-      },
-    },
-    "pkgs/voisona": {
-      "name": "@mekuru/voisona",
-      "version": "0.0.0",
-      "dependencies": {
-        "@mekuru/speech": "workspace:^",
-      },
-      "devDependencies": {
-        "@mekuru/types": "workspace:*",
       },
     },
   },
@@ -247,8 +215,6 @@
 
     "@mekuru/audio": ["@mekuru/audio@workspace:pkgs/audio"],
 
-    "@mekuru/coeiroink": ["@mekuru/coeiroink@workspace:pkgs/coeiroink"],
-
     "@mekuru/core": ["@mekuru/core@workspace:pkgs/core"],
 
     "@mekuru/create": ["@mekuru/create@workspace:pkgs/create"],
@@ -257,17 +223,11 @@
 
     "@mekuru/speech": ["@mekuru/speech@workspace:pkgs/speech"],
 
-    "@mekuru/style-bert-vits2": ["@mekuru/style-bert-vits2@workspace:pkgs/style-bert-vits2"],
-
     "@mekuru/types": ["@mekuru/types@workspace:pkgs/types"],
 
     "@mekuru/upload": ["@mekuru/upload@workspace:pkgs/upload"],
 
     "@mekuru/viewer": ["@mekuru/viewer@workspace:pkgs/viewer"],
-
-    "@mekuru/voicevox": ["@mekuru/voicevox@workspace:pkgs/voicevox"],
-
-    "@mekuru/voisona": ["@mekuru/voisona@workspace:pkgs/voisona"],
 
     "@oxc-project/types": ["@oxc-project/types@0.151.0", "", {}, "sha512-J1yXrIlNDZVzE3ada310xeAw7nH8yCAyLPuUIsjKatFPmfn5bS1oW+cM+QsGOtVWd5nhSpbwZWx/rue+r5Z+PA=="],
 

@@ -12,7 +12,7 @@ bun install
 
 Unspecified choices are prompted in a terminal. The command checks ffmpeg after creation.
 
-- `--engine <engines>`: Comma-separated speech engines: `voicevox,aivisspeech,sharevox,voisona,coeiroink,style-bert-vits2`. Adds their packages. Default: none.
+- `--engine <engines>`: Comma-separated speech engines: `voicevox,aivisspeech,sharevox,voisona,coeiroink,style-bert-vits2`. Adds `@mekuru/speech`. Default: none.
 - `--upload <sites>`: Add upload scripts and YAML settings for `youtube,niconico`. Default: none.
 - `--yes`: Use defaults without prompts; also the behavior outside a terminal.
 - `--force`: Allow creation in a nonempty directory.

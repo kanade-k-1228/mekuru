@@ -1,4 +1,4 @@
-import { cached, type Engine } from "@mekuru/speech";
+import { cached, type Engine } from "../engine.ts";
 import type { VoicevoxProps } from "./index.tsx";
 
 export const client: Engine<VoicevoxProps>["create"] = (call, url) => {

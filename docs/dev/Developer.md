@@ -9,8 +9,7 @@
 - [pkgs/viewer](../../pkgs/viewer/README.md): React viewer, built into `pkgs/core/viewer/`
 - [pkgs/create](../../pkgs/create/README.md): Project generator
 - [pkgs/audio](../../pkgs/audio/README.md): Audio resources and WAV processing
-- [pkgs/speech](../../pkgs/speech/README.md): API for implementing speech components
-- `pkgs/voicevox`, `coeiroink`, `style-bert-vits2`, `voisona`: Speech engine integrations
+- [pkgs/speech](../../pkgs/speech/README.md): Speech components for VOICEVOX, COEIROINK, Style-Bert-VITS2 and VoiSona Talk, and the API for adding an engine
 - [pkgs/narrator](../../pkgs/narrator/README.md): Portraits, lip sync, subtitles, and PSD preparation for custom narrators
 - [pkgs/upload](../../pkgs/upload/README.md): Upload commands for YouTube and niconico
 - [example](../../example/README.md): Tutorial and explainer video (Japanese)
@@ -112,4 +111,4 @@ Viewer state lives in Jotai atoms; `logic/` does not depend on `view/`. Componen
 
 ## Package boundaries
 
-`types` owns JSX and XML build context; `core` is the native compiler and preview server. `audio` owns audio resources and WAV processing; `speech` owns synthesis preparation and caches. Engine packages own their HTTP APIs. `narrator` composes portraits and subtitles. `upload` owns the upload commands. The preview contract is typed in [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts); the native server implements it in Rust.
+`types` owns JSX and XML build context; `core` is the native compiler and preview server. `audio` owns audio resources and WAV processing; `speech` owns synthesis preparation, caches and each engine's HTTP API. `narrator` composes portraits and subtitles. `upload` owns the upload commands. The preview contract is typed in [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts); the native server implements it in Rust.
