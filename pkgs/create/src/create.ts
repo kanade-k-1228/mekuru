@@ -10,7 +10,6 @@ export const VERSION: string = (await Bun.file(join(pkgDir, "package.json")).jso
 
 export interface CreateOptions {
   force?: boolean;
-  mekuru?: string;
   engines?: readonly Engine[];
   upload?: readonly Site[];
 }
@@ -27,7 +26,7 @@ const copy = async (from: string, to: string, chosen: readonly string[]): Promis
   }
 };
 
-export const create = async (dir: string, { force = false, mekuru = `^${VERSION}`, engines = [], upload = [] }: CreateOptions = {}): Promise<string> => {
+export const create = async (dir: string, { force = false, engines = [], upload = [] }: CreateOptions = {}): Promise<string> => {
   const target = resolve(dir);
   if (!isEmptyDir(target) && !force) throw new Error(`${dir} is not empty (use --force to write into it anyway)`);
   const selected = ENGINE_NAMES.filter((e) => engines.includes(e));
@@ -42,7 +41,6 @@ export const create = async (dir: string, { force = false, mekuru = `^${VERSION}
   }
   const deps = [...Object.keys(pkg.devDependencies), ...selected.map((e) => ENGINES[e].pkg), ...sites.map((s) => SITES[s].pkg)];
   for (const name of deps) if (name.startsWith("@mekuru/")) pkg.devDependencies[name] = `^${VERSION}`;
-  pkg.devDependencies["@mekuru/types"] = mekuru;
   pkg.devDependencies = Object.fromEntries(Object.entries(pkg.devDependencies).sort(([a], [b]) => (a < b ? -1 : 1)));
   await Bun.write(pkgFile, `${JSON.stringify(pkg, null, 2)}\n`);
   const readme = join(target, "README.md");
