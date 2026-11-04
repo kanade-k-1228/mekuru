@@ -1,7 +1,7 @@
-import { defineEngine, type SpeechProps } from "@mekuru/speech";
+import { defineEngine, type EngineProps } from "@mekuru/speech";
 import { client } from "./client.ts";
 
-export interface CoeiroinkProps extends SpeechProps {
+export interface CoeiroinkProps extends EngineProps {
   speaker: number | string;
   speed?: number;
   pitch?: number;
@@ -10,7 +10,6 @@ export interface CoeiroinkProps extends SpeechProps {
   pre?: number;
   post?: number;
   pause?: number;
-  url?: string;
 }
 
 export const Coeiroink = defineEngine<CoeiroinkProps>({

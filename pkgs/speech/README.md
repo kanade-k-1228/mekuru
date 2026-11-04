@@ -87,11 +87,10 @@ Draft preparation returns an estimated source and queues synthesis; the final pa
 Makes the component for an engine with an HTTP API, like the bundled ones (see [VOICEVOX](../voicevox/src/index.tsx)):
 
 ```tsx
-import { defineEngine, type SpeechProps } from "@mekuru/speech";
+import { defineEngine, type EngineProps } from "@mekuru/speech";
 
-interface MySpeechProps extends SpeechProps {
+interface MySpeechProps extends EngineProps {
   speaker: number;
-  url?: string;
 }
 
 export const MySpeech = defineEngine<MySpeechProps>({
@@ -107,10 +106,11 @@ export const MySpeech = defineEngine<MySpeechProps>({
 });
 ```
 
+- The props extend `EngineProps`, which adds `url` and `max-chars` to `SpeechProps`.
 - The server is the `url` prop, else the `env` environment variable, else `defaultUrl`. Each server gets its own `create(call, url)` reader and runs `concurrency` lines at a time.
 - `call(path, init)` sends a request to the server with a five-minute timeout. If the server cannot be reached, the error shows `help`; an HTTP error shows `name`, the path and the status.
 - The reader gets `voice`, the props other than `SpeechProps` and `url`, which is also the cache key, and returns WAV bytes.
-- With `maxChars`, lines longer than the `max-chars` prop (default `maxChars`) are split near punctuation, read part by part and joined.
+- Lines longer than the `max-chars` prop (default `maxChars`; no limit when neither is set) are split near punctuation, read part by part and joined.
 - `who(props)` is the speaker's name when `name` is not set.
 - `cached(load)` keeps what a reader loads once per server, such as the speaker list. A failed load is retried on the next line, and calling the result with `true` loads it again.
 

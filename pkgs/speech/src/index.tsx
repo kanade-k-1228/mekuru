@@ -5,7 +5,7 @@ import { fps, isDraft, waitFor, type At, type JSX, type Node, type Time } from "
 import { speechText } from "./text.tsx";
 
 export { subtitleText } from "./text.tsx";
-export { cached, defineEngine, type Engine } from "./engine.ts";
+export { cached, defineEngine, type Engine, type EngineProps } from "./engine.ts";
 
 export interface SpeechProps {
   children?: Node;

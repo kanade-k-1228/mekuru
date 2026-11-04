@@ -96,6 +96,7 @@ AivisSpeech・SHAREVOX のキャラクターは、`url` を `MEKURU_AIVISSPEECH_
 - `volume`: 合成時の音量（`volumeScale`）。
 - `pre`・`post`: 読み上げの前後の無音（秒）。
 - `pause-scale`: 間の長さの倍率（`pauseLengthScale`）。
+- `max-chars`: 1回の合成リクエストの最大文字数。長いセリフは句読点の近くで分割し、一つの WAV に結合します。既定は制限なし。
 - `url`: エンジンのベース URL。既定は `http://127.0.0.1:50021`。
 
 省略した合成設定は `/audio_query` の値を使います。互換エンジンは `url` に AivisSpeech の `http://127.0.0.1:10101`、SHAREVOX の `http://127.0.0.1:50025` を指定し、そのエンジンの `/speakers` から話者を選びます。

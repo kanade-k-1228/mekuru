@@ -1,7 +1,7 @@
-import { defineEngine, type SpeechProps } from "@mekuru/speech";
+import { defineEngine, type EngineProps } from "@mekuru/speech";
 import { client } from "./client.ts";
 
-export interface VoisonaProps extends SpeechProps {
+export interface VoisonaProps extends EngineProps {
   voice: string;
   version?: string;
   language?: string;
@@ -12,8 +12,6 @@ export interface VoisonaProps extends SpeechProps {
   huskiness?: number;
   intonation?: number;
   style?: Readonly<Record<string, number>>;
-  "max-chars"?: number;
-  url?: string;
 }
 
 export const Voisona = defineEngine<VoisonaProps>({

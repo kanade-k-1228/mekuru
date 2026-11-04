@@ -87,11 +87,10 @@ export const createSpeech = (synthesize: Synthesize) =>
 同梱のエンジンと同じく、HTTP API を持つエンジンの部品を作ります（例: [VOICEVOX](../voicevox/src/index.tsx)）。
 
 ```tsx
-import { defineEngine, type SpeechProps } from "@mekuru/speech";
+import { defineEngine, type EngineProps } from "@mekuru/speech";
 
-interface MySpeechProps extends SpeechProps {
+interface MySpeechProps extends EngineProps {
   speaker: number;
-  url?: string;
 }
 
 export const MySpeech = defineEngine<MySpeechProps>({
@@ -107,10 +106,11 @@ export const MySpeech = defineEngine<MySpeechProps>({
 });
 ```
 
+- 属性は `EngineProps`（`SpeechProps` に `url` と `max-chars` を加えたもの）を拡張します。
 - 接続先は `url` 属性、なければ環境変数 `env`、なければ `defaultUrl` です。接続先ごとに `create(call, url)` で読み上げ関数を作り、同時に `concurrency` 本まで合成します。
 - `call(path, init)` は接続先にリクエストを送ります（タイムアウトは5分）。接続できなければ `help` を、HTTP エラーなら `name`・パス・ステータスをエラーに含めます。
 - 読み上げ関数は `voice`（`SpeechProps` と `url` 以外の属性。キャッシュのキーにもなる）とテキストを受け取り、WAV のバイト列を返します。
-- `maxChars` を指定すると、`max-chars` 属性（既定は `maxChars`）より長いセリフを句読点の近くで分割して順に読み、結合します。
+- `max-chars` 属性（既定は `maxChars`。どちらもなければ制限なし）より長いセリフは、句読点の近くで分割して順に読み、結合します。
 - `who(props)` は `name` を省略したときの話者名です。
 - `cached(load)` は話者一覧など、読み上げ関数が接続先ごとに一度だけ読むものを保持します。読み込みに失敗したら次のセリフで読み直します。戻り値の関数に `true` を渡すと必ず読み直します。
 

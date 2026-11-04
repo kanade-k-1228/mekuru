@@ -82,6 +82,7 @@ import { Coeiroink, tsukuyomi } from "@mekuru/coeiroink";
 - `volume`: Synthesis volume multiplier. Default: `1`.
 - `pre`, `post`: Silence before and after speech, in seconds. Default: `0.1` each.
 - `pause`: Pause length for punctuation such as `、`, in seconds. Omitted by default, leaving it to the engine.
+- `max-chars`: Maximum characters per synthesis request; longer lines are split near punctuation and joined into one WAV. Default: no limit.
 - `url`: Base URL; default `http://127.0.0.1:50032`.
 
 Unknown speakers are reported with the available speaker/style names. Check `/v1/speakers` and restart the app after downloading a voice.

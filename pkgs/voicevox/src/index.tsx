@@ -1,7 +1,7 @@
-import { defineEngine, type SpeechProps } from "@mekuru/speech";
+import { defineEngine, type EngineProps } from "@mekuru/speech";
 import { client } from "./client.ts";
 
-export interface VoicevoxProps extends SpeechProps {
+export interface VoicevoxProps extends EngineProps {
   speaker: number | string;
   speed?: number;
   pitch?: number;
@@ -10,7 +10,6 @@ export interface VoicevoxProps extends SpeechProps {
   pre?: number;
   post?: number;
   "pause-scale"?: number;
-  url?: string;
 }
 
 export const Voicevox = defineEngine<VoicevoxProps>({

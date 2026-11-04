@@ -1,8 +1,11 @@
 import { joinWavs } from "@mekuru/audio/wav";
 import { defineSpeech, prepare, type SpeechProps } from "./index.tsx";
 
-interface EngineProps extends SpeechProps {
+/** The props of every component made with `defineEngine()`. */
+export interface EngineProps extends SpeechProps {
+  /** Base URL of the server. */
   url?: string;
+  /** Lines longer than this are split, read part by part and joined. */
   "max-chars"?: number;
 }
 

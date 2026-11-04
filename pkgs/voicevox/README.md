@@ -96,6 +96,7 @@ AivisSpeech and SHAREVOX characters set `url` from `MEKURU_AIVISSPEECH_URL` or `
 - `volume`: Synthesis volume (`volumeScale`).
 - `pre`, `post`: Silence before and after speech, in seconds.
 - `pause-scale`: Pause duration multiplier (`pauseLengthScale`).
+- `max-chars`: Maximum characters per synthesis request; longer lines are split near punctuation and joined into one WAV. Default: no limit.
 - `url`: Base URL; default `http://127.0.0.1:50021`.
 
 Omitted synthesis options keep the engine's `/audio_query` values. For compatible engines, set `url` to `http://127.0.0.1:10101` (AivisSpeech) or `http://127.0.0.1:50025` (SHAREVOX), and choose a voice from that engine's `/speakers`.
