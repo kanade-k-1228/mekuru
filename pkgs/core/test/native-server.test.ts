@@ -118,7 +118,8 @@ test("native patches reconstruct the reconnect snapshot, retain failures and rec
     if (patch.type !== "patch") throw new Error("expected patch");
     expect(Object.keys(patch.resources)).toHaveLength(1);
     const full = await snapshot();
-    expect(applyEvent(before, patch)).toEqual(applyEvent(empty, full));
+    const patched = applyEvent(before, patch);
+    expect(patched).toEqual(applyEvent(empty, full));
     const reconnect = await connect();
     expect(await reconnect.next()).toEqual(full);
     reconnect.close();
@@ -141,7 +142,7 @@ test("native patches reconstruct the reconnect snapshot, retain failures and rec
     await connection.next();
     const replaced = await connection.next();
     if (replaced.type !== "patch") throw new Error("expected patch");
-    expect(store.apply(replaced)).toEqual(fresh.apply(await snapshot()));
+    expect(applyEvent(patched, replaced)).toEqual(applyEvent(empty, await snapshot()));
   } finally {
     connection.close();
   }
