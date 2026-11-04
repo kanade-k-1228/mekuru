@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!pkgs/core/viewer", "!bun.lock", "!example/tutorial/assets/character/zundamon"]
+    "includes": ["**", "!bun.lock", "!example/tutorial/assets/character/zundamon"]
   },
   "formatter": {
     "indentStyle": "space",

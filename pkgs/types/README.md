@@ -4,8 +4,6 @@
 
 TSX authoring and XML output for Mekuru Movie Maker. Provides types for built-in elements and re-exports Hono's JSX runtime.
 
-This package was previously named `@mekuru/core`. Update authoring imports and `jsxImportSource` to `@mekuru/types`; `@mekuru/core` now provides the native compiler and preview server.
-
 Requires Bun 1.4 or later.
 
 ```sh

@@ -4,8 +4,6 @@
 
 Mekuru Movie Maker の台本を TSX で書き、XML に書き出すパッケージです。組み込み要素の型と、Hono の JSX ランタイムの再エクスポートを提供します。
 
-旧 `@mekuru/core` から名前を変更しました。台本の import と `jsxImportSource` を `@mekuru/types` へ変更してください。`@mekuru/core` はネイティブコンパイラとプレビューサーバーのパッケージになりました。
-
 Bun 1.4 以上が必要です。
 
 ```sh

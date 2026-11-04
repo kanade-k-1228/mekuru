@@ -39,13 +39,13 @@ bun install
 
 ```tsx
 // example/src/parts.tsx（抜粋）
-export const Tsuzumi: FC<Line> = async ({ children, face, show, ...time }) => {
-  const line = await Voisona.prepare({ ...voice, children });
+export const Zundamon: FC<Line> = async ({ children, face, show, ...time }) => {
+  const line = await Voicevox.prepare({ ...voice, children });
   return (
-    <dur len={line.len} {...time}>
+    <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
-        <tsuzumi.Talk source={line.audio} face={face} />
+        <zundamon.Talk source={line.audio} {...(face ? FACES[face] : { face: "normal" })} />
         <Subtitle>{line.display}</Subtitle>
         {show}
       </stack>
@@ -54,7 +54,7 @@ export const Tsuzumi: FC<Line> = async ({ children, face, show, ...time }) => {
 };
 ```
 
-`Voisona.prepare` で一度準備した音声素材を `Audio` と `Talk` に渡します（`Audio` は `@mekuru/speech` から import）。`line.display` はルビの表記部分と改行を保持した字幕です。`Subtitle` は装飾だけを加える通常の `text` です。外側の `<dur>` でセリフの長さを決めるので、`show` に追加した素材もその区間に収まります。詳しくは [ナレータの組み立て](../../pkgs/narrator/README.jp.md) を参照してください。
+`Voicevox.prepare` で一度準備した音声素材を `Audio` と `Talk` に渡します（`Audio` は `@mekuru/audio` から import）。`line.display` はルビの表記部分と改行を保持した字幕です。`Subtitle` は装飾だけを加える通常の `text` です。外側の `<dur>` でセリフの長さを決めるので、`show` に追加した素材もその区間に収まります。詳しくは [ナレータの組み立て](../../pkgs/narrator/README.jp.md) を参照してください。
 
 ### コードを表示する
 
@@ -77,7 +77,7 @@ bun preview   # http://localhost:3333
 
 `bun preview --no-open` でブラウザの自動起動を抑止します。常に抑止する場合は `MEKURU_OPEN=0`、一時的に開く場合は `--open` を指定します。VS Code では表示された URL を選んで Integrated Browser で開けます。
 
-時間・配置・文字組みは書き出しと共通です。ブラウザの描画や動画のシーク精度には差があります。速度変更は音程を保って再生し、1/16〜16倍を超える部分はシークで追従します。
+時間・配置は書き出しと共通です。文字はブラウザが描画するため、文字幅・改行・縁取りや動画のシーク精度には差が出る場合があります。速度変更は音程を保って再生し、1/16〜16倍を超える部分はシークで追従します。
 
 ## 書き出す
 
