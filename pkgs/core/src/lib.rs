@@ -40,6 +40,15 @@ fn normalize(p: &Path) -> PathBuf {
     out
 }
 
+/// The absolute folder that `src` paths start from: `root`, else the XML's folder (the project above it for `.mekuru/`).
+pub fn project_root(xml: &Path, root: Option<&Path>) -> PathBuf {
+    let parent = |p: &Path| p.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new(".")).to_path_buf();
+    let dir = parent(xml);
+    let dir = if dir.file_name().is_some_and(|n| n == ".mekuru") { parent(&dir) } else { dir };
+    let root = root.map_or(dir, Path::to_path_buf);
+    std::path::absolute(&root).map_or(root, |r| normalize(&r))
+}
+
 pub struct Project {
     pub path: PathBuf,
     pub source: String,
@@ -62,14 +71,7 @@ impl Project {
 
     pub(crate) fn from_source_mode(path: &Path, root: Option<&Path>, source: String, preview: bool) -> Project {
         let (doc, mut diags) = lang::xml::parse(&source);
-        let dir = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
-        let dir = if dir.file_name().is_some_and(|n| n == ".mekuru") {
-            dir.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."))
-        } else {
-            dir
-        };
-        let base = root.unwrap_or(dir).to_path_buf();
-        let base = std::path::absolute(&base).map(|b| normalize(&b)).unwrap_or(base);
+        let base = project_root(path, root);
         let fonts = typography::font_book(&doc.settings, &base, &doc.root);
         let script = lang::expand::lower(&doc, &base, &fonts, &mut diags, preview);
         let index = LineIndex::new(&source);

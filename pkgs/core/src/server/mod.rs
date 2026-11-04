@@ -4,7 +4,10 @@ mod script;
 mod socket;
 mod watch;
 
-use crate::preview::{Diagnostic, Request, Session, delta::Published};
+use crate::preview::{
+    Diagnostic, Request, Session,
+    delta::{Patch, Published, Resources, SharedPreview, Update},
+};
 use anyhow::{Context, Result};
 use axum::{
     Router,
@@ -18,7 +21,6 @@ use axum::{
 };
 use serde::Serialize;
 use std::{
-    collections::HashMap,
     net::SocketAddr,
     path::PathBuf,
     sync::{Arc, Condvar, Mutex},
@@ -47,6 +49,31 @@ struct PreviewState {
     diagnostics: Vec<Diagnostic>,
 }
 
+/// A WebSocket message: the viewer's `PreviewEvent`.
+#[derive(Serialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+enum Event<'a> {
+    Status {
+        state: &'a PreviewState,
+    },
+    Snapshot {
+        state: &'a PreviewState,
+        preview: Option<&'a SharedPreview>,
+        resources: &'a Resources,
+    },
+    Patch {
+        state: &'a PreviewState,
+        #[serde(flatten)]
+        patch: &'a Patch,
+    },
+}
+
+impl Event<'_> {
+    fn json(&self) -> String {
+        serde_json::to_string(self).expect("preview JSON")
+    }
+}
+
 struct Live {
     state: PreviewState,
     scene: Option<Published>,
@@ -56,20 +83,13 @@ struct Live {
     compile_error: Option<String>,
 }
 impl Live {
-    fn snapshot(&self) -> serde_json::Result<String> {
-        #[derive(Serialize)]
-        struct Snapshot<'a> {
-            r#type: &'static str,
-            state: &'a PreviewState,
-            preview: Option<&'a crate::preview::delta::SharedPreview>,
-            resources: &'a crate::preview::delta::Resources,
-        }
-        serde_json::to_string(&Snapshot {
-            r#type: "snapshot",
+    fn snapshot(&self) -> String {
+        Event::Snapshot {
             state: &self.state,
             preview: self.scene.as_ref().map(|s| &s.preview),
-            resources: self.scene.as_ref().map(|s| s.resources.as_ref()).unwrap_or(&HashMap::new()),
-        })
+            resources: self.scene.as_ref().map_or(&Resources::new(), |s| &*s.resources),
+        }
+        .json()
     }
     fn refresh_error(&mut self) {
         self.state.error = self.script_error.clone().or_else(|| self.compile_error.clone());
@@ -117,10 +137,36 @@ impl Queue {
 }
 
 impl App {
+    fn new(root: PathBuf, path: String, xml: String, backlog: usize) -> App {
+        App {
+            root,
+            live: Arc::new(Mutex::new(Live {
+                state: PreviewState {
+                    path,
+                    version: 1,
+                    preview_version: 0,
+                    status: "building",
+                    error: None,
+                    diagnostics: vec![],
+                },
+                scene: None,
+                xml,
+                writes: 0,
+                script_error: None,
+                compile_error: None,
+            })),
+            events: broadcast::channel(backlog).0,
+            cancel: CancellationToken::new(),
+            connections: TaskTracker::new(),
+            queue: Arc::default(),
+        }
+    }
+    fn send(&self, event: Event) {
+        let _ = self.events.send(event.json().into());
+    }
     fn status(&self, live: &mut Live) {
         live.refresh_error();
-        let json = serde_json::to_string(&serde_json::json!({"type": "status", "state": live.state})).expect("preview state JSON");
-        let _ = self.events.send(json.into());
+        self.send(Event::Status { state: &live.state });
     }
     fn changed(&self, xml: String) {
         let mut live = self.live.lock().unwrap();
@@ -186,34 +232,28 @@ fn compile(app: App, path: PathBuf) {
         };
         live.state.diagnostics = result.diagnostics;
         live.state.status = if result.preview_version.is_some() { "ready" } else { "error" };
-        live.compile_error = result.preview_version.is_none().then(|| {
-            live.state
-                .diagnostics
-                .iter()
-                .map(|d| format!("L{} {}: {}", d.line, d.code, d.message))
-                .collect::<Vec<_>>()
-                .join("\n")
-        });
+        live.compile_error = result
+            .preview_version
+            .is_none()
+            .then(|| live.state.diagnostics.iter().map(Diagnostic::to_string).collect::<Vec<_>>().join("\n"));
         live.refresh_error();
         if let Some(version) = result.preview_version {
             live.state.preview_version = version;
             live.scene = worker.scene();
         }
-        if let Some(update) = result.update {
-            #[derive(Serialize)]
-            struct Message<'a> {
-                state: &'a PreviewState,
-                #[serde(flatten)]
-                update: crate::preview::delta::Update,
-            }
-            let json = serde_json::to_string(&Message { state: &live.state, update }).expect("preview JSON");
-            let _ = app.events.send(json.into());
-        } else {
-            app.status(&mut live);
+        let state = &live.state;
+        match &result.update {
+            Some(Update::Snapshot { preview, resources }) => app.send(Event::Snapshot {
+                state,
+                preview: Some(preview),
+                resources,
+            }),
+            Some(Update::Patch(patch)) => app.send(Event::Patch { state, patch }),
+            None => app.status(&mut live),
         }
         eprintln!("preview {} in {:.1}ms", live.state.status, started.elapsed().as_secs_f64() * 1000.0);
         for d in &live.state.diagnostics {
-            eprintln!("  L{} {}: {}", d.line, d.code, d.message);
+            eprintln!("  {d}");
         }
     }
 }
@@ -255,22 +295,15 @@ impl Drop for Server {
 
 pub async fn start(opts: Options) -> Result<Server> {
     let path = crate::normalize(&std::path::absolute(&opts.xml)?);
-    let parent = path.parent().context("XML has no parent folder")?;
-    let root = opts.root.unwrap_or_else(|| {
-        if parent.file_name().is_some_and(|n| n == ".mekuru") {
-            parent.parent().unwrap_or(parent).into()
-        } else {
-            parent.into()
-        }
-    });
     let xml = match tokio::fs::read_to_string(&path).await {
         Ok(xml) => xml,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound && opts.run.is_some() => {
-            tokio::fs::create_dir_all(parent).await?;
+            tokio::fs::create_dir_all(path.parent().context("XML has no parent folder")?).await?;
             "<mekuru><seq/></mekuru>".into()
         }
         Err(e) => return Err(e).with_context(|| format!("cannot read {}", path.display())),
     };
+    let root = crate::project_root(&path, opts.root.as_deref());
     let root = tokio::fs::canonicalize(root).await.context("cannot open project root")?;
     let listener = TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, opts.port))
         .await
@@ -282,29 +315,8 @@ pub async fn start(opts: Options) -> Result<Server> {
             eprintln!("preview TCP_NODELAY: {error}");
         }
     });
-    let (events, _) = broadcast::channel(64);
-    let app = App {
-        root,
-        live: Arc::new(Mutex::new(Live {
-            state: PreviewState {
-                path: opts.title.unwrap_or_else(|| opts.xml.to_string_lossy().into_owned()),
-                version: 1,
-                preview_version: 0,
-                status: "building",
-                error: None,
-                diagnostics: vec![],
-            },
-            scene: None,
-            xml: xml.clone(),
-            writes: 0,
-            script_error: None,
-            compile_error: None,
-        })),
-        events,
-        cancel: CancellationToken::new(),
-        connections: TaskTracker::new(),
-        queue: Arc::default(),
-    };
+    let title = opts.title.unwrap_or_else(|| opts.xml.to_string_lossy().into_owned());
+    let app = App::new(root, title, xml.clone(), 64);
     app.queue.push(1, xml);
     let watcher = watch::start(path.clone(), app.clone())?;
     let mut server = Server {
@@ -343,14 +355,13 @@ async fn http(State(app): State<App>, request: HttpRequest<Body>) -> Response {
     if path == "/api/state" || path == "/api/preview" {
         let live = app.live.lock().unwrap();
         let json = if path == "/api/state" {
-            serde_json::to_string(&live.state)
+            serde_json::to_string(&live.state).expect("preview state JSON")
         } else {
             if live.scene.is_none() {
                 return files::empty(StatusCode::NOT_FOUND);
             }
             live.snapshot()
-        }
-        .expect("preview JSON");
+        };
         return Response::builder()
             .header("content-type", "application/json")
             .header("cache-control", "no-store")
@@ -427,29 +438,7 @@ mod tests {
 
     #[tokio::test]
     async fn slow_subscribers_resynchronize_without_unbounded_event_queues() {
-        let (events, _) = broadcast::channel(2);
-        let app = App {
-            root: PathBuf::new(),
-            live: Arc::new(Mutex::new(Live {
-                state: PreviewState {
-                    path: "test.xml".into(),
-                    version: 1,
-                    preview_version: 0,
-                    status: "building",
-                    error: None,
-                    diagnostics: vec![],
-                },
-                scene: None,
-                xml: String::new(),
-                writes: 0,
-                script_error: None,
-                compile_error: None,
-            })),
-            events,
-            cancel: CancellationToken::new(),
-            connections: TaskTracker::new(),
-            queue: Arc::default(),
-        };
+        let app = App::new(PathBuf::new(), "test.xml".into(), String::new(), 2);
         let mut subscription = socket::Subscription::new(app.clone());
         let first: serde_json::Value = serde_json::from_str(&subscription.snapshot()).unwrap();
         assert_eq!(first["type"], "snapshot");

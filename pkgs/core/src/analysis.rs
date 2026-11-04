@@ -14,6 +14,12 @@ pub struct Diagnostic {
     pub message: String,
 }
 
+impl std::fmt::Display for Diagnostic {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "L{} {}: {}", self.line, self.code, self.message)
+    }
+}
+
 pub struct Resolved {
     pub prepared: Prepared,
     pub schedule: Schedule,
