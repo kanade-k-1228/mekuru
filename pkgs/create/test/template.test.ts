@@ -4,25 +4,36 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { create, VERSION } from "../src/create.ts";
 
-test("generated projects include selected engines, audio and upload commands", async () => {
+test("generated projects include the selected engines and upload commands", async () => {
   const dir = await mkdtemp(join(tmpdir(), "mekuru-create-"));
   try {
-    await create(dir, { mekuru: "^0.3.0", engines: ["voicevox"], upload: ["youtube"] });
+    await create(dir, { mekuru: "^0.3.0", engines: ["voicevox", "aivisspeech"], upload: ["youtube", "niconico"] });
     const pkg = await Bun.file(join(dir, "package.json")).json();
+    expect(Object.keys(pkg.devDependencies)).toEqual([
+      "@mekuru/audio",
+      "@mekuru/core",
+      "@mekuru/narrator",
+      "@mekuru/types",
+      "@mekuru/upload",
+      "@mekuru/voicevox",
+      "@types/bun",
+      "typescript",
+    ]);
     expect(pkg.devDependencies["@mekuru/types"]).toBe("^0.3.0");
     expect(pkg.devDependencies["@mekuru/core"]).toBe(`^${VERSION}`);
-    expect(pkg.devDependencies["@mekuru/compiler"]).toBeUndefined();
+    expect(pkg.devDependencies["@mekuru/upload"]).toBe(`^${VERSION}`);
+    expect(pkg.scripts["upload:youtube"]).toBe("mekuru-youtube");
+    expect(pkg.scripts["upload:niconico"]).toBe("mekuru-niconico");
+    expect(await Bun.file(join(dir, "configs/youtube.yaml")).text()).toContain("privacy: private");
     const tsconfig = await Bun.file(join(dir, "tsconfig.json")).json();
     expect(tsconfig.compilerOptions.jsxImportSource).toBe("@mekuru/types");
-    expect(pkg.devDependencies["@mekuru/audio"]).toBeDefined();
-    expect(pkg.devDependencies["@mekuru/voicevox"]).toBeDefined();
-    expect(pkg.devDependencies["@mekuru/voisona"]).toBeUndefined();
-    expect(pkg.scripts["upload:youtube"]).toBe("mekuru-youtube");
-    expect(await Bun.file(join(dir, "configs/youtube.yaml")).text()).toContain("privacy: private");
-    const main = await Bun.file(join(dir, "src/main.tsx")).text();
-    expect(main).toContain('from "@mekuru/types"');
-    expect(main).not.toContain("#if");
-    expect(main).toContain("<mekuru");
+    const readme = await Bun.file(join(dir, "README.md")).text();
+    expect(readme).toStartWith(`# ${pkg.name}\n`);
+    expect(readme).not.toContain("#if");
+    expect(readme).toContain("- VOICEVOX:");
+    expect(readme).toContain("- AivisSpeech:");
+    expect(readme).not.toContain("VoiSona");
+    expect(readme).toContain("upload:niconico");
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

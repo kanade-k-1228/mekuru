@@ -16,11 +16,10 @@
         "@mekuru/audio": "workspace:*",
         "@mekuru/core": "workspace:*",
         "@mekuru/narrator": "workspace:*",
-        "@mekuru/niconico": "workspace:*",
         "@mekuru/speech": "workspace:*",
         "@mekuru/types": "workspace:*",
+        "@mekuru/upload": "workspace:*",
         "@mekuru/voicevox": "workspace:*",
-        "@mekuru/youtube": "workspace:*",
         "@types/bun": "1.4.2",
         "ag-psd": "^31.0.3",
         "sharp": "^0.35.5",
@@ -64,9 +63,7 @@
         "create-mekuru": "./src/index.ts",
       },
       "dependencies": {
-        "@clack/core": "^1.5.1",
         "@clack/prompts": "^1.8.1",
-        "@mekuru/platform": "workspace:^",
         "commander": "^15.0.0",
       },
     },
@@ -88,22 +85,6 @@
       "peerDependencies": {
         "@mekuru/types": "workspace:^",
       },
-    },
-    "pkgs/niconico": {
-      "name": "@mekuru/niconico",
-      "version": "0.0.0",
-      "bin": {
-        "mekuru-niconico": "./src/cli.ts",
-      },
-      "dependencies": {
-        "@mekuru/platform": "workspace:^",
-        "commander": "^15.0.0",
-        "playwright-core": "1.64.1",
-      },
-    },
-    "pkgs/platform": {
-      "name": "@mekuru/platform",
-      "version": "0.0.0",
     },
     "pkgs/speech": {
       "name": "@mekuru/speech",
@@ -136,6 +117,18 @@
       "version": "0.0.0",
       "dependencies": {
         "hono": "^4.13.0",
+      },
+    },
+    "pkgs/upload": {
+      "name": "@mekuru/upload",
+      "version": "0.0.0",
+      "bin": {
+        "mekuru-youtube": "./src/youtube/cli.ts",
+        "mekuru-niconico": "./src/niconico/cli.ts",
+      },
+      "dependencies": {
+        "commander": "^15.0.0",
+        "playwright-core": "1.64.1",
       },
     },
     "pkgs/viewer": {
@@ -182,17 +175,6 @@
       },
       "peerDependencies": {
         "@mekuru/types": "workspace:^",
-      },
-    },
-    "pkgs/youtube": {
-      "name": "@mekuru/youtube",
-      "version": "0.0.0",
-      "bin": {
-        "mekuru-youtube": "./src/cli.ts",
-      },
-      "dependencies": {
-        "@mekuru/platform": "workspace:^",
-        "commander": "^15.0.0",
       },
     },
   },
@@ -295,23 +277,19 @@
 
     "@mekuru/narrator": ["@mekuru/narrator@workspace:pkgs/narrator"],
 
-    "@mekuru/niconico": ["@mekuru/niconico@workspace:pkgs/niconico"],
-
-    "@mekuru/platform": ["@mekuru/platform@workspace:pkgs/platform"],
-
     "@mekuru/speech": ["@mekuru/speech@workspace:pkgs/speech"],
 
     "@mekuru/style-bert-vits2": ["@mekuru/style-bert-vits2@workspace:pkgs/style-bert-vits2"],
 
     "@mekuru/types": ["@mekuru/types@workspace:pkgs/types"],
 
+    "@mekuru/upload": ["@mekuru/upload@workspace:pkgs/upload"],
+
     "@mekuru/viewer": ["@mekuru/viewer@workspace:pkgs/viewer"],
 
     "@mekuru/voicevox": ["@mekuru/voicevox@workspace:pkgs/voicevox"],
 
     "@mekuru/voisona": ["@mekuru/voisona@workspace:pkgs/voisona"],
-
-    "@mekuru/youtube": ["@mekuru/youtube@workspace:pkgs/youtube"],
 
     "@oxc-project/types": ["@oxc-project/types@0.151.0", "", {}, "sha512-J1yXrIlNDZVzE3ada310xeAw7nH8yCAyLPuUIsjKatFPmfn5bS1oW+cM+QsGOtVWd5nhSpbwZWx/rue+r5Z+PA=="],
 

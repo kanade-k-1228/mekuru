@@ -5,7 +5,7 @@ export const SITES = {
   youtube: {
     name: "YouTube",
     hint: "uploads it, with an OAuth client of your Google Cloud project",
-    pkg: "@mekuru/youtube",
+    pkg: "@mekuru/upload",
     bin: "mekuru-youtube",
     settings: (title: string) => `# bun run upload:youtube の設定（${DOCS}）。パスはプロジェクトのフォルダから書く
 video: video.mp4
@@ -20,7 +20,7 @@ privacy: private # private・unlisted・public
   niconico: {
     name: "niconico",
     hint: "posts it by filling in the upload page in a headless browser (niconico has no API)",
-    pkg: "@mekuru/niconico",
+    pkg: "@mekuru/upload",
     bin: "mekuru-niconico",
     settings: (title: string) => `# bun run upload:niconico の設定（${DOCS}）。パスはプロジェクトのフォルダから書く
 video: video.mp4

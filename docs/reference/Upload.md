@@ -6,7 +6,7 @@ Each upload command reads a YAML configuration and uploads the video. Paths in t
 
 ## Setup
 
-`bun create @mekuru --upload youtube,niconico` generates upload commands and `configs/`. For an existing project, add [@mekuru/youtube](../../pkgs/youtube/README.md) or [@mekuru/niconico](../../pkgs/niconico/README.md).
+`bun create @mekuru --upload youtube,niconico` generates upload commands and `configs/`. For an existing project, add [@mekuru/upload](../../pkgs/upload/README.md).
 
 - YouTube: `mekuru-youtube`. Default configuration: `configs/youtube.yaml`.
 - niconico: `mekuru-niconico`. Default configuration: `configs/niconico.yaml`.

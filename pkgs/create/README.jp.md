@@ -10,7 +10,7 @@ cd my-video
 bun install
 ```
 
-端末では未指定の項目を対話で選びます。作成後に ffmpeg と選択した音声合成エンジンを確認します。
+端末では未指定の項目を対話で選びます。作成後に ffmpeg を確認します。
 
 - `--engine <engines>`: 音声合成エンジンをカンマ区切りで指定（`voicevox,aivisspeech,sharevox,voisona,coeiroink,style-bert-vits2`）。そのパッケージを追加。既定: なし。
 - `--upload <sites>`: `youtube,niconico` の投稿コマンドと YAML 設定を追加。既定: なし。

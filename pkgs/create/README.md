@@ -10,7 +10,7 @@ cd my-video
 bun install
 ```
 
-Unspecified choices are prompted in a terminal. The command checks ffmpeg and the selected speech engines after creation.
+Unspecified choices are prompted in a terminal. The command checks ffmpeg after creation.
 
 - `--engine <engines>`: Comma-separated speech engines: `voicevox,aivisspeech,sharevox,voisona,coeiroink,style-bert-vits2`. Adds their packages. Default: none.
 - `--upload <sites>`: Add upload scripts and YAML settings for `youtube,niconico`. Default: none.

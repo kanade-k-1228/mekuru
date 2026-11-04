@@ -1,0 +1,26 @@
+{
+  "name": "@mekuru/upload",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kanade-k-1228/mekuru.git",
+    "directory": "pkgs/upload"
+  },
+  "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/upload/README.md",
+  "description": "Uploads a video of Mekuru Movie Maker to YouTube or niconico with the title, description, ... written in YAML",
+  "type": "module",
+  "bin": {
+    "mekuru-youtube": "./src/youtube/cli.ts",
+    "mekuru-niconico": "./src/niconico/cli.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "engines": {
+    "bun": ">=1.4"
+  },
+  "dependencies": {
+    "commander": "^15.0.0",
+    "playwright-core": "1.64.1"
+  }
+}

@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
 import { relative, resolve } from "node:path";
-import { check, type Check } from "./check.ts";
+import { checkFfmpeg } from "./check.ts";
 import { create, isEmptyDir, type CreateOptions } from "./create.ts";
 import { ENGINE_NAMES, ENGINES, type Engine } from "./engine.ts";
 import { SITE_NAMES, SITES, type Site } from "./site.ts";
@@ -59,8 +59,6 @@ const nextSteps = (target: string, sites: readonly Site[]): string => {
   ].join("\n");
 };
 
-const line = (c: Check): string => `${c.name}: ${c.detail}`.replace(/\n/g, "\n  ");
-
 export const run = async (args: Args): Promise<number> => {
   if (args.yes || !process.stdin.isTTY || !process.stdout.isTTY) {
     const engines = args.engines ?? [];
@@ -69,8 +67,8 @@ export const run = async (args: Args): Promise<number> => {
       const target = await create(args.dir ?? "my-video", { ...args, engines, upload });
       const steps = nextSteps(target, upload).replace(/^/gm, "  ");
       console.log(`\nCreated a Mekuru Movie Maker project in ${relative(process.cwd(), target) || "."}\n\nNext:\n${steps}\n`);
-      const checks = (await check(engines, upload)).map((c) => `${c.ok ? "✓" : "✗"} ${line(c)}`.replace(/^/gm, "  "));
-      console.log(`Tools:\n${checks.join("\n")}\n`);
+      const { ok, detail } = await checkFfmpeg();
+      console.log(`${ok ? "✓" : "✗"} ffmpeg: ${detail}\n`);
       return 0;
     } catch (e) {
       console.error(`error: ${(e as Error).message}`);
@@ -83,12 +81,11 @@ export const run = async (args: Args): Promise<number> => {
     const target = await create(answers.dir, answers);
     p.log.success(`Created a Mekuru Movie Maker project in ${relative(process.cwd(), target) || "."}`);
     p.note(nextSteps(target, answers.upload), "Next");
-    const { engines } = answers;
     const spin = p.spinner();
-    spin.start(engines.length > 0 || answers.upload.length > 0 ? "Checking ffmpeg and the other tools" : "Checking ffmpeg");
-    const checks = await check(engines, answers.upload);
-    spin.stop(checks.every((c) => c.ok) ? "All the tools are ready" : "Some tools are missing");
-    for (const c of checks) (c.ok ? p.log.success : p.log.warn)(line(c));
+    spin.start("Checking ffmpeg");
+    const { ok, detail } = await checkFfmpeg();
+    if (ok) spin.stop(`ffmpeg: ${detail}`);
+    else spin.error(`ffmpeg: ${detail}`);
     p.outro("Done");
     return 0;
   } catch (e) {

@@ -2,27 +2,19 @@
 import { Command, InvalidArgumentError } from "commander";
 import { VERSION } from "./create.ts";
 import { run, type Args } from "./prompts.ts";
-import { ENGINE_NAMES, isEngine, type Engine } from "./engine.ts";
-import { SITE_NAMES, isSite, type Site } from "./site.ts";
-const parseEngines = (value: string, previous: Engine[] = []): Engine[] => {
-  const names = value
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s !== "");
-  const unknown = names.find((n) => !isEngine(n));
-  if (unknown !== undefined) throw new InvalidArgumentError(`unknown engine ${JSON.stringify(unknown)} (${ENGINE_NAMES.join(", ")})`);
-  return ENGINE_NAMES.filter((e) => previous.includes(e) || names.includes(e));
-};
-
-const parseSites = (value: string, previous: Site[] = []): Site[] => {
-  const names = value
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s !== "");
-  const unknown = names.find((n) => !isSite(n));
-  if (unknown !== undefined) throw new InvalidArgumentError(`unknown upload site ${JSON.stringify(unknown)} (${SITE_NAMES.join(", ")})`);
-  return SITE_NAMES.filter((s) => previous.includes(s) || names.includes(s));
-};
+import { ENGINE_NAMES, type Engine } from "./engine.ts";
+import { SITE_NAMES } from "./site.ts";
+const parseList =
+  <T extends string>(what: string, all: readonly T[]) =>
+  (value: string, previous: T[] = []): T[] => {
+    const names = value
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s !== "");
+    const unknown = names.find((n) => !(all as readonly string[]).includes(n));
+    if (unknown !== undefined) throw new InvalidArgumentError(`unknown ${what} ${JSON.stringify(unknown)} (${all.join(", ")})`);
+    return all.filter((n) => previous.includes(n) || names.includes(n));
+  };
 
 new Command("create-mekuru")
   .description(
@@ -31,8 +23,8 @@ new Command("create-mekuru")
   )
   .version(VERSION)
   .argument("[folder]", "the folder of the project (default: my-video)")
-  .option("--engine <engines>", `the speech engines, separated by commas: ${ENGINE_NAMES.join(", ")} (default: none)`, parseEngines)
-  .option("--upload <sites>", `where to upload the video, separated by commas: ${SITE_NAMES.join(", ")} (default: none)`, parseSites)
+  .option("--engine <engines>", `the speech engines, separated by commas: ${ENGINE_NAMES.join(", ")} (default: none)`, parseList("engine", ENGINE_NAMES))
+  .option("--upload <sites>", `where to upload the video, separated by commas: ${SITE_NAMES.join(", ")} (default: none)`, parseList("upload site", SITE_NAMES))
   .option("-f, --force", "write into a folder that is not empty")
   .option("-y, --yes", "do not ask")
   .option("--mekuru <spec>", "the version of the @mekuru/types package to depend on", `^${VERSION}`)
