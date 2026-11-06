@@ -28,7 +28,7 @@ curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.s
 bun create @mekuru my-video
 cd my-video
 bun install
-bun run voicevox # 別のターミナルで起動したままにする（Docker が必要）
+bun run irodoru # 別のターミナルで起動したままにする（Docker が必要）
 bun preview     # http://localhost:3333
 bun run build   # video.mp4
 ```
@@ -38,7 +38,7 @@ bun run build   # video.mp4
 ```tsx
 // src/main.tsx
 import { writeXml } from "@mekuru/tsx";
-import { Voicevox, zunda } from "@mekuru/speech/voicevox";
+import { Speech } from "@mekuru/speech";
 
 const Video = () => (
   <mekuru size="1920x1080" fps={30} lang="ja">
@@ -47,8 +47,8 @@ const Video = () => (
     <stack>
       <text x="50%" y="40%" anchor="center" size={90} text="はじめての動画" />
       <seq>
-        <Voicevox {...zunda} text="こんにちは、ずんだもんなのだ。" />
-        <Voicevox {...zunda} text="タイトルは、セリフが終わるまで表示されるのだ。" />
+        <Speech caption="明るく聞き取りやすい声" text="こんにちは。" />
+        <Speech caption="明るく聞き取りやすい声" text="タイトルは、セリフが終わるまで表示されます。" />
       </seq>
     </stack>
   </mekuru>
@@ -57,6 +57,6 @@ const Video = () => (
 await writeXml(".mekuru/main.xml", <Video />);
 ```
 
-既定の「VOICEVOX sample」には、このサンプルと必要なパッケージが入っています。Docker の `bun run voicevox` または VOICEVOX アプリを起動しておいてください。空の台本から始める場合は、作成時に「Empty project」を選ぶか `--template empty` を指定します。完成までの手順は [最初の動画を作るチュートリアル](example/README.md) を参照してください。
+既定の「irodoru sample」には、このサンプルと必要なパッケージが入っています。`bun run irodoru` でビルド済み Docker イメージを起動します（初回はダウンロード、終了は Ctrl+C）。VOICEVOX は `bun run voicevox` と `@mekuru/speech/voicevox` で使えます。接続先は `MEKURU_IRODORU_URL` / `MEKURU_VOICEVOX_URL` で変更できます。空の台本から始める場合は「Empty project」か `--template empty` を選びます。[チュートリアル](example/README.md)・[音声合成の設定](pkgs/speech/README.jp.md)。
 
 > [@mekuru/tsx](pkgs/tsx/README.jp.md) が TSX の型・JSX ランタイム・XML 出力、[@mekuru/core](pkgs/core/README.jp.md) がネイティブコンパイラとプレビューサーバーを提供します。ビューアと OS 別バイナリは core に同梱され、生成プロジェクトには両パッケージが設定されます。

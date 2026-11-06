@@ -12,7 +12,7 @@ Requires Bun 1.4 or later.
 bun add -d @mekuru/tsx @mekuru/narrator
 ```
 
-Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/tsx"` in `tsconfig.json`. Install your speech engine separately and provide portrait image assets.
+Set `jsx: "react-jsx"` and `jsxImportSource: "@mekuru/tsx"` in `tsconfig.json`. Start the speech server (`bun run irodoru` or `bun run voicevox` in a sample project) and provide portrait image assets.
 
 ## Compose a narrator
 
@@ -23,7 +23,7 @@ import type { At, FC, Node } from "@mekuru/tsx";
 import { portrait, Subtitle } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
-import { Voisona } from "@mekuru/speech/voisona";
+import { Speech } from "@mekuru/speech";
 
 import type { LayerProps } from "./assets/character/tsuzumi/portrait";
 
@@ -32,7 +32,7 @@ type TsuzumiProps = { text: Node; face?: LayerProps["face"]; id?: string; at?: A
 
 export const TsuzumiStand = actor.Stand;
 export const Tsuzumi: FC<TsuzumiProps> = async ({ text, face, id, at }) => {
-  const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", text });
+  const line = await Speech.prepare({ caption: "落ち着いた聞き取りやすい声", text });
   return (
     <dur len={line.audio.len} id={id} at={at}>
       <stack>

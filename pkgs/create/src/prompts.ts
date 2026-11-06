@@ -52,7 +52,7 @@ const nextSteps = (target: string, template: Template, sites: readonly Site[]): 
   return [
     ...(cd === "." ? [] : [`cd ${cd.includes(" ") ? JSON.stringify(cd) : cd}`]),
     "bun install",
-    ...(template === "sample" ? ["bun run voicevox # keep running in another terminal (requires Docker); or start the VOICEVOX app"] : []),
+    ...(template === "sample" ? ["bun run irodoru  # keep running in another terminal (requires Docker); VOICEVOX: bun run voicevox"] : []),
     "bun preview      # open the viewer (it follows src/main.tsx as you save it)",
     "bun run build    # render video.mp4",
     ...sites.map((s) => UPLOAD_STEPS[s]),

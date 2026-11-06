@@ -1,25 +1,26 @@
-import { defineEngine, type EngineProps } from "../engine.ts";
-import { client } from "./client.ts";
+/** @jsxImportSource @mekuru/tsx */
+import { Audio } from "@mekuru/audio";
+import type { JSX } from "@mekuru/tsx";
+import { lineText, prepareLine, type LineProps } from "../shared/line.ts";
+import { requestFor, synthesize, type VoicevoxOptions } from "./client.ts";
 
-export interface VoicevoxProps extends EngineProps {
-  speaker: number | string;
-  speed?: number;
-  pitch?: number;
-  intonation?: number;
-  volume?: number;
-  pre?: number;
-  post?: number;
-  "pause-scale"?: number;
+export interface VoicevoxProps extends LineProps, VoicevoxOptions {
+  /** Defaults to MEKURU_VOICEVOX_URL or http://127.0.0.1:50021. */
+  url?: string;
 }
 
-export const Voicevox = defineEngine<VoicevoxProps>({
-  kind: "voicevox",
-  name: "VOICEVOX",
-  defaultUrl: "http://127.0.0.1:50021",
-  help: "  - start the VOICEVOX app (its engine listens on port 50021), or\n    docker run --rm -p 127.0.0.1:50021:50021 voicevox/voicevox_engine:cpu-latest",
-  concurrency: 2,
-  who: (props) => String(props.speaker),
-  create: client,
-});
+const prepare = async (props: Omit<VoicevoxProps, "id" | "at">) => {
+  const text = await lineText(props);
+  const request = requestFor(props, text.say);
+  return prepareLine(props, text, String(props.speaker), { voicevox: request }, (out) => synthesize(request, out));
+};
+
+export const Voicevox = Object.assign(
+  async (props: VoicevoxProps): Promise<Awaited<JSX.Element>> => {
+    const line = await prepare(props);
+    return <Audio source={line.audio} id={props.id} at={props.at} />;
+  },
+  { prepare },
+);
 
 export * from "./characters.ts";

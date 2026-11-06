@@ -137,15 +137,15 @@ const Tutorial: FC = () => (
             <Point text="Bun 1.4 以上 — 台本を動かす" />
             <Point text="ffmpeg（libx264 付き）/ ffprobe — 書き出し" />
             <Point text="フォント — Noto Sans・Noto Sans CJK" />
-            <Point text="VOICEVOX — ずんだもんの読み上げ" />
+            <Point text="irodoru — セリフの読み上げ" />
           </column>
           <Terminal at={TOOLS_TERM} w={760} text={"$ bun --version\n$ ffmpeg -version\n$ ffprobe -version"} />
           <seq>
             <Zundamon text="まずは道具をそろえます。" />
             <Zundamon text="Bun は 1.4 以上、ffmpeg は動画をエンコードできるものを用意します。" />
-            <Zundamon text="フォントを入れて、VOICEVOX を起動するのだ。" />
-            <Zundamon text="ずんだもんのノーマルスタイルで、台本を読み上げるのだ。" />
-            <Zundamon text="接続先の設定は、この手順を確認してね。VOICEVOX は起動したまま使うのだ。">
+            <Zundamon text="フォントを入れて、irodoru を起動するのだ。" />
+            <Zundamon text="声の説明を指定して、台本を読み上げるのだ。" />
+            <Zundamon text="接続先の設定は、この手順を確認してね。irodoru は起動したまま使うのだ。">
               <Label x={640} y={820} size={34} color={COLOR.blue} text="pkgs/speech/README.jp.md" />
             </Zundamon>
             <Zundamon text="Windows の人は、WSL の中で動かしてね。">
@@ -162,13 +162,13 @@ const Tutorial: FC = () => (
           <Terminal
             at={PICK}
             w={800}
-            text={["◇ Project template", "│ ● VOICEVOX sample", "│ ○ Empty project", "◇ Upload to (You can add it later)", "│   ◻ YouTube   ◻ niconico"].join(
+            text={["◇ Project template", "│ ● irodoru sample", "│ ○ Empty project", "◇ Upload to (You can add it later)", "│   ◻ YouTube   ◻ niconico"].join(
               "\n",
             )}
           />
           <seq>
             <Zundamon text="次は、プロジェクトを作ります。" />
-            <Zundamon text="テンプレートは VOICEVOX sample を選びます。空の台本から始めることもできます。">
+            <Zundamon text="テンプレートは irodoru sample を選びます。空の台本から始めることもできます。">
               <TermMark term={PICK} from={1} to={3} w={740} />
             </Zundamon>
             <Zundamon text="上下で移動して、エンターで決定です。投稿先はスペースでチェックできます。">
@@ -198,7 +198,7 @@ const Tutorial: FC = () => (
               "",
               "$ cd my-video",
               "$ bun install",
-              "$ bun run voicevox",
+              "$ bun run irodoru",
               "# 別のターミナルで bun preview",
             ].join("\n")}
           />
@@ -209,7 +209,7 @@ const Tutorial: FC = () => (
             <Zundamon text="問題なければ、フォルダに移って、bun install です。">
               <TermMark term={INSTALL_TERM} from={5} to={6} w={400} />
             </Zundamon>
-            <Zundamon text="Docker があれば、bun run voicevox で音声サーバーを起動できます。アプリが起動済みなら、この手順は不要です。">
+            <Zundamon text="Docker を起動して、bun run irodoru を実行します。公開イメージの取得後、音声サーバーが起動します。">
               <TermMark term={INSTALL_TERM} from={7} to={8} w={1110} />
             </Zundamon>
             <Zundamon text="ここから先のコマンドは、全部このフォルダの中で実行します。">
@@ -226,7 +226,7 @@ const Tutorial: FC = () => (
             <Zundamon text="台本は src の main.tsx。動画の中身は、ここに書いていきます。">
               <TreeMark tree={FILES} from={3} w={500} />
             </Zundamon>
-            <Zundamon text="先に example で bun run portrait を実行します。tutorial の character を src に、assets をプロジェクト直下にコピーしてね。">
+            <Zundamon text="先に example で bun run portrait を実行します。tutorial の character と parts.tsx を src に、assets をプロジェクト直下にコピーしてね。">
               <TreeMark tree={FILES} from={5} to={6} w={740} />
             </Zundamon>
             <Zundamon face="smile" text="ずんだもんの声と立ち絵の部品は、この import で読み込みます。">
@@ -343,11 +343,11 @@ const Tutorial: FC = () => (
         <stack id="voice">
           <Step n="09" text="間と読み方を調整する" />
           <text x={76} y={152} size={30} color={COLOR.sub} text="src/character/zundamon.tsx" />
-          <Code at={VOICE} text={"const line = await Voicevox.prepare({\n  gap: 12, ...zunda,\n  reading: READING, text,\n});"} />
+          <Code at={VOICE} text={"const line = await Speech.prepare({\n  gap: 12, caption: '明るく元気な声',\n  reading: READING, text,\n});"} />
           <text x={76} y={432} size={30} color={COLOR.sub} text="src/parts.tsx" />
           <Code at={READ} text={'export const READING = {\n  Mekuru: "めくる", bun: "バン", TSX: "ティーエスエックス",\n};'} />
           <seq>
-            <Zundamon text="次はセリフの間です。Voicevox.prepare の gap を変えてみましょう。">
+            <Zundamon text="次はセリフの間です。Speech.prepare の gap を変えてみましょう。">
               <CodeMark code={VOICE} from={2} w={238} />
             </Zundamon>
             <Zundamon face="smile" text="30 fps の動画で 12 にすると、セリフの後に 0.4 秒の間が入ります。" />
@@ -441,7 +441,7 @@ const Tutorial: FC = () => (
           <Code
             at={YAML}
             text={
-              'video: video.mp4\ntitle: "はじめての Mekuru 動画"\ndescription: |\n  Mekuru Movie Maker で作った最初の動画です。\n  音声: VOICEVOX:ずんだもん\ntags: [MekuruMovieMaker, VOICEVOX, ずんだもん]\nprivacy: private'
+              'video: video.mp4\ntitle: "はじめての Mekuru 動画"\ndescription: |\n  Mekuru Movie Maker で作った最初の動画です。\n  音声: irodoru / Irodori-TTS\ntags: [MekuruMovieMaker, irodoru, ずんだもん]\nprivacy: private'
             }
           />
           <seq>
@@ -495,7 +495,7 @@ const Tutorial: FC = () => (
         </stack>
       </seq>
     </stack>
-    <EndCard top="動画づくり" bottom="完全に理解した" credit="音声: VOICEVOX:ずんだもん　立ち絵: SDずんだもん（画像生成・自作PSD）" len={120} />
+    <EndCard top="動画づくり" bottom="完全に理解した" credit="音声: irodoru / Irodori-TTS　立ち絵: SDずんだもん（画像生成・自作PSD）" len={120} />
   </mekuru>
 );
 

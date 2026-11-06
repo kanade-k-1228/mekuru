@@ -237,7 +237,7 @@
 - `label`: タイムラインに出す説明（`<audio>`）
 - `<video>` の大きさは `<image>` と同じ: 素材の縦横比で、`w`・`h` を省くと素材の大きさ（入りきらなければ縮める）
 - `<audio>` は場所を取らない（`<row>` の中でも並ばない）
-- 読み上げの音声も `<audio>` になる（[VOICEVOX](../../pkgs/speech/README.jp.md#voicevox)・[COEIROINK](../../pkgs/speech/README.jp.md#coeiroink)・[Style-Bert-VITS2](../../pkgs/speech/README.jp.md#style-bert-vits2)・[VoiSona Talk](../../pkgs/speech/README.jp.md#voisona-talk)）
+- `Speech` の読み上げ音声も `<audio>` になる（[irodoru の音声合成](../../pkgs/speech/README.jp.md)）。
 
 ```tsx
 // example/src/main.tsx（抜粋）

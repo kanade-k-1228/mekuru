@@ -1,7 +1,7 @@
 import { mkdir, rename, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { buildValue, projectRoot } from "@mekuru/tsx";
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 
 const canonical = (v: unknown): string => {
   if (v === null || typeof v !== "object") return JSON.stringify(v) ?? "null";
@@ -20,14 +20,14 @@ const showSpeech = (p: { done: number; total: number; label: string }): void => 
 const SESSION = Symbol("speech");
 const session = () => buildValue(SESSION, () => ({ pending: new Map<string, Promise<string>>(), progress: { done: 0, total: 0 } }));
 
-export const cacheFile = (kind: string, voice: object, text: string): string => {
-  const key = new Bun.CryptoHasher("sha256").update(canonical({ v: CACHE_VERSION, kind, voice, text })).digest("hex");
+export const cacheFile = (request: object): string => {
+  const key = new Bun.CryptoHasher("sha256").update(canonical({ v: CACHE_VERSION, request })).digest("hex");
   return join(projectRoot(), ".mekuru", "cache", "tts", key.slice(0, 2), `${key}.wav`);
 };
 
-export const synthesized = (kind: string, voice: object, text: string, synthesize: (out: string) => Promise<void>): Promise<string> => {
+export const synthesized = (request: object, text: string, synthesize: (out: string) => Promise<void>): Promise<string> => {
   const { pending, progress } = session();
-  const file = cacheFile(kind, voice, text);
+  const file = cacheFile(request);
   let made = pending.get(file);
   if (!made) {
     made = (async () => {

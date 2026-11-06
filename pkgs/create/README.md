@@ -2,19 +2,19 @@
 
 [日本語](README.jp.md)
 
-Create a Mekuru project from a VOICEVOX sample or a blank script, with preview/build commands. Requires Bun 1.4+.
+Create a Mekuru project from an irodoru sample or a blank script, with preview/build commands. Requires Bun 1.4+.
 
 ```sh
 bun create @mekuru my-video
 cd my-video
 bun install
-bun run voicevox # keep running in another terminal (requires Docker)
+bun run irodoru # keep running in another terminal (requires Docker)
 bun preview
 ```
 
 The folder, template, and upload sites are prompted in a terminal when unspecified. The command checks ffmpeg after creation.
 
-- **VOICEVOX sample (default)**: Includes a speech sample, speech packages, and `bun run voicevox`. The command starts the CPU server in Docker at `http://127.0.0.1:50021`, downloading the image on first use. Stop it with Ctrl+C. You can also start the VOICEVOX app instead. See the [speech documentation](../speech/README.md) to switch engines later.
+- **irodoru sample (default)**: Includes speech, its packages, and `bun run irodoru` / `bun run voicevox`. The default irodoru sample needs no reference audio. These commands start prebuilt Docker images; the first run downloads the image and Ctrl+C stops the server. The default server is `http://127.0.0.1:8080`; override it with `MEKURU_IRODORU_URL`. See [setup and settings](../speech/README.md).
 - **Empty project**: Includes a blank `src/main.tsx` and minimal dependencies, without speech packages or a server command.
 
 ```sh

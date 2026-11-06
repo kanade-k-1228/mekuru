@@ -5,9 +5,9 @@ description: |
   プロジェクトの作成、台本の編集、プレビュー、声と立ち絵の調整、書き出し、任意の投稿まで。
   手順と完成した台本: https://github.com/kanade-k-1228/mekuru/tree/main/example
 
-  音声: VOICEVOX:ずんだもん
+  音声: irodoru / Irodori-TTS
   立ち絵: SDずんだもん（画像生成・自作PSD）
   キャラクター: 東北ずん子・ずんだもんプロジェクト https://zunko.jp/
-tags: [MekuruMovieMaker, VOICEVOX, ずんだもん, 解説動画]
+tags: [MekuruMovieMaker, irodoru, ずんだもん, 解説動画]
 category: 28
 privacy: private

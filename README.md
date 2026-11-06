@@ -28,7 +28,7 @@ curl -fsSL https://raw.githubusercontent.com/kanade-k-1228/mekuru/main/install.s
 bun create @mekuru my-video
 cd my-video
 bun install
-bun run voicevox # keep running in another terminal (requires Docker)
+bun run irodoru # keep running in another terminal (requires Docker)
 bun preview     # http://localhost:3333
 bun run build   # video.mp4
 ```
@@ -38,7 +38,7 @@ bun run build   # video.mp4
 ```tsx
 // src/main.tsx
 import { writeXml } from "@mekuru/tsx";
-import { Voicevox, zunda } from "@mekuru/speech/voicevox";
+import { Speech } from "@mekuru/speech";
 
 const Video = () => (
   <mekuru size="1920x1080" fps={30}>
@@ -47,8 +47,8 @@ const Video = () => (
     <stack>
       <text x="50%" y="40%" anchor="center" size={90} text="My first video" />
       <seq>
-        <Voicevox {...zunda} text="Hello! This is my first video." />
-        <Voicevox {...zunda} text="The title stays until both lines end." />
+        <Speech caption="明るく聞き取りやすい声" text="Hello! This is my first video." />
+        <Speech caption="明るく聞き取りやすい声" text="The title stays until both lines end." />
       </seq>
     </stack>
   </mekuru>
@@ -57,6 +57,6 @@ const Video = () => (
 await writeXml(".mekuru/main.xml", <Video />);
 ```
 
-The default “VOICEVOX sample” includes speech and its required packages. Keep `bun run voicevox` (Docker) or the VOICEVOX app running. To start with a blank script, select “Empty project” during creation or pass `--template empty`. See the [first-video tutorial](example/README.md) for a complete example.
+The default “irodoru sample” includes speech and its required packages. Run `bun run irodoru` to start the prebuilt Docker image (first run downloads it; Ctrl+C stops it). For VOICEVOX, use `bun run voicevox` and import `@mekuru/speech/voicevox`. Set `MEKURU_IRODORU_URL` or `MEKURU_VOICEVOX_URL` for a different server. Select “Empty project” or pass `--template empty` for a blank script. See the [tutorial](example/README.md) and [speech settings](pkgs/speech/README.md).
 
 > [@mekuru/tsx](pkgs/tsx/README.md) provides TSX types, the JSX runtime and XML output. [@mekuru/core](pkgs/core/README.md) provides the native compiler and preview server, including the viewer and platform binaries. Generated projects include both packages.

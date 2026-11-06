@@ -1,5 +1,5 @@
 export const TEMPLATES = {
-  sample: { name: "VOICEVOX sample", hint: "speech sample and a Docker command to start the server" },
+  sample: { name: "irodoru sample", hint: "speech sample with Docker commands for irodoru and VOICEVOX" },
   empty: { name: "Empty project", hint: "a blank script, with no speech server needed" },
 } as const;
 export type Template = keyof typeof TEMPLATES;

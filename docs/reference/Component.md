@@ -19,10 +19,10 @@ bun install
 
 See [@mekuru/create](../../pkgs/create/README.md) for creation options and the [tutorial](../../example/README.md) (Japanese) for your first script.
 
-The default is the VOICEVOX sample. Before previewing, run `bun run voicevox` in another terminal (requires Docker), or start the VOICEVOX app. Use `--template empty` to start with a blank script.
+The default is the irodoru sample. Run `bun run irodoru` in another terminal before previewing (requires Docker); `bun run voicevox` starts VOICEVOX (default: `http://127.0.0.1:8080`; override with `MEKURU_IRODORU_URL`). Use `--template empty` to start with a blank script.
 
 - `src/main.tsx`: Script
-- `src/parts.tsx`: Shared components, such as subtitles (VOICEVOX sample)
+- `src/parts.tsx`: Optional shared components, such as subtitles (add this file when needed)
 - `assets/`: Images, video, and audio
 - `configs/`: Upload settings and thumbnails
 - `.mekuru/`: Generated XML and speech cache
@@ -42,7 +42,7 @@ This component combines speech, a portrait, and subtitles into one line. Types a
 ```tsx
 // Excerpt from example/src/parts.tsx
 export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time }) => {
-  const line = await Voicevox.prepare({ ...voice, text: say ?? text });
+  const line = await Speech.prepare({ ...voice, text: say ?? text });
   return (
     <dur len={line.audio.len} {...time}>
       <stack>
@@ -63,7 +63,7 @@ export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time })
 <Zundamon text="今日の天気" say="きょうのてんき" />
 ```
 
-`Voicevox.prepare` prepares one shared audio source for `Audio` and `Talk` (`Audio` is imported from `@mekuru/audio`). `line.display` is the subtitle string, with `\n` line breaks. `Subtitle` only adds styles to ordinary `text`. `text` is the subtitle and `say` is what is spoken; without `say`, `text` is spoken. The outer `<dur>` bounds the whole line, so the children appear only while it is spoken. See [composing narrators](../../pkgs/narrator/README.md).
+`Speech.prepare` prepares one shared audio source for `Audio` and `Talk` (`Audio` is imported from `@mekuru/audio`). `line.display` is the subtitle string, with `\n` line breaks. `Subtitle` only adds styles to ordinary `text`. `text` is the subtitle and `say` is what is spoken; without `say`, `text` is spoken. The outer `<dur>` bounds the whole line, so the children appear only while it is spoken. See [composing narrators](../../pkgs/narrator/README.md).
 
 ### Displaying code
 

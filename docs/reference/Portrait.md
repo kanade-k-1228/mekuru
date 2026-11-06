@@ -79,7 +79,7 @@ const Line: FC = async () => {
 };
 ```
 
-Place `Line` inside `<mekuru>`. For synthesis, pass `line.audio` from `Voicevox.prepare(...)` or another engine instead of `readAudio`. `Talk` does not play audio itself.
+Place `Line` inside `<mekuru>`. For synthesis, pass `line.audio` from `Speech.prepare(...)` instead of `readAudio`. `Talk` does not play audio itself.
 
 `Stand` accepts `id`, `at`, and `len`. `Talk` displays the portrait for the shared audio source's duration. A speaking portrait temporarily replaces an idle portrait with the same `slot`. Mouths remain closed during idle, draft, silence, and the tail after audio. Eyes blink even in drafts. Identical inputs produce reproducible motion.
 

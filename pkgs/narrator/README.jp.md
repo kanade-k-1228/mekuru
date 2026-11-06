@@ -12,7 +12,7 @@ Bun 1.4 以上が必要です。
 bun add -d @mekuru/tsx @mekuru/narrator
 ```
 
-`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/tsx"` を設定します。音声エンジンと立ち絵の画像素材は別途用意します。
+`tsconfig.json` に `jsx: "react-jsx"` と `jsxImportSource: "@mekuru/tsx"` を設定します。音声サーバー（サンプルプロジェクトでは `bun run irodoru` / `bun run voicevox`）を起動し、立ち絵の画像素材を用意します。
 
 ## ナレータを組み立てる
 
@@ -23,7 +23,7 @@ import type { At, FC, Node } from "@mekuru/tsx";
 import { portrait, Subtitle } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
-import { Voisona } from "@mekuru/speech/voisona";
+import { Speech } from "@mekuru/speech";
 
 import type { LayerProps } from "./assets/character/tsuzumi/portrait";
 
@@ -32,7 +32,7 @@ type TsuzumiProps = { text: Node; face?: LayerProps["face"]; id?: string; at?: A
 
 export const TsuzumiStand = actor.Stand;
 export const Tsuzumi: FC<TsuzumiProps> = async ({ text, face, id, at }) => {
-  const line = await Voisona.prepare({ voice: "suzuki-tsudumi_ja_JP", text });
+  const line = await Speech.prepare({ caption: "落ち着いた聞き取りやすい声", text });
   return (
     <dur len={line.audio.len} id={id} at={at}>
       <stack>
