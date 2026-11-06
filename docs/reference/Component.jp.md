@@ -19,10 +19,10 @@ bun install
 
 作成オプションは [@mekuru/create](../../pkgs/create/README.jp.md)、最初の台本は [チュートリアル](../../example/README.md) を参照してください。
 
-既定は VOICEVOX サンプルです。プレビュー前に、別のターミナルで `bun run voicevox`（Docker が必要）または VOICEVOX アプリを起動します。空の台本は `--template empty` で作成できます。
+既定は irodoru サンプルです。プレビュー前に別のターミナルで `bun run irodoru` を実行します（Docker が必要）。VOICEVOX は `bun run voicevox` で起動できます（既定: `http://127.0.0.1:8080`、変更は `MEKURU_IRODORU_URL`）。空の台本は `--template empty` で作成できます。
 
 - `src/main.tsx`: 台本
-- `src/parts.tsx`: 字幕などの共通部品（VOICEVOX サンプル）
+- `src/parts.tsx`: 字幕などの共通部品（必要に応じて追加）
 - `assets/`: 画像・動画・音声
 - `configs/`: 投稿設定とサムネイル
 - `.mekuru/`: 生成した XML と音声キャッシュ
@@ -42,7 +42,7 @@ bun install
 ```tsx
 // example/src/parts.tsx（抜粋）
 export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time }) => {
-  const line = await Voicevox.prepare({ ...voice, text: say ?? text });
+  const line = await Speech.prepare({ ...voice, text: say ?? text });
   return (
     <dur len={line.audio.len} {...time}>
       <stack>
@@ -63,7 +63,7 @@ export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time })
 <Zundamon text="今日の天気" say="きょうのてんき" />
 ```
 
-`Voicevox.prepare` で一度準備した音声素材を `Audio` と `Talk` に渡します（`Audio` は `@mekuru/audio` から import）。`line.display` は字幕の文字列で、`\n` で改行します。`Subtitle` は装飾だけを加える通常の `text` です。`text` は字幕、`say` は読み上げる文で、`say` を省くと `text` を読み上げます。外側の `<dur>` でセリフの長さを決めるので、子要素はそのセリフの間だけ表示されます。詳しくは [ナレータの組み立て](../../pkgs/narrator/README.jp.md) を参照してください。
+`Speech.prepare` で一度準備した音声素材を `Audio` と `Talk` に渡します（`Audio` は `@mekuru/audio` から import）。`line.display` は字幕の文字列で、`\n` で改行します。`Subtitle` は装飾だけを加える通常の `text` です。`text` は字幕、`say` は読み上げる文で、`say` を省くと `text` を読み上げます。外側の `<dur>` でセリフの長さを決めるので、子要素はそのセリフの間だけ表示されます。詳しくは [ナレータの組み立て](../../pkgs/narrator/README.jp.md) を参照してください。
 
 ### コードを表示する
 

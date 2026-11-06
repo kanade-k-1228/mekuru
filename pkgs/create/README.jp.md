@@ -2,19 +2,19 @@
 
 [English](README.md)
 
-VOICEVOX サンプルか空の台本を選び、プレビューとビルドのコマンドを備えたプロジェクトを作成します。Bun 1.4 以上が必要です。
+irodoru サンプルか空の台本を選び、プレビューとビルドのコマンドを備えたプロジェクトを作成します。Bun 1.4 以上が必要です。
 
 ```sh
 bun create @mekuru my-video
 cd my-video
 bun install
-bun run voicevox # 別のターミナルで起動したままにする（Docker が必要）
+bun run irodoru # 別のターミナルで起動したままにする（Docker が必要）
 bun preview
 ```
 
 端末ではフォルダ・テンプレート・投稿先の未指定項目を対話で選びます。作成後に ffmpeg を確認します。
 
-- **VOICEVOX sample（既定）**: 音声付きサンプル・音声パッケージ・`bun run voicevox` を含みます。起動コマンドは Docker で CPU 版サーバーを `http://127.0.0.1:50021` に公開します。初回はイメージを取得し、Ctrl+C で終了します。VOICEVOX アプリを起動する方法でも構いません。他のエンジンへの変更は [音声合成の説明](../speech/README.jp.md) を参照してください。
+- **irodoru sample（既定）**: 音声付きサンプル・音声パッケージ・`bun run irodoru` / `bun run voicevox` を含みます。既定の irodoru サンプルは参照音声なしで使えます。起動コマンドはビルド済み Docker イメージを使い、初回はイメージを取得、Ctrl+C で終了します。既定の接続先は `http://127.0.0.1:8080`、変更は `MEKURU_IRODORU_URL`。[起動と設定](../speech/README.jp.md)。
 - **Empty project**: 空の `src/main.tsx` と最小限の依存を含みます。音声パッケージやサーバー起動コマンドは含みません。
 
 ```sh

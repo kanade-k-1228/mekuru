@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "irodoru": "docker run --rm -p 127.0.0.1:8080:8080 ghcr.io/kanade-k-1228/irodoru:latest-mf",
     "voicevox": "docker run --rm -p 127.0.0.1:50021:50021 voicevox/voicevox_engine:cpu-latest",
     "preview": "mekuru-compiler --serve --run 'bun --hot src/main.tsx' .mekuru/main.xml",
     "build": "bun src/main.tsx && mekuru-compiler .mekuru/main.xml -o video.mp4",

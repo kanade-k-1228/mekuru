@@ -2,8 +2,7 @@ import type { At, FC, Length, Node } from "@mekuru/tsx";
 import { portrait, Subtitle as NarratorSubtitle } from "@mekuru/narrator";
 
 import { Audio } from "@mekuru/audio";
-import { subtitleText } from "@mekuru/speech";
-import { Voicevox, zunda } from "@mekuru/speech/voicevox";
+import { Speech, subtitleText } from "@mekuru/speech";
 import type { LayerProps } from "../tutorial/assets/character/zundamon/portrait";
 
 type Children = { children?: Node };
@@ -35,8 +34,9 @@ const READING: Record<string, string> = {
   bun: "バン",
   ffmpeg: "エフエフエムペグ",
   WSL: "ダブリューエスエル",
-  VOICEVOX: "ボイスボックス",
-  Voicevox: "ボイスボックス",
+  irodoru: "いろどる",
+  Speech: "スピーチ",
+  MEKURU_IRODORU_URL: "めくる いろどる ユーアールエル",
   "zundamon.tsx": "ずんだもん ティーエスエックス",
   PSD: "ピーエスディー",
   API: "エーピーアイ",
@@ -96,13 +96,13 @@ const zundamon = portrait<LayerProps>({ src: SRC, x: 1560, y: 1000, h: 960, z: 1
 const big = portrait<LayerProps>({ src: SRC, x: 1510, y: 1140, h: 1150, z: 30, slot: "portrait:big" });
 export const ZundamonStand = zundamon.Stand;
 
-const voice = { ...zunda, gap: 6, reading: READING };
+const voice = { name: "ずんだもん", caption: "明るく元気な、高めの声", gap: 6, reading: READING };
 
 // text: subtitle. say: what is spoken (defaults to text). children: shown only during this line.
 type Line = Children & { id?: string; at?: At; face?: LayerProps["face"]; text: Node; say?: Node };
 
 export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time }) => {
-  const line = await Voicevox.prepare({ ...voice, text: say ?? text });
+  const line = await Speech.prepare({ ...voice, text: say ?? text });
   return (
     <dur len={line.audio.len} {...time}>
       <stack>
@@ -116,7 +116,7 @@ export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time })
 };
 
 export const Jingle: FC<{ text: string }> = async ({ text }) => {
-  const line = await Voicevox.prepare({ ...voice, text });
+  const line = await Speech.prepare({ ...voice, text });
   return (
     <stack>
       <rect w="100%" h="100%" fill={COLOR.pink} z={20} />

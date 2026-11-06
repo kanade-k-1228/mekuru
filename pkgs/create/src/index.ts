@@ -16,7 +16,7 @@ const parseSites = (value: string, previous: Site[] = []): Site[] => {
 
 new Command("create-mekuru")
   .description(
-    "Creates a Mekuru Movie Maker video project from a VOICEVOX sample or an empty script. In a terminal, it asks for what the options do not give; " +
+    "Creates a Mekuru Movie Maker video project from an irodoru sample or an empty script. In a terminal, it asks for what the options do not give; " +
       "with --yes (or when the input is not a terminal), it uses the defaults.",
   )
   .version(VERSION)

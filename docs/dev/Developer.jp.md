@@ -9,7 +9,7 @@
 - [pkgs/viewer](../../pkgs/viewer/README.jp.md): React のビューア。ビルド先は `pkgs/core/viewer/`
 - [pkgs/create](../../pkgs/create/README.jp.md): プロジェクト生成
 - [pkgs/audio](../../pkgs/audio/README.jp.md): 音声素材と WAV 処理
-- [pkgs/speech](../../pkgs/speech/README.jp.md): VOICEVOX・COEIROINK・Style-Bert-VITS2・VoiSona Talk の読み上げ部品と、エンジンを追加する API
+- [pkgs/speech](../../pkgs/speech/README.jp.md): irodoru / VOICEVOX の独立したクライアントと、共通のWAVキャッシュ・時間管理
 - [pkgs/narrator](../../pkgs/narrator/README.jp.md): 自作ナレータの立ち絵・口パク・字幕・PSD 素材準備
 - [pkgs/upload](../../pkgs/upload/README.jp.md): YouTube・ニコニコ動画への投稿コマンド
 - [example](../../example/README.md): チュートリアルと解説動画

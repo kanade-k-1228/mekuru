@@ -137,7 +137,7 @@ main() {
   fi
   log 'Next: bun create @mekuru my-video'
   log 'Then: cd my-video && bun install && bun preview'
-  log 'Also prepare a speech engine, and Noto Sans CJK for Chinese, Japanese or Korean text.'
+  log 'For speech, use bun run irodoru or bun run voicevox (Docker), and Noto Sans CJK for Chinese, Japanese or Korean text.'
 }
 
 main "$@"

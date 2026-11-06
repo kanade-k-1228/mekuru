@@ -1,18 +1,14 @@
 # Mekuru Movie Maker の使い方
 
-VOICEVOX のずんだもんが、プロジェクト作成から書き出しまでを案内する example 動画です。立ち絵は、画像生成スキルで作った SD（スーパーデフォルメ）イラストをまとめたシンプルな PSD を使います。
+irodoru の音声とずんだもんの立ち絵が、プロジェクト作成から書き出しまでを案内する example 動画です。立ち絵は、画像生成スキルで作った SD（スーパーデフォルメ）イラストをまとめたシンプルな PSD を使います。
 
 ## example 動画を作る
 
 リポジトリ直下で `bun install` を実行し、Bun 1.4 以上、libx264 付き ffmpeg・ffprobe、フォント（Noto Sans・Noto Sans CJK）を用意します。コンパイラは `bun run build` でビルドできます。
 
-VOICEVOX を起動します。既定の接続先は `http://127.0.0.1:50021`、音声は「ずんだもん / ノーマル」です。別の接続先は `MEKURU_VOICEVOX_URL` で指定できます。
+別のターミナルで `bun run --cwd example irodoru` を実行します（Docker が必要）。公開イメージ `ghcr.io/kanade-k-1228/irodoru:latest-mf` を使い、初回はダウンロードします。終了は Ctrl+C。既定の接続先は `http://127.0.0.1:8080`。別の接続先は `MEKURU_IRODORU_URL` で指定できます。声は caption で指定した生成音声で、参照音声は不要です。ずんだもんの公式音声ではありません。
 
-Docker が使える場合は、次のコマンドで CPU 版のサーバーを起動できます。初回はイメージをダウンロードします。起動したターミナルはそのままにして、別のターミナルで `preview`・`build` を実行します。終了は Ctrl+C です。
-
-```sh
-bun run --cwd example voicevox
-```
+VOICEVOX を使う場合は `bun run --cwd example voicevox` で起動し、読み上げ部品を `@mekuru/speech/voicevox` の `Voicevox` に変更します。
 
 ```sh
 bun run --cwd example preview
@@ -37,7 +33,7 @@ bun run --cwd example export:vscode
 bun create @mekuru my-video --template sample
 ```
 
-まず、このリポジトリの直下で `bun run --cwd example portrait` を実行して、PSD から PNG を展開します。その後、作ったプロジェクトに [tutorial/character/zundamon.tsx](tutorial/character/zundamon.tsx) を `src/character/zundamon.tsx`、[tutorial/assets](tutorial/assets) の内容を `assets` としてコピーします。[tutorial/main.tsx](tutorial/main.tsx) は完成時の台本です。`src/parts.tsx` は作成時のものを使います。
+まず、このリポジトリの直下で `bun run --cwd example portrait` を実行して、PSD から PNG を展開します。その後、作ったプロジェクトに [tutorial/character/zundamon.tsx](tutorial/character/zundamon.tsx) を `src/character/zundamon.tsx`、[tutorial/assets](tutorial/assets) の内容を `assets` としてコピーします。[tutorial/main.tsx](tutorial/main.tsx) は完成時の台本です。[tutorial/parts.tsx](tutorial/parts.tsx) も `src/parts.tsx` としてコピーします。
 
 PSD・メタデータ・型を Git 管理し、展開後の PNG は `.gitignore` で除外しています。PSD を編集したら、作成したプロジェクトで再展開します。
 
@@ -80,6 +76,6 @@ bun run --cwd example mekuru-psd /path/to/zundamon.psd --out tutorial/assets/cha
 
 ## クレジット
 
-- 音声: VOICEVOX:ずんだもん
+- 音声: irodoru / Irodori-TTS（caption による生成音声）
 - 立ち絵: SDずんだもん（内蔵 image_gen による画像生成・自作PSD。既存の配布立ち絵は使用していません）
 - キャラクター: [東北ずん子・ずんだもんプロジェクト](https://zunko.jp/)

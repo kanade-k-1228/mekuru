@@ -1,12 +1,12 @@
 import type { FC } from "@mekuru/tsx";
 import { Audio } from "@mekuru/audio";
-import { Voicevox, zunda } from "@mekuru/speech/voicevox";
+import { Speech } from "@mekuru/speech";
 import { portrait, type PortraitOptions } from "@mekuru/narrator";
 import { READING, Subtitle, type Line } from "../parts";
 import type { LayerProps } from "../../assets/character/zundamon/portrait";
 
 export const Zundamon: FC<Line> = async ({ text, ...time }) => {
-  const line = await Voicevox.prepare({ ...zunda, gap: 6, reading: READING, text });
+  const line = await Speech.prepare({ name: "ずんだもん", caption: "明るく元気な、高めの声", gap: 6, reading: READING, text });
   return (
     <dur len={line.audio.len} {...time}>
       <stack>

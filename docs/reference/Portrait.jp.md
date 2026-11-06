@@ -81,7 +81,7 @@ const Line: FC = async () => {
 };
 ```
 
-`Line` を `<mekuru>` 内で使います。音声合成では `readAudio` の代わりに `Voicevox.prepare(...)` などの `line.audio` を渡します。`Talk` 自体は音声を再生しません。
+`Line` を `<mekuru>` 内で使います。音声合成では `readAudio` の代わりに `Speech.prepare(...)` などの `line.audio` を渡します。`Talk` 自体は音声を再生しません。
 
 `Stand` は待機表示で、`id`・`at`・`len` を受け取ります。`Talk` は `source` の長さだけ表示します。同じ `slot` の待機表示は発言中だけ差し替わります。口は待機・下書き・無音・余韻では閉じます。目は下書きでもまばたきします。動きは同じ入力で再現可能です。
 

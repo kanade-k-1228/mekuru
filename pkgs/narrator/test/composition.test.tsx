@@ -1,10 +1,10 @@
-import { expect, test } from "bun:test";
+import { expect, spyOn, test } from "bun:test";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { projectRoot, toXml, writeXml } from "@mekuru/tsx";
 import { Audio, type AudioSource } from "@mekuru/audio";
-import { prepare } from "@mekuru/speech";
+import { Speech } from "@mekuru/speech";
 import { wav } from "../../audio/test/fixture.ts";
 import { portrait, Subtitle } from "../src/index.tsx";
 
@@ -14,6 +14,7 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
   const other = join(dir, "other");
   const ready = Promise.withResolvers<void>();
   let writing: Promise<void> | undefined;
+  const fetchMock = spyOn(globalThis, "fetch");
   try {
     await mkdir(join(dir, "actor"), { recursive: true });
     await mkdir(other);
@@ -36,15 +37,15 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
       expansions++;
       return <>{"漢字\n 次"}</>;
     };
-    const synthesize = async (say: string, out: string) => {
+    fetchMock.mockImplementation((async (_input: string | URL | Request, init?: RequestInit) => {
       syntheses++;
-      expect(say).toBe("かんじ 次");
+      expect(JSON.parse(String(init?.body)).text).toBe("かんじ 次");
       await ready.promise;
-      await Bun.write(out, wav(new Array(2400).fill(12000), 4800)); // half a second
-    };
+      return new Response(wav(new Array(2400).fill(12000), 4800)); // half a second
+    }) as typeof fetch);
     const Narrator = async () => {
       roots.push(projectRoot());
-      const line = await prepare("fixture", { text: <Words />, reading: { 漢字: "かんじ" }, gap: 3 }, "actor", {}, synthesize);
+      const line = await Speech.prepare({ text: <Words />, reading: { 漢字: "かんじ" }, gap: 3, name: "actor", url: "http://irodoru.test" });
       sources.push(line.audio);
       expect(Object.isFrozen(line)).toBe(true);
       expect(Object.isFrozen(line.audio)).toBe(true);
@@ -98,6 +99,7 @@ test("one prepared source drives speech, portraits and subtitles in both passes,
   } finally {
     ready.resolve();
     await writing?.catch(() => {});
+    fetchMock.mockRestore();
     process.chdir(before);
     await rm(dir, { recursive: true, force: true });
   }

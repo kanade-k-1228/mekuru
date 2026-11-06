@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { toXml, type Node } from "@mekuru/tsx";
-import { speechText, subtitleText } from "../src/text.tsx";
+import { speechText, subtitleText } from "../../src/shared/text.tsx";
 
 const display = async (text: Node) => {
   const xml = await toXml(

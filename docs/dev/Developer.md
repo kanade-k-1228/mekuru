@@ -9,7 +9,7 @@
 - [pkgs/viewer](../../pkgs/viewer/README.md): React viewer, built into `pkgs/core/viewer/`
 - [pkgs/create](../../pkgs/create/README.md): Project generator
 - [pkgs/audio](../../pkgs/audio/README.md): Audio resources and WAV processing
-- [pkgs/speech](../../pkgs/speech/README.md): Speech components for VOICEVOX, COEIROINK, Style-Bert-VITS2 and VoiSona Talk, and the API for adding an engine
+- [pkgs/speech](../../pkgs/speech/README.md): Independent irodoru / VOICEVOX clients with shared WAV caching and preview timing
 - [pkgs/narrator](../../pkgs/narrator/README.md): Portraits, lip sync, subtitles, and PSD preparation for custom narrators
 - [pkgs/upload](../../pkgs/upload/README.md): Upload commands for YouTube and niconico
 - [example](../../example/README.md): Tutorial and explainer video (Japanese)
