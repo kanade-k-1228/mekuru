@@ -5,11 +5,12 @@ use crate::ir::*;
 use crate::lang::ast::Flow;
 use crate::lang::diag::Diag;
 use crate::lang::span::Span;
-use crate::media::Fps;
-use crate::media::probe::MediaProbe;
 use crate::prepare::Prepared;
 use graph::Graph;
-use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
+use std::collections::BTreeMap;
+mod assemble;
+mod media;
+use media::{Clock, MediaTiming};
 
 pub const EPS: f64 = 1e-6;
 const NONE: i64 = i64::MIN / 4;
@@ -20,67 +21,6 @@ fn up(frames: f64) -> i64 {
 
 fn show(frames: f64) -> String {
     if frames.fract() == 0.0 { format!("{frames}") } else { format!("{frames:.2}") }
-}
-
-#[derive(Clone, Copy)]
-struct Clock {
-    from: f64,
-    to: f64,
-}
-
-fn clock(e: &Elem, probe: Option<MediaProbe>, fps: Fps) -> Option<Clock> {
-    let (from, to, len) = match &e.kind {
-        ElemKind::Video(VideoSpec { media: m, .. }) | ElemKind::Audio(AudioSpec { media: m }) => {
-            (m.from as f64, m.to, probe.map_or(0.0, |p| fps.of(p.duration)))
-        }
-        ElemKind::DraftAudio | ElemKind::View(_) => return None,
-    };
-    Some(Clock {
-        from,
-        to: to.map_or(len, |t| t as f64).min(len).max(from),
-    })
-}
-
-fn paces(e: &Elem, c: Option<Clock>) -> Vec<(f64, f64, f64)> {
-    let (Some(m), Some(c)) = (e.kind.media(), c) else { return vec![] };
-    let at = |p: Option<i64>, or: f64| p.map_or(or, |p| p as f64);
-    let parts: Vec<(f64, f64, f64)> = m
-        .speeds
-        .iter()
-        .map(|p| (at(p.from, c.from).max(c.from), at(p.to, c.to).min(c.to), p.rate))
-        .filter(|p| p.1 > p.0 + EPS)
-        .collect();
-    let mut marks: Vec<f64> = parts.iter().flat_map(|p| [p.0, p.1]).collect();
-    marks.sort_by(f64::total_cmp);
-    marks.dedup_by(|a, b| (*a - *b).abs() <= EPS);
-    let mut out: Vec<(f64, f64, f64)> = vec![];
-    for w in marks.windows(2) {
-        let (a, b) = (w[0], w[1]);
-        let mid = (a + b) / 2.0;
-        let rate: f64 = parts.iter().filter(|p| p.0 <= mid && mid < p.1).map(|p| p.2).product();
-        match out.last_mut() {
-            _ if (rate - 1.0).abs() <= EPS => {}
-            Some(l) if (l.1 - a).abs() <= EPS && l.2 == rate => l.1 = b,
-            _ => out.push((a, b, rate)),
-        }
-    }
-    out
-}
-
-fn runs(paces: &[(f64, f64, f64)], a: f64, b: f64) -> Vec<(f64, f64, f64)> {
-    let (mut out, mut p) = (vec![], a);
-    for &(x, y, r) in paces.iter().filter(|q| q.1 > a + EPS && q.0 < b - EPS) {
-        if x > p + EPS {
-            out.push((p, x, 1.0));
-        }
-        let e = y.min(b);
-        out.push((p.max(x), e, r));
-        p = e;
-    }
-    if b > p + EPS {
-        out.push((p, b, 1.0));
-    }
-    out
 }
 
 #[derive(Clone, Copy)]
@@ -101,12 +41,7 @@ pub fn schedule(s: &Script, prepared: &Prepared) -> Schedule {
         .iter()
         .map(|element| {
             let probe = prepared.media.get(&element.id).map(|m| m.probe);
-            let clock = clock(element, probe, fps);
-            MediaTiming {
-                probe,
-                clock,
-                paces: paces(element, clock),
-            }
+            MediaTiming::new(element, probe, fps)
         })
         .collect();
     let mut holds: BTreeMap<ElemId, Vec<(i64, NodeId)>> = BTreeMap::new();
@@ -139,12 +74,6 @@ pub fn schedule(s: &Script, prepared: &Prepared) -> Schedule {
     solver.unreached();
     solver.past();
     solver.finish()
-}
-
-struct MediaTiming {
-    probe: Option<MediaProbe>,
-    clock: Option<Clock>,
-    paces: Vec<(f64, f64, f64)>,
 }
 
 #[derive(Clone, Default)]
@@ -225,21 +154,6 @@ impl<'a> Solver<'a> {
 
     fn holds_of(&self, media: ElemId) -> &[(i64, NodeId)] {
         self.holds.get(&media).map_or(&[], Vec::as_slice)
-    }
-
-    fn played(&self, v: ElemId, a: f64, b: f64) -> f64 {
-        self.media[v].paces.iter().fold(b - a, |u, &(x, y, r)| {
-            let o = (y.min(b) - x.max(a)).max(0.0);
-            u - o + o / r
-        })
-    }
-
-    fn waits_at(&self, v: ElemId, q: f64) -> f64 {
-        self.media[v]
-            .paces
-            .iter()
-            .find(|p| p.2.is_infinite() && p.0 <= q + EPS && q <= p.1 + EPS)
-            .map_or(q, |p| p.1.max(q))
     }
 
     fn reference(&self, x: Target) -> Option<(&'a str, Target, i64)> {
@@ -326,12 +240,12 @@ impl<'a> Solver<'a> {
     /// Arrival is the latest of these variable + offset terms. Only a media end waits for holds at `q` itself.
     fn arrival_terms(&self, y: Target, q: f64, end: bool) -> impl Iterator<Item = (usize, i64)> + '_ {
         let clock = self.clock(y);
-        let elapsed = clock.map_or(q, |(v, c)| self.played(v, c.from, q));
+        let elapsed = clock.map_or(q, |(v, c)| self.media[v].played(c.from, q));
         std::iter::once((self.var(y, V::Start), up(elapsed))).chain(clock.into_iter().flat_map(move |(v, _)| {
             self.holds_of(v)
                 .iter()
                 .filter(move |(at, _)| (*at as f64) < q || (end && *at as f64 <= q))
-                .map(move |&(at, h)| (self.var(Target::Node(h), V::End), up(self.played(v, at as f64, q))))
+                .map(move |&(at, h)| (self.var(Target::Node(h), V::End), up(self.media[v].played(at as f64, q))))
         }))
     }
 
@@ -478,206 +392,36 @@ impl<'a> Solver<'a> {
         }
     }
 
-    fn segments(&self, v: ElemId, c: Clock, start: i64, end: i64) -> Vec<SrcSeg> {
-        let end = end as f64;
-        let mut segs: Vec<SrcSeg> = vec![];
-        let add = |segs: &mut Vec<SrcSeg>, t0: f64, t1: f64, s0: f64, rate: f64| {
-            let t1 = t1.min(end);
-            if t1 <= t0 + EPS {
-                return;
-            }
-            match segs.last_mut() {
-                Some(g) if g.rate == rate && (g.t1 - t0).abs() <= EPS && (g.s0 + g.rate * (g.t1 - g.t0) - s0).abs() <= EPS => g.t1 = t1,
-                _ => segs.push(SrcSeg { t0, t1, s0, rate }),
-            }
-        };
-        let play = |segs: &mut Vec<SrcSeg>, t: f64, pos: f64, q: f64| {
-            runs(&self.media[v].paces, pos, q).into_iter().fold(t, |t, (a, b, r)| {
-                let dt = (b - a) / r;
-                add(segs, t, t + dt, a, r);
-                t + dt
-            })
-        };
-        let (mut t, mut pos) = (start as f64, c.from);
-        for &(at, h) in self.holds_of(v) {
-            let q = self.waits_at(v, at as f64).max(pos);
-            let arrive = play(&mut segs, t, pos, q);
-            let resume = arrive.max(self.val[self.var(Target::Node(h), V::End)] as f64);
-            add(&mut segs, arrive, resume, q, 0.0);
-            (t, pos) = (resume, q);
-        }
-        let arrive = play(&mut segs, t, pos, c.to);
-        add(&mut segs, arrive, f64::INFINITY, c.to, 0.0);
-        segs
-    }
-
     fn finish(mut self) -> Schedule {
-        let s = self.s;
-        let nodes: Vec<NodeTime> = self.targets[..s.nodes.len()]
+        let intervals: Vec<_> = self.targets.iter().map(|state| state.interval).collect();
+        let periods: Vec<_> = self.nodes.iter().map(|state| state.period).collect();
+        let media = self
+            .s
+            .elems
             .iter()
-            .map(|state| {
-                let (start, end) = state.interval;
-                NodeTime { start, end }
+            .map(|e| {
+                let timing = &self.media[e.id];
+                let (start, end) = self.targets[self.ix(Target::Elem(e.id))].interval;
+                let source = timing.clock.filter(|_| !self.targets[self.ix(Target::Elem(e.id))].dropped).map(|clock| {
+                    let holds = self.holds_of(e.id).iter().map(|&(at, h)| (at, self.val[self.var(Target::Node(h), V::End)]));
+                    SrcMap {
+                        segs: timing.segments(clock, start, end, holds),
+                        from: clock.from,
+                        end: clock.to,
+                    }
+                });
+                let audible =
+                    e.kind.media().is_some_and(|m| m.volume > 0.0) && (matches!(e.kind, ElemKind::Audio(_)) || timing.probe.is_some_and(|p| p.has_audio));
+                (source, audible)
             })
             .collect();
-        let total = nodes[0].end;
-        let mut repeats: Vec<Vec<Repeat>> = vec![vec![]; s.nodes.len()];
-        for n in &s.nodes {
-            let nt = nodes[n.id];
-            let mut chain = n.parent.map_or_else(Vec::new, |p| repeats[p].clone());
-            if let Some(period) = self.nodes[n.id].period.filter(|&r| r > 0 && nt.end > nt.start + r) {
-                chain.push(Repeat {
-                    from: nt.start,
-                    period,
-                    until: nt.end,
-                });
-            }
-            repeats[n.id] = chain;
-        }
-        let level = |n: &Node| n.parent.map_or(0, |p| repeats[p].len());
-        let mut fades: Vec<Option<Fade>> = vec![None; s.nodes.len()];
-        for n in &s.nodes {
-            let nt = nodes[n.id];
-            if n.t.fade_in + n.t.fade_out <= 0 {
-                continue;
-            }
-            let (fade_in, fade_out) = fit_fades(n.t.fade_in, n.t.fade_out, nt.end - nt.start, n.head, &mut self.diags);
-            fades[n.id] = Some(Fade {
-                start: nt.start as f64,
-                end: nt.end as f64,
-                fade_in,
-                fade_out,
-                level: level(n),
-            });
-        }
-        let hidden = self.hidden(&repeats);
-        let hidden_in = |e: &Elem| {
-            let mut out = hidden.get(&Target::Elem(e.id)).cloned().unwrap_or_default();
-            out.extend(ancestors(&s.nodes, Some(e.node)).filter_map(|i| hidden.get(&Target::Node(i))).flatten());
-            merge(out)
-        };
-        let mut elems = Vec::with_capacity(s.elems.len());
-        let mut audio = vec![];
-        for (eid, e) in s.elems.iter().enumerate() {
-            let i = self.ix(Target::Elem(eid));
-            let (start, end) = self.targets[i].interval;
-            let parent = nodes[e.node];
-            let draws = !matches!(&e.kind, ElemKind::View(v) if v.ops.is_empty());
-            if e.kind.is_visual() && draws && end <= start && parent.end > parent.start {
-                self.diags.push(Diag::new(
-                    "W552",
-                    e.site,
-                    format!("`{}` is never visible (its interval is empty)", e.kind.name()),
-                ));
-            }
-            let (fi, fo) = fit_fades(e.t.fade_in, e.t.fade_out, end - start, e.site, &mut self.diags);
-            let mut et = ElemTime {
-                start,
-                end,
-                fade_in: fi,
-                fade_out: fo,
-                outer: ancestors(&s.nodes, Some(e.node)).filter_map(|i| fades[i]).collect(),
-                src: None,
-                repeat: repeats[e.node].clone(),
-                hidden: vec![],
-            };
-            if e.kind.is_visual() {
-                et.hidden = hidden_in(e);
-            }
-            if let Some(c) = self.media[eid].clock.filter(|_| !self.targets[i].dropped) {
-                let segs = self.segments(eid, c, start, end);
-                let volume = e.kind.media().map_or(0.0, |m| m.volume);
-                let audible = volume > 0.0 && (matches!(e.kind, ElemKind::Audio(_)) || self.media[eid].probe.is_some_and(|p| p.has_audio));
-                if audible {
-                    let env = et.fades();
-                    for g in segs.iter().filter(|g| g.rate > 0.0 && g.t1 - g.t0 > EPS) {
-                        for (at, len, shift) in unroll(&et.repeat, g.t0, g.t1) {
-                            let env = env.iter().map(|f| f.shifted(shift[f.level])).collect();
-                            audio.push(AudioClip {
-                                elem: eid,
-                                at,
-                                len,
-                                src: g.s0,
-                                rate: g.rate,
-                                gain: volume,
-                                env,
-                            });
-                        }
-                    }
-                }
-                et.src = Some(SrcMap { segs, from: c.from, end: c.to });
-            }
-            elems.push(et);
-        }
-        self.checks(&nodes);
-        if total <= 0 {
+        let mut schedule = assemble::finish(self.s, &intervals, &periods, media, &mut self.diags);
+        self.checks(&schedule.nodes);
+        if schedule.total <= 0 {
             self.diags.push(Diag::new("W555", Span::default(), "the video is empty (total length is 0)"));
         }
-        Schedule {
-            total,
-            nodes,
-            elems,
-            audio,
-            diags: self.diags,
-        }
-    }
-
-    fn hidden(&self, repeats: &[Vec<Repeat>]) -> BTreeMap<Target, Vec<(i64, i64)>> {
-        let s = self.s;
-        let mut slots: BTreeMap<&str, Vec<(Target, i64, i64, u32)>> = BTreeMap::new();
-        for x in targets(s) {
-            let (start, end) = self.targets[self.ix(x)].interval;
-            let (order, chain): (u32, &[Repeat]) = match x {
-                Target::Node(n) => (s.nodes[n].head.lo, s.nodes[n].parent.map_or(&[], |p| repeats[p].as_slice())),
-                Target::Elem(e) => (s.elems[e].site.lo, &repeats[s.elems[e].node]),
-            };
-            if let Some(name) = &self.time(x).slot
-                && end > start
-            {
-                for (at, len, _) in unroll(chain, start as f64, end as f64) {
-                    slots.entry(name.as_str()).or_default().push((x, up(at), up(at + len), order));
-                }
-            }
-        }
-        let total = self.targets[0].interval.1;
-        let mut hidden = BTreeMap::new();
-        for holders in slots.values_mut() {
-            holders.sort_by_key(|h| (h.1, h.3));
-            let marks: Vec<_> = holders.iter().flat_map(|h| [h.1, h.2]).collect::<BTreeSet<_>>().into_iter().collect();
-            let mut visible: BTreeMap<Target, Vec<(i64, i64)>> = holders.iter().map(|h| (h.0, vec![])).collect();
-            let mut active = BinaryHeap::new();
-            let mut next = 0;
-            for w in marks.windows(2) {
-                let (a, b) = (w[0], w[1]);
-                while next < holders.len() && holders[next].1 <= a {
-                    let h = holders[next];
-                    active.push((h.1, h.3, next));
-                    next += 1;
-                }
-                while active.peek().is_some_and(|&(_, _, i)| holders[i].2 <= a) {
-                    active.pop();
-                }
-                if let Some(&(_, _, i)) = active.peek() {
-                    visible.get_mut(&holders[i].0).expect("slot holder").push((a, b));
-                }
-            }
-            // Visibility is in global time; the same target can win again in another round.
-            for (target, spans) in visible {
-                let mut gaps = vec![];
-                let mut at = 0;
-                for (a, b) in merge(spans) {
-                    if a > at {
-                        gaps.push((at, a));
-                    }
-                    at = b;
-                }
-                if at < total {
-                    gaps.push((at, total));
-                }
-                hidden.insert(target, gaps);
-            }
-        }
-        hidden
+        schedule.diags = self.diags;
+        schedule
     }
 
     fn checks(&mut self, nodes: &[NodeTime]) {

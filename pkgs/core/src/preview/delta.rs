@@ -1,49 +1,11 @@
 //! A compiled scene and the patch from the previous one.
-use super::dto::*;
-use serde::Serialize;
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+pub use super::dto::{CollectionPatch, Dimensions, Patch, Resources, Versioned};
+use std::collections::{HashMap, HashSet};
 
-pub type Resources = HashMap<String, Arc<Vec<Op>>>;
-
-#[derive(PartialEq, Serialize)]
-pub struct Versioned {
-    pub version: u64,
-    #[serde(flatten)]
-    pub scene: Preview,
-}
 /// A scene and the drawings it uses.
 pub struct Published {
     pub preview: Versioned,
     pub resources: Resources,
-}
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Patch {
-    base_version: u64,
-    version: u64,
-    scene: Dimensions,
-    elements: CollectionPatch<Element>,
-    nodes: CollectionPatch<TimelineNode>,
-    clips: CollectionPatch<Clip>,
-    resources: Resources,
-}
-
-#[derive(Serialize)]
-pub struct Dimensions {
-    width: u32,
-    height: u32,
-    fps: f64,
-    duration: f64,
-}
-#[derive(Serialize)]
-pub struct CollectionPatch<T> {
-    upsert: Vec<T>,
-    remove: Vec<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    order: Option<Vec<String>>,
 }
 fn collection<T: Clone + PartialEq>(before: &[T], after: &[T], key: impl Fn(&T) -> &str) -> CollectionPatch<T> {
     let old: HashMap<_, _> = before.iter().map(|e| (key(e), e)).collect();

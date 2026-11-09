@@ -1,7 +1,5 @@
-import type { Child } from "hono/jsx";
-import type { JSX as HonoJSX } from "hono/jsx/jsx-runtime";
-
-export type Node = Child;
+import type { JsxNode, Node } from "./runtime.ts";
+export type { Node } from "./runtime.ts";
 
 export type Length = number | `${number}%` | "auto";
 type Ratio = number | `${number}%`;
@@ -128,10 +126,14 @@ export interface IntrinsicElements {
 }
 
 export namespace JSX {
-  export type Element = HonoJSX.Element;
-  export type ElementType = HonoJSX.ElementType;
-  export interface ElementChildrenAttribute extends HonoJSX.ElementChildrenAttribute {}
-  export interface IntrinsicAttributes extends HonoJSX.IntrinsicAttributes {}
+  export type Element = JsxNode | Promise<JsxNode>;
+  export type ElementType = keyof IntrinsicElements | ((props: never) => Node);
+  export interface ElementChildrenAttribute {
+    children: Node;
+  }
+  export interface IntrinsicAttributes {
+    key?: string | number | bigint | null;
+  }
   export interface IntrinsicElements extends IntrinsicElementsBase {}
 }
 

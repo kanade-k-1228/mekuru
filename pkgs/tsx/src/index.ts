@@ -1,6 +1,6 @@
-export { Fragment, jsx, jsx as jsxs, jsx as jsxDEV } from "hono/jsx/jsx-runtime";
+export { Fragment, jsx, jsx as jsxs, jsx as jsxDEV } from "./runtime.ts";
 
-export type { FC } from "hono/jsx";
+export type { FC } from "./runtime.ts";
 export type { Anchor, At, Color, IntrinsicElements, JSX, Length, Node, Time } from "./jsx.ts";
 export { buildValue, isDraft, projectRoot, waitFor } from "./context.ts";
 export { fps, resolveText } from "./expand.ts";

@@ -2,7 +2,7 @@
 
 [日本語](README.jp.md)
 
-TSX authoring and XML output for Mekuru Movie Maker. Provides types for built-in elements and re-exports Hono's JSX runtime.
+TSX authoring and XML output for Mekuru Movie Maker. Provides types for built-in elements and a small JSX runtime that builds nodes for XML expansion.
 
 Requires Bun 1.4 or later.
 

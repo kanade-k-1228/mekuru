@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+import type { FC, JsxNode } from "./runtime.ts";
 type Props = Record<string, unknown>;
 
 export interface Element {
@@ -7,12 +8,6 @@ export interface Element {
   children: Element[];
 }
 export type Item = Element | string;
-
-interface JsxNode {
-  tag: unknown;
-  props: Props;
-  children: unknown[];
-}
 
 const isJsxNode = (v: unknown): v is JsxNode => typeof v === "object" && v !== null && "tag" in v && "props" in v && Array.isArray((v as JsxNode).children);
 
@@ -48,11 +43,7 @@ export const expand = async (node: unknown, out: Item[]): Promise<void> => {
     if (typeof tag === "function") {
       const p = { ...props };
       if (children.length) p.children = children.length === 1 ? children[0] : children;
-      return expand(await tag(p), out);
-    }
-    if (tag === "") {
-      for (const c of children) await expand(c, out);
-      return;
+      return expand(await (tag as FC<Props>)(p), out);
     }
     if (typeof tag === "string") {
       const items: Item[] = [];

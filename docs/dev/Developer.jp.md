@@ -62,7 +62,7 @@ git push origin 0.3.0
 タグの公開処理:
 
 1. `release.ts stamp` が版を manifests と lockfiles に設定する。変更はコミットしない。
-2. 各 OS のジョブでビューアをビルドし、Rust 実行ファイルへ埋め込んでから `pack` で npm tarball にする。
+2. 専用ジョブで一度ビルドしたビューアを各 OS のジョブへ配布し、Rust 実行ファイルへ埋め込んでから `pack` で npm tarball にする。
 3. `deps` が `@mekuru/core` の `optionalDependencies` を設定し、バイナリと公開 workspace を `bun publish` で公開する。`private` は除外する。
 4. 変更点付きの GitHub Release を作成する。
 
@@ -98,7 +98,7 @@ CI の各 OS ジョブでも UI 埋め込み後にネイティブサーバーの
 - TSX → XML: [tsx/src/xml.ts](../../pkgs/tsx/src/xml.ts)。部品を展開し、省略・別名を正規化
 - XML の解析: [core/src/lang](../../pkgs/core/src/lang)。厳格な属性・参照の検査
 - 配置: [core/src/layout](../../pkgs/core/src/layout)。taffy で文書全体を配置し、時間の木に変換
-- 時間の計算: [core/src/schedule/mod.rs](../../pkgs/core/src/schedule/mod.rs)。依存順に解決。循環は E510、到達できない参照は E504
+- 時間の計算: [core/src/schedule/mod.rs](../../pkgs/core/src/schedule/mod.rs)。依存順に解決。速度区間と一時停止は `schedule/media.rs`、解決済み区間からの描画・音声データ生成は `schedule/assemble.rs`。循環は E510、到達できない参照は E504
 - 描画: [core/src/render](../../pkgs/core/src/render)。cosmic-text で組版、Skrifa で文字輪郭、tiny-skia で描画
 - 出力: [core/src/pipeline.rs](../../pkgs/core/src/pipeline.rs)。音声の速度変更・ミックス・エンコード
 - ビューア: [viewer/src/view](../../pkgs/viewer/src/view) は UI、[viewer/src/logic](../../pkgs/viewer/src/logic) は状態と計算
@@ -111,4 +111,4 @@ TSX の `fps()` は `<mekuru>` の展開中だけ使えます。音声の速度�
 
 ## パッケージの責務
 
-`types` はJSX・XMLと構築コンテキスト、`core` はネイティブコンパイラとプレビューサーバー、`audio` は音声素材とWAV処理、`speech` は合成の準備・キャッシュと各エンジンの HTTP API を担当します。`narrator` は立ち絵・字幕、`upload` は投稿コマンドを担当します。プレビューの通信契約の型は [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts) にあり、ネイティブサーバーがそれを Rust で実装します。
+`tsx` はJSX・XMLと構築コンテキスト、`core` はネイティブコンパイラとプレビューサーバー、`audio` は音声素材とWAV処理、`speech` は合成の準備・キャッシュと各エンジンの HTTP API を担当します。`narrator` は立ち絵・字幕、`upload` は投稿コマンドを担当します。プレビューの通信契約の型は [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts) にあり、Rust 側の対応する通信型は [core/src/preview/dto.rs](../../pkgs/core/src/preview/dto.rs) に集約します。差分計算とサーバーはこの型を使います。

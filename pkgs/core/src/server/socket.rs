@@ -1,4 +1,5 @@
 use super::{App, files};
+use crate::preview::dto::Command;
 use axum::{
     extract::{
         State, WebSocketUpgrade,
@@ -7,15 +8,8 @@ use axum::{
     http::{HeaderMap, StatusCode, Uri},
     response::Response,
 };
-use serde::Deserialize;
 use std::time::Duration;
 use tokio::sync::broadcast;
-
-#[derive(Deserialize)]
-#[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
-enum Command {
-    Resync,
-}
 
 pub(super) struct Subscription {
     app: App,
