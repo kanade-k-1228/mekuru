@@ -14,7 +14,7 @@
     "portrait:source": "bun scripts/create-portrait.ts"
   },
   "devDependencies": {
-    "@types/bun": "1.4.2",
+    "@types/bun": "1.4.4",
     "@mekuru/tsx": "workspace:*",
     "@mekuru/core": "workspace:*",
     "@mekuru/upload": "workspace:*",
