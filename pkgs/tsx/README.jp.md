@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-Mekuru Movie Maker の台本を TSX で書き、XML に書き出すパッケージです。組み込み要素の型と、Hono の JSX ランタイムの再エクスポートを提供します。
+Mekuru Movie Maker の台本を TSX で書き、XML に書き出すパッケージです。組み込み要素の型と、XML 展開用のノードを作る小さな JSX ランタイムを提供します。
 
 Bun 1.4 以上が必要です。
 

@@ -62,7 +62,7 @@ git push origin 0.3.0
 Publishing a tag:
 
 1. `release.ts stamp` sets the version in manifests and lockfiles without committing the changes.
-2. Each platform job builds the viewer, embeds it in the Rust executable, and `pack` creates compiler npm tarballs.
+2. A dedicated job builds the viewer once. Each platform job downloads that artifact, embeds it in the Rust executable, and `pack` creates compiler npm tarballs.
 3. `deps` sets `@mekuru/core`'s `optionalDependencies`; publish the binaries and public workspaces with `bun publish`. Exclude `private` packages.
 4. Create a GitHub Release with release notes.
 
@@ -98,7 +98,7 @@ The CI platform matrix runs the native server tests after embedding the viewer.
 - TSX → XML: [tsx/src/xml.ts](../../pkgs/tsx/src/xml.ts): expand components and normalize omissions and aliases
 - XML parsing: [core/src/lang](../../pkgs/core/src/lang): strict attribute and reference validation
 - Layout: [core/src/layout](../../pkgs/core/src/layout): lay out the document with taffy and convert it to a timing tree
-- Timing: [core/src/schedule/mod.rs](../../pkgs/core/src/schedule/mod.rs): resolve dependencies; cycles are E510, unreachable references are E504
+- Timing: [core/src/schedule/mod.rs](../../pkgs/core/src/schedule/mod.rs): resolve dependencies; `schedule/media.rs` handles speed ranges and holds, and `schedule/assemble.rs` builds playback and audio data from resolved intervals. Cycles are E510, unreachable references are E504
 - Rendering: [core/src/render](../../pkgs/core/src/render): cosmic-text for shaping, Skrifa for glyph outlines, tiny-skia for drawing
 - Output: [core/src/pipeline.rs](../../pkgs/core/src/pipeline.rs): audio speed changes, mixing, and encoding
 - Viewer: [viewer/src/view](../../pkgs/viewer/src/view) for UI; [viewer/src/logic](../../pkgs/viewer/src/logic) for state and calculations
@@ -111,4 +111,4 @@ Viewer state lives in Jotai atoms; `logic/` does not depend on `view/`. Componen
 
 ## Package boundaries
 
-`types` owns JSX and XML build context; `core` is the native compiler and preview server. `audio` owns audio resources and WAV processing; `speech` owns synthesis preparation, caches and each engine's HTTP API. `narrator` composes portraits and subtitles. `upload` owns the upload commands. The preview contract is typed in [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts); the native server implements it in Rust.
+`tsx` owns JSX and XML build context; `core` is the native compiler and preview server. `audio` owns audio resources and WAV processing; `speech` owns synthesis preparation, caches and each engine's HTTP API. `narrator` composes portraits and subtitles. `upload` owns the upload commands. The preview contract is typed in [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts); the corresponding Rust wire types live in [core/src/preview/dto.rs](../../pkgs/core/src/preview/dto.rs), shared by delta generation and the server.

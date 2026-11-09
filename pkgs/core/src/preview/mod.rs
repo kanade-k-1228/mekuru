@@ -19,7 +19,7 @@ use crate::{
 use std::{collections::BTreeMap, fmt::Write, path::Path};
 use tiny_skia::{LineCap, LineJoin, PathSegment, Transform};
 
-mod dto;
+pub(crate) mod dto;
 pub use dto::*;
 
 fn file_src(path: &Path, root: &Path) -> String {

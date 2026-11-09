@@ -1,5 +1,6 @@
 pub use crate::analysis::Diagnostic;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Clone, PartialEq, Serialize)]
 pub struct Preview {
@@ -110,4 +111,82 @@ pub struct Clip {
     pub(super) label: String,
     pub(super) estimated: bool,
     pub(super) freezes: Vec<[f64; 2]>,
+}
+
+pub type Resources = HashMap<String, Arc<Vec<Op>>>;
+
+#[derive(PartialEq, Serialize)]
+pub struct Versioned {
+    pub version: u64,
+    #[serde(flatten)]
+    pub scene: Preview,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Patch {
+    pub(super) base_version: u64,
+    pub(super) version: u64,
+    pub(super) scene: Dimensions,
+    pub(super) elements: CollectionPatch<Element>,
+    pub(super) nodes: CollectionPatch<TimelineNode>,
+    pub(super) clips: CollectionPatch<Clip>,
+    pub(super) resources: Resources,
+}
+
+#[derive(Serialize)]
+pub struct Dimensions {
+    pub(super) width: u32,
+    pub(super) height: u32,
+    pub(super) fps: f64,
+    pub(super) duration: f64,
+}
+#[derive(Serialize)]
+pub struct CollectionPatch<T> {
+    pub(super) upsert: Vec<T>,
+    pub(super) remove: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) order: Option<Vec<String>>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PreviewState {
+    pub(crate) title: String,
+    pub(crate) version: u64,
+    pub(crate) preview_version: u64,
+    pub(crate) status: &'static str,
+    pub(crate) error: Option<String>,
+    pub(crate) diagnostics: Vec<Diagnostic>,
+}
+
+/// A WebSocket message: the viewer's `PreviewEvent`.
+#[derive(Serialize)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub(crate) enum Event<'a> {
+    Status {
+        state: &'a PreviewState,
+    },
+    Snapshot {
+        state: &'a PreviewState,
+        preview: Option<&'a Versioned>,
+        resources: &'a Resources,
+    },
+    Patch {
+        state: &'a PreviewState,
+        #[serde(flatten)]
+        patch: &'a Patch,
+    },
+}
+
+impl Event<'_> {
+    pub(crate) fn json(&self) -> String {
+        serde_json::to_string(self).expect("preview JSON")
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) enum Command {
+    Resync,
 }

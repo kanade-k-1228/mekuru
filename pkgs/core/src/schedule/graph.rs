@@ -1,4 +1,5 @@
-use super::{BTreeSet, Target};
+use crate::ir::Target;
+use std::collections::BTreeSet;
 pub(super) struct Edge {
     from: usize,
     to: usize,

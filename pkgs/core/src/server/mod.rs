@@ -6,7 +6,8 @@ mod watch;
 
 use crate::preview::{
     Diagnostic, Session,
-    delta::{Patch, Published, Resources, Versioned},
+    delta::{Published, Resources},
+    dto::{Event, PreviewState},
 };
 use anyhow::{Context, Result};
 use axum::{
@@ -19,7 +20,6 @@ use axum::{
     routing::get,
     serve::ListenerExt,
 };
-use serde::Serialize;
 use std::{
     path::PathBuf,
     sync::{Arc, Condvar, Mutex},
@@ -36,42 +36,6 @@ pub struct Options {
     pub port: u16,
     /// Open the viewer in a browser.
     pub open: bool,
-}
-
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct PreviewState {
-    title: String,
-    version: u64,
-    preview_version: u64,
-    status: &'static str,
-    error: Option<String>,
-    diagnostics: Vec<Diagnostic>,
-}
-
-/// A WebSocket message: the viewer's `PreviewEvent`.
-#[derive(Serialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
-enum Event<'a> {
-    Status {
-        state: &'a PreviewState,
-    },
-    Snapshot {
-        state: &'a PreviewState,
-        preview: Option<&'a Versioned>,
-        resources: &'a Resources,
-    },
-    Patch {
-        state: &'a PreviewState,
-        #[serde(flatten)]
-        patch: &'a Patch,
-    },
-}
-
-impl Event<'_> {
-    fn json(&self) -> String {
-        serde_json::to_string(self).expect("preview JSON")
-    }
 }
 
 struct Live {
