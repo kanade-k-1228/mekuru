@@ -1,3 +1,4 @@
+use super::pcm::{CHANNELS, RATE};
 use super::{Fps, ffmpeg};
 use crate::util::TempFile;
 use crate::util::proc::{ChildGuard, tail};
@@ -25,8 +26,9 @@ impl EncodeArgs<'_> {
         c.args(["-video_size", &format!("{}x{}", self.w, self.h)]);
         c.args(["-framerate", &format!("{}/{}", self.fps.num, self.fps.den)]);
         c.args(["-i", "pipe:0"]);
-        if let Some(wav) = self.audio {
-            c.arg("-i").arg(wav).args(["-map", "0:v:0", "-map", "1:a:0"]);
+        if let Some(pcm) = self.audio {
+            c.args(["-f", "s16le", "-ar", &RATE.to_string(), "-ac", &CHANNELS.to_string()]);
+            c.arg("-i").arg(pcm).args(["-map", "0:v:0", "-map", "1:a:0"]);
         }
         c.args(["-vf", "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p"]);
         c.args(["-c:v", "libx264", "-preset", self.preset, "-crf", &self.crf.to_string()]);

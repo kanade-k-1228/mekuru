@@ -25,7 +25,7 @@ pub fn probe_cached(src: &Path) -> Result<MediaProbe> {
     MEMO.get(src, || probe(src))
 }
 
-pub fn probe(src: &Path) -> Result<MediaProbe> {
+fn probe(src: &Path) -> Result<MediaProbe> {
     let mut c = Command::new(std::env::var("MEKURU_FFPROBE").unwrap_or_else(|_| "ffprobe".into()));
     c.args(["-v", "error", "-print_format", "json", "-show_format", "-show_streams"]).arg(src);
     let out = run_checked(c)?;

@@ -23,6 +23,11 @@ fn show(frames: f64) -> String {
     if frames.fract() == 0.0 { format!("{frames}") } else { format!("{frames:.2}") }
 }
 
+/// The part of its source that a media plays, for a message.
+fn played(c: Clock) -> String {
+    format!("it plays its source from frame {} to {}", show(c.from), show(c.to))
+}
+
 #[derive(Clone, Copy)]
 enum V {
     Start,
@@ -321,11 +326,7 @@ impl<'a> Solver<'a> {
             } else if let Some((_, c)) = self.clock(y)
                 && ((q as f64) < c.from || q as f64 > c.to)
             {
-                format!(
-                    "`{id}` never gets to frame {q}: it plays its source from frame {} to {}",
-                    show(c.from),
-                    show(c.to)
-                )
+                format!("`{id}` never gets to frame {q}: {}", played(c))
             } else if self.arrival_at(y, q) > self.targets[self.ix(y)].interval.1 {
                 let (start, end) = self.targets[self.ix(y)].interval;
                 format!("`{id}` never gets to frame {q}: it is shown for {} frames", end - start)
@@ -339,16 +340,8 @@ impl<'a> Solver<'a> {
                 && let Some(c) = self.media[h.media].clock
                 && ((h.at as f64) < c.from || h.at as f64 > c.to)
             {
-                found.push(Diag::new(
-                    "E504",
-                    n.head,
-                    format!(
-                        "the media never gets to frame {}: it plays its source from frame {} to {}",
-                        h.at,
-                        show(c.from),
-                        show(c.to)
-                    ),
-                ));
+                let msg = format!("the media never gets to frame {}: {}", h.at, played(c));
+                found.push(Diag::new("E504", n.head, msg));
             }
         }
         for (e, c) in self.s.elems.iter().zip(self.media.iter().map(|media| media.clock)) {
@@ -356,17 +349,8 @@ impl<'a> Solver<'a> {
             for p in &m.speeds {
                 let (a, b) = (p.from.map_or(c.from, |a| a as f64), p.to.map_or(c.to, |b| b as f64));
                 if b.min(c.to) <= a.max(c.from) {
-                    found.push(Diag::new(
-                        "E504",
-                        p.site,
-                        format!(
-                            "the media never plays frames {} to {}: it plays its source from frame {} to {}",
-                            show(a),
-                            show(b),
-                            show(c.from),
-                            show(c.to)
-                        ),
-                    ));
+                    let msg = format!("the media never plays frames {} to {}: {}", show(a), show(b), played(c));
+                    found.push(Diag::new("E504", p.site, msg));
                 }
             }
         }
