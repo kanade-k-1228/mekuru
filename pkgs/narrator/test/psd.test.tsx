@@ -3,11 +3,13 @@ import { writeFile, readFile, access } from "node:fs/promises";
 import { join } from "node:path";
 import type { Layer } from "ag-psd";
 import sharp from "sharp";
-import { toXml } from "@mekuru/tsx";
+import { toXml, type Node } from "@mekuru/tsx";
 import { wav } from "../../audio/test/fixture.ts";
 import { portrait } from "../src/index.tsx";
 import { exportPsd } from "../src/psd.ts";
 import { pixel, psdFixture } from "./fixture.ts";
+
+const render = (children: Node) => toXml(<mekuru>{children}</mekuru>);
 
 const layers = (): Layer[] => [
   pixel("body [fixed]", [255, 0, 0, 255]),
@@ -43,25 +45,13 @@ test("PSD export preserves options, order, defaults and types, flattening nested
     expect([...image.data.subarray(0, 4)]).toEqual([0, 0, 255, 255]);
     expect(image.data[7]).toBe(0);
     const actor = portrait<Props>({ src: out });
-    const xml = await toXml(
-      <mekuru>
-        <actor.Stand face="angry" glass />
-      </mekuru>,
-    );
+    const xml = await render(<actor.Stand face="angry" glass />);
     expect(xml.indexOf("body.png")).toBeLessThan(xml.indexOf("face/angry.png"));
     expect(xml).toContain("glass.png");
-    const reset = await toXml(
-      <mekuru>
-        <actor.Stand />
-      </mekuru>,
-    );
+    const reset = await render(<actor.Stand />);
     expect(reset).toContain("face/smile.png");
     expect(reset).not.toContain("glass.png");
-    const talk = await toXml(
-      <mekuru>
-        <actor.Talk face="smile" source={{ status: "draft", len: 30 }} />
-      </mekuru>,
-    );
+    const talk = await render(<actor.Talk face="smile" source={{ status: "draft", len: 30 }} />);
     expect(talk).not.toContain("<audio");
     expect(talk).toContain('len="30"');
     expect(talk).toContain("face/smile.png");
@@ -169,17 +159,9 @@ test("explicit kinds do not change when options are added; null hides selections
       ["toggle", true],
     ]);
     const actor = portrait<{ 服?: "普段着" | null; glass?: boolean }>({ src: out });
-    const hidden = await toXml(
-      <mekuru>
-        <actor.Stand 服={null} glass={false} />
-      </mekuru>,
-    );
+    const hidden = await render(<actor.Stand 服={null} glass={false} />);
     expect(hidden).not.toContain("<image");
-    const reset = await toXml(
-      <mekuru>
-        <actor.Stand />
-      </mekuru>,
-    );
+    const reset = await render(<actor.Stand />);
     expect(reset).toContain("服/普段着.png");
     expect(reset).toContain("glass.png");
     expect(await readFile(join(out, "portrait.d.ts"), "utf8")).toContain('"服"?: "普段着" | null');
@@ -214,11 +196,7 @@ test("animation frames are ordered numerically, static alternatives stay static,
     const shown = await xml();
     expect(shown).toContain("eyes/normal/0.png");
     expect(shown).toContain("eyes/normal/2.png");
-    const staticXml = await toXml(
-      <mekuru>
-        <actor.Stand eyes="smile" len={120} />
-      </mekuru>,
-    );
+    const staticXml = await render(<actor.Stand eyes="smile" len={120} />);
     expect(staticXml.match(/<image /g)).toHaveLength(1);
     const before = await readFile(join(out, "portrait.json"), "utf8");
     await save([{ name: "eyes [blink]", children: [{ name: "normal", children: [pixel("0", [0, 0, 0, 255]), pixel("2", [0, 0, 0, 255])] }] }]);
@@ -237,11 +215,7 @@ test("speech animates any lip group, closes during silence/draft/tail, and prese
     const src = join(out, "speech.wav");
     await writeFile(src, wav([...new Array(2400).fill(0), ...new Array(2400).fill(12000)], 4800));
     const actor = portrait({ src: out, slot: "speaker", blink: 6 });
-    const draft = await toXml(
-      <mekuru>
-        <actor.Talk source={{ status: "draft", len: 60 }} />
-      </mekuru>,
-    );
+    const draft = await render(<actor.Talk source={{ status: "draft", len: 60 }} />);
     expect(draft).toContain("くち/normal/0.png");
     expect(draft).not.toContain("くち/normal/1.png");
     expect(draft).toContain("eyes/normal/0.png");
@@ -255,29 +229,17 @@ test("speech animates any lip group, closes during silence/draft/tail, and prese
     );
     expect(ready).toContain("くち/normal/1.png");
     expect(ready.match(/slot="speaker"/g)).toHaveLength(2);
-    const spoken = await toXml(
-      <mekuru>
-        <actor.Talk source={{ status: "ready", src, len: 60 }} />
-      </mekuru>,
-    );
+    const spoken = await render(<actor.Talk source={{ status: "ready", src, len: 60 }} />);
     const mouth = [...spoken.matchAll(/<dur len="(\d+)">\s*<image[^>]*src="[^"]*くち\/normal\/(\d).png"/g)].map((m) => [Number(m[1]), Number(m[2])]);
     expect(mouth[0][1]).toBe(0);
     expect(mouth.at(-1)?.[1]).toBe(0);
     expect(mouth.reduce((sum, [len]) => sum + len, 0)).toBe(60);
     expect(mouth.some(([, shape]) => shape === 1)).toBe(true);
     await writeFile(src, wav(4800, 4800));
-    const silence = await toXml(
-      <mekuru>
-        <actor.Talk source={{ status: "ready", src, len: 60 }} />
-      </mekuru>,
-    );
+    const silence = await render(<actor.Talk source={{ status: "ready", src, len: 60 }} />);
     expect(silence).not.toContain("くち/normal/1.png");
     const still = portrait({ src: out, blink: false });
-    const stand = await toXml(
-      <mekuru>
-        <still.Stand />
-      </mekuru>,
-    );
+    const stand = await render(<still.Stand />);
     expect(stand).toContain("eyes/normal/1.png");
     expect(stand).not.toContain("eyes/normal/0.png");
   }));

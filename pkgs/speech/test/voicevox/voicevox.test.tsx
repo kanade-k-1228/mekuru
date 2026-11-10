@@ -1,38 +1,12 @@
 /** @jsxImportSource @mekuru/tsx */
-import { afterEach, beforeEach, expect, mock, spyOn, test } from "bun:test";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { expect, mock, test } from "bun:test";
 import { Audio } from "@mekuru/audio";
-import { toXml, type Node } from "@mekuru/tsx";
 import { Speech } from "@mekuru/speech/irodoru";
 import { Voicevox, zunda } from "@mekuru/speech/voicevox";
 import { wav } from "../../../audio/test/fixture.ts";
+import { mockFetch, say, tempProject } from "../shared/project.tsx";
 
-let dir: string;
-let cwd: string;
-const keys = ["MEKURU_VOICEVOX_URL", "MEKURU_IRODORU_URL"];
-let env: (string | undefined)[];
-beforeEach(async () => {
-  cwd = process.cwd();
-  env = keys.map((key) => process.env[key]);
-  for (const key of keys) delete process.env[key];
-  dir = await mkdtemp(join(tmpdir(), "mekuru-voicevox-"));
-  process.chdir(dir);
-});
-afterEach(async () => {
-  mock.restore();
-  process.chdir(cwd);
-  keys.forEach((key, index) => {
-    if (env[index] === undefined) delete process.env[key];
-    else process.env[key] = env[index];
-  });
-  await rm(dir, { recursive: true, force: true });
-});
-
-const say = (line: Node) => toXml(<mekuru>{line}</mekuru>);
-const mockFetch = (fn: (input: string | URL | Request, init?: RequestInit) => Promise<Response>) =>
-  spyOn(globalThis, "fetch").mockImplementation(fn as typeof fetch);
+tempProject();
 
 const serve = () => {
   const sent: { url: URL; body?: Record<string, unknown> }[] = [];
