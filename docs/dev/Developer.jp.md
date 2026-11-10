@@ -4,11 +4,10 @@
 
 ## リポジトリ構成
 
-- [pkgs/tsx](../../pkgs/tsx/README.jp.md): TSX の型・JSX ランタイム・XML 出力
+- [pkgs/tsx](../../pkgs/tsx/README.jp.md): TSX の型・JSX ランタイム・XML 出力・音声素材と WAV 処理
 - [pkgs/core](../../pkgs/core/README.jp.md): Rust の動画コンパイラ、ネイティブのプレビューサーバー、埋め込み UI、npm 用の起動スクリプト
 - [pkgs/viewer](../../pkgs/viewer/README.jp.md): React のビューア。ビルド先は `pkgs/core/viewer/`
 - [pkgs/create](../../pkgs/create/README.jp.md): プロジェクト生成
-- [pkgs/audio](../../pkgs/audio/README.jp.md): 音声素材と WAV 処理
 - [pkgs/speech](../../pkgs/speech/README.jp.md): irodoru / VOICEVOX の独立したクライアントと、共通のWAVキャッシュ・時間管理
 - [pkgs/narrator](../../pkgs/narrator/README.jp.md): 自作ナレータの立ち絵・口パク・字幕・PSD 素材準備
 - [pkgs/upload](../../pkgs/upload/README.jp.md): YouTube・ニコニコ動画への投稿コマンド
@@ -111,4 +110,4 @@ TSX の `fps()` は `<mekuru>` の展開中だけ使えます。音声の速度�
 
 ## パッケージの責務
 
-`tsx` はJSX・XMLと構築コンテキスト、`core` はネイティブコンパイラとプレビューサーバー、`audio` は音声素材とWAV処理、`speech` は合成の準備・キャッシュと各エンジンの HTTP API を担当します。`narrator` は立ち絵・字幕、`upload` は投稿コマンドを担当します。プレビューの通信契約の型は [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts) にあり、Rust 側の対応する通信型は [core/src/preview/dto.rs](../../pkgs/core/src/preview/dto.rs) に集約します。差分計算とサーバーはこの型を使います。
+`tsx` はJSX・XMLと構築コンテキスト、音声素材とWAV処理、`core` はネイティブコンパイラとプレビューサーバー、`speech` は合成の準備・キャッシュと各エンジンの HTTP API を担当します。`narrator` は立ち絵・字幕、`upload` は投稿コマンドを担当します。プレビューの通信契約の型は [viewer/src/protocol.ts](../../pkgs/viewer/src/protocol.ts) にあり、Rust 側の対応する通信型は [core/src/preview/dto.rs](../../pkgs/core/src/preview/dto.rs) に集約します。差分計算とサーバーはこの型を使います。

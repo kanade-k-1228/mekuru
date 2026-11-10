@@ -86,7 +86,7 @@ The server accepts at most 1,000 characters per request and caps generated audio
 ## Prepare audio, subtitles, and portraits together
 
 ```tsx
-import { Audio } from "@mekuru/audio";
+import { Audio } from "@mekuru/tsx";
 import { Speech } from "@mekuru/speech";
 import { Subtitle } from "@mekuru/narrator";
 

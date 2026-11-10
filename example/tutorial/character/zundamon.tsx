@@ -1,5 +1,4 @@
-import type { FC } from "@mekuru/tsx";
-import { Audio } from "@mekuru/audio";
+import { Audio, type FC } from "@mekuru/tsx";
 import { Speech } from "@mekuru/speech";
 import { portrait, type PortraitOptions } from "@mekuru/narrator";
 import { READING, Subtitle, type Line } from "../parts";

@@ -20,7 +20,6 @@
     "@mekuru/upload": "workspace:*",
     "typescript": "7.0.2",
     "@mekuru/narrator": "workspace:*",
-    "@mekuru/audio": "workspace:*",
     "@mekuru/speech": "workspace:*",
     "ag-psd": "^31.0.3",
     "sharp": "^0.35.5"

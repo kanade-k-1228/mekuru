@@ -16,13 +16,12 @@ bun add -d @mekuru/tsx @mekuru/narrator
 
 ## ナレータを組み立てる
 
-次は `@mekuru/speech`・`@mekuru/audio` を追加したプロジェクトでの例です。先に `face [select]` グループを持つPSDを `mekuru-psd` で展開し、`src` をそのフォルダーに置き換えます。
+次は `@mekuru/speech` を追加したプロジェクトでの例です。先に `face [select]` グループを持つPSDを `mekuru-psd` で展開し、`src` をそのフォルダーに置き換えます。
 
 ```tsx
-import type { At, FC, Node } from "@mekuru/tsx";
+import { Audio, type At, type FC, type Node } from "@mekuru/tsx";
 import { portrait, Subtitle } from "@mekuru/narrator";
 
-import { Audio } from "@mekuru/audio";
 import { Speech } from "@mekuru/speech";
 
 import type { LayerProps } from "./assets/character/tsuzumi/portrait";

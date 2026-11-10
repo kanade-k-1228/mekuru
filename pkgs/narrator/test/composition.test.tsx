@@ -2,10 +2,9 @@ import { expect, spyOn, test } from "bun:test";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { projectRoot, toXml, writeXml } from "@mekuru/tsx";
-import { Audio, type AudioSource } from "@mekuru/audio";
+import { Audio, projectRoot, toXml, writeXml, type AudioSource } from "@mekuru/tsx";
 import { Speech } from "@mekuru/speech";
-import { wav } from "../../audio/test/fixture.ts";
+import { wav } from "../../tsx/test/fixture.ts";
 import { portrait, Subtitle } from "../src/index.tsx";
 
 test("one prepared source drives speech, portraits and subtitles in both passes, independent of cwd changes", async () => {

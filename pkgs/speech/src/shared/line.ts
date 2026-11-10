@@ -1,5 +1,4 @@
-import { type AudioSource, frameCount, frames, readAudio } from "@mekuru/audio";
-import { fps, isDraft, waitFor, type At, type Node, type Time } from "@mekuru/tsx";
+import { fps, frameCount, frames, isDraft, readAudio, waitFor, type At, type AudioSource, type Node, type Time } from "@mekuru/tsx";
 import { cacheFile, synthesized } from "./cache.ts";
 import { speechText } from "./text.tsx";
 

@@ -1,9 +1,8 @@
 /** @jsxImportSource @mekuru/tsx */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { fps, projectRoot, type At, type IntrinsicElements, type Time } from "@mekuru/tsx";
-import type { AudioSource } from "@mekuru/audio";
-import { samples } from "@mekuru/audio/wav";
+import { fps, projectRoot, type At, type AudioSource, type IntrinsicElements, type Time } from "@mekuru/tsx";
+import { samples } from "@mekuru/tsx/wav";
 import { blinks } from "./blink.ts";
 import { lipSync } from "./lips.ts";
 import { random, type Shot } from "./shots.ts";

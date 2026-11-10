@@ -1,6 +1,5 @@
 /** @jsxImportSource @mekuru/tsx */
-import { Audio } from "@mekuru/audio";
-import type { JSX } from "@mekuru/tsx";
+import { Audio, type JSX } from "@mekuru/tsx";
 import { lineText, prepareLine, type LineProps } from "../shared/line.ts";
 import { requestFor, synthesize, type VoicevoxOptions } from "./client.ts";
 
