@@ -1,7 +1,10 @@
 use mekuru_compiler::{
     Project,
     prepare::Prepared,
-    preview::{Session, delta::Published},
+    preview::{
+        Session,
+        delta::{Published, Update, publish},
+    },
     render::{FrameRenderer, RenderCtx, RenderTarget},
 };
 use serde_json::{Value, json};
@@ -24,6 +27,9 @@ fn single(path: &Path, root: Option<&Path>, xml: &str) -> Value {
         "resources": scene.as_ref().map(|s| &s.resources),
     })
 }
+
+/// The parts of a scene that a patch updates by key.
+const COLLECTIONS: [&str; 3] = ["elements", "nodes", "clips"];
 
 fn apply_collection(before: &Value, delta: &Value) -> Value {
     let mut entries: HashMap<_, _> = before
@@ -76,30 +82,31 @@ impl Viewer {
         self.version += 1;
         let (diagnostics, next) = self.session.compile(Path::new("-"), Some(root), xml.into(), self.version);
         let failed = next.is_none();
-        // Like the server: nothing when the scene is unchanged, else a snapshot or a patch on the shown scene.
+        // What the server sends, applied as the viewer applies it.
         let mut update = Value::Null;
-        if let Some(next) = next.filter(|next| self.shown.as_ref().is_none_or(|shown| shown.preview.scene != next.preview.scene)) {
-            if let Some(before) = &self.shown {
-                update = wire(next.patch(before));
+        match next.map(|next| publish(&mut self.shown, next)) {
+            Some(Update::Patch(patch)) => {
+                update = wire(patch);
                 update["type"] = json!("patch");
                 assert_eq!(self.scene["version"], update["baseVersion"]);
                 for (key, value) in update["scene"].as_object().unwrap() {
                     self.scene[key] = value.clone();
                 }
                 self.scene["version"] = update["version"].clone();
-                self.scene["elements"] = apply_collection(&self.scene["elements"], &update["elements"]);
-                for name in ["nodes", "clips"] {
-                    self.scene["timeline"][name] = apply_collection(&self.scene["timeline"][name], &update[name]);
+                for name in COLLECTIONS {
+                    self.scene[name] = apply_collection(&self.scene[name], &update[name]);
                 }
                 for (key, ops) in update["resources"].as_object().unwrap() {
                     self.resources.insert(key.clone(), ops.clone());
                 }
-            } else {
-                update = json!({ "type": "snapshot", "resources": next.resources });
-                self.scene = wire(&next.preview);
+            }
+            Some(Update::Snapshot) => {
+                let shown = self.shown.as_ref().unwrap();
+                update = json!({ "type": "snapshot", "resources": shown.resources });
+                self.scene = wire(&shown.preview);
                 self.resources = serde_json::from_value(update["resources"].clone()).unwrap();
             }
-            self.shown = Some(next);
+            Some(Update::Unchanged) | None => {}
         }
         let preview = if failed {
             Value::Null
@@ -132,8 +139,8 @@ impl Viewer {
 fn expand(scene: Value, resources: &mut HashMap<String, Value>) -> Value {
     let mut expanded = scene;
     if !expanded.is_null() {
-        for entries in [&expanded["elements"], &expanded["timeline"]["nodes"], &expanded["timeline"]["clips"]] {
-            let entries = entries.as_array().unwrap();
+        for name in COLLECTIONS {
+            let entries = expanded[name].as_array().unwrap();
             let keys: std::collections::HashSet<_> = entries.iter().map(|e| e["key"].as_str().unwrap()).collect();
             assert_eq!(keys.len(), entries.len(), "duplicate preview keys");
         }
@@ -157,7 +164,7 @@ fn expand(scene: Value, resources: &mut HashMap<String, Value>) -> Value {
         }
         resources.retain(|k, _| used.contains(k));
         for name in ["nodes", "clips"] {
-            for entry in expanded["timeline"][name].as_array_mut().unwrap() {
+            for entry in expanded[name].as_array_mut().unwrap() {
                 entry.as_object_mut().unwrap().remove("key");
             }
         }
@@ -412,8 +419,8 @@ fn preview_and_renderer_agree_on_a_static_scene() {
     assert_eq!(preview["fps"], 30.0);
     assert_eq!(preview["duration"], 1.0);
     assert!(!preview["elements"].as_array().unwrap().is_empty());
-    assert!(preview["timeline"]["nodes"].is_array());
-    assert!(preview["timeline"]["clips"].is_array());
+    assert!(preview["nodes"].is_array());
+    assert!(preview["clips"].is_array());
 }
 
 #[test]

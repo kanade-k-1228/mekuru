@@ -1,5 +1,5 @@
 import { atom } from "jotai";
-import type { PreviewCommand, PreviewEvent, SceneElement, StateDto, TimelineDto } from "../protocol";
+import type { PreviewCommand, PreviewEvent, SceneElement, StateDto, TimelineClip, TimelineNode } from "../protocol";
 import { applyEvent, previewSocketUrl, type PreviewState } from "./preview";
 
 export type ConnState = "connecting" | "open" | "reconnecting";
@@ -84,17 +84,15 @@ eventsAtom.onMount = connect;
 export const connAtom = atom((get) => get(eventsAtom).conn);
 export const serverAtom = atom((get) => get(eventsAtom).server);
 export const previewAtom = atom((get) => get(eventsAtom).preview);
-export const previewLoadingAtom = atom((get) => {
-  const { server, preview, previewError } = get(eventsAtom);
-  return !!server && !previewError && server.previewVersion !== 0 && server.previewVersion !== (preview?.version ?? 0);
-});
 export const previewErrorAtom = atom((get) => get(eventsAtom).previewError);
 export const durationAtom = atom((get) => get(previewAtom)?.duration ?? 0);
 export const fpsAtom = atom((get) => get(previewAtom)?.fps ?? 30);
 
 const EMPTY_ELEMENTS: SceneElement[] = [];
-const EMPTY_TIMELINE: TimelineDto = { nodes: [], clips: [] };
+const EMPTY_NODES: TimelineNode[] = [];
+const EMPTY_CLIPS: TimelineClip[] = [];
 export const elementsAtom = atom((get) => get(previewAtom)?.elements ?? EMPTY_ELEMENTS);
-export const timelineAtom = atom((get) => get(previewAtom)?.timeline ?? EMPTY_TIMELINE);
+export const nodesAtom = atom((get) => get(previewAtom)?.nodes ?? EMPTY_NODES);
+export const clipsAtom = atom((get) => get(previewAtom)?.clips ?? EMPTY_CLIPS);
 
 export const resourcesAtom = atom((get) => get(eventsAtom).resources);

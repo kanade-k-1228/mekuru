@@ -1,4 +1,4 @@
-import type { ClipLane, TimelineClip, TimelineDto, TimelineNode } from "../../protocol";
+import type { ClipLane, TimelineClip, TimelineNode } from "../../protocol";
 import { clamp } from "../util";
 
 export const LEFT_PAD = 12;
@@ -42,7 +42,7 @@ const pack = (items: { start: number; end: number }[]): { rows: number[]; count:
   return { rows, count: Math.max(1, ends.length) };
 };
 
-export const buildLayout = (tl: TimelineDto): Layout => {
+export const buildLayout = (tl: { nodes: TimelineNode[]; clips: TimelineClip[] }): Layout => {
   const nodes: PlacedNode[] = [];
   const clips: PlacedClip[] = [];
   let y = ROW_GAP + 1;

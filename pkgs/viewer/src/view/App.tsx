@@ -2,7 +2,7 @@ import { useAtomValue } from "jotai";
 import { RefreshCw } from "lucide-react";
 import type { StateDto } from "../protocol";
 import { keysAtom } from "../logic/playback";
-import { connAtom, previewAtom, previewErrorAtom, previewLoadingAtom, serverAtom } from "../logic/server";
+import { connAtom, previewAtom, previewErrorAtom, serverAtom } from "../logic/server";
 import { PREVIEW_MIN_HEIGHT, TIMELINE_MIN_HEIGHT, timelineHeightAtom } from "../logic/timeline/atoms";
 import { Preview } from "./preview/Preview";
 import { ResizeHandle } from "./timeline/ResizeHandle";
@@ -33,10 +33,12 @@ const Workspace = ({ server }: { server: StateDto }) => {
   useAtomValue(keysAtom);
   const timelineHeight = useAtomValue(timelineHeightAtom);
   const preview = useAtomValue(previewAtom);
-  const loading = useAtomValue(previewLoadingAtom);
   const previewError = useAtomValue(previewErrorAtom);
+  const [failures, warnings] = (["error", "warning"] as const).map((severity) => server.diagnostics.filter((d) => d.severity === severity));
+  // `server.error` is what has no line in the XML: the script command failed, or the compiler did.
+  const failed = [server.error, ...failures.map((d) => `L${d.line} ${d.code}: ${d.message}`)].filter(Boolean).join("\n");
   const errors = [
-    ...(server.error ? [{ title: "Error in the script (showing the last version that worked)", text: server.error }] : []),
+    ...(failed ? [{ title: "Error in the script (showing the last version that worked)", text: failed }] : []),
     ...(previewError ? [{ title: "Could not load the preview", text: previewError }] : []),
   ];
 
@@ -55,16 +57,14 @@ const Workspace = ({ server }: { server: StateDto }) => {
             <pre className="font-mono whitespace-pre-wrap wrap-break-word">{e.text}</pre>
           </div>
         ))}
-        {server.diagnostics
-          .filter((d) => d.severity === "warning")
-          .map((d, i) => (
-            <p key={i} className="px-3 text-xs text-warning">
-              L{d.line}: {d.message}
-            </p>
-          ))}
+        {warnings.map((d, i) => (
+          <p key={i} className="px-3 text-xs text-warning">
+            L{d.line}: {d.message}
+          </p>
+        ))}
         <div className="relative flex min-h-0 flex-1 flex-col">
           {preview && <Preview width={preview.width} height={preview.height} />}
-          {(server.status === "building" || loading) && <Reloading />}
+          {server.status === "building" && <Reloading />}
         </div>
       </main>
       <div className="relative min-h-0">

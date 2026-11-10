@@ -200,21 +200,25 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, session: &
             hidden: et.hidden.iter().map(|&(a, b)| [i(a), i(b)]).collect(),
         });
     }
+    let (nodes, clips) = timeline(p, sched, &keys, &elem_keys);
     Preview {
-        width: st.width,
-        height: st.height,
-        fps: st.fps,
-        duration: i(sched.total),
+        dimensions: Dimensions {
+            width: st.width,
+            height: st.height,
+            fps: st.fps,
+            duration: i(sched.total),
+        },
         elements,
-        timeline: timeline(p, sched, &keys, &elem_keys),
+        nodes,
+        clips,
     }
 }
 
-fn timeline(p: &Project, sched: &Schedule, keys: &std::collections::HashMap<usize, String>, elem_keys: &[String]) -> Timeline {
+fn timeline(p: &Project, sched: &Schedule, keys: &std::collections::HashMap<usize, String>, elem_keys: &[String]) -> (Vec<TimelineNode>, Vec<Clip>) {
     let fps = p.script.settings.rate();
     let i = |f: i64| fps.secs(f as f64);
     let s = &p.script;
-    let mut out = Timeline::default();
+    let (mut nodes, mut clips) = (vec![], vec![]);
     let tags: BTreeMap<_, _> = p.syntax.descendants().into_iter().map(|tag| (tag.head.lo, tag)).collect();
     let mut depths = vec![0; s.nodes.len()];
     let mut labels = vec![String::new(); s.nodes.len()];
@@ -252,7 +256,7 @@ fn timeline(p: &Project, sched: &Schedule, keys: &std::collections::HashMap<usiz
         if matches!(&e.kind, ElemKind::View(v) if v.ops.is_empty()) {
             continue;
         }
-        out.clips.push(Clip {
+        clips.push(Clip {
             key: format!("{}:clip", elem_keys[e.id]),
             tag: name.into(),
             lane,
@@ -284,7 +288,7 @@ fn timeline(p: &Project, sched: &Schedule, keys: &std::collections::HashMap<usiz
     for n in s.nodes.iter().filter(|n| !top(n.id) && n.flow != Flow::Seq) {
         let t = sched.nodes[n.id];
         let line = p.index.line(n.head.lo);
-        out.nodes.push(TimelineNode {
+        nodes.push(TimelineNode {
             key: format!("{}:node", keys[&(n.head.lo as usize)]),
             depth: depths[n.id] - 1,
             tag: n.flow.name(),
@@ -295,5 +299,5 @@ fn timeline(p: &Project, sched: &Schedule, keys: &std::collections::HashMap<usiz
             pin: (n.t.delay > 0).then(|| i(n.t.delay)),
         });
     }
-    out
+    (nodes, clips)
 }

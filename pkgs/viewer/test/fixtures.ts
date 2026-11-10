@@ -19,9 +19,9 @@ export const element = (key: string, drawings: string[], start = 0): SceneElemen
 export const compilation = (version = 1, elements = [element("e0", ["A", "B"]), element("e1", ["A"], 1)], available = resources) => ({
   version,
   resources: available,
-  preview: { width: 100, height: 100, fps: 30, duration: 2, elements, timeline: { nodes: [], clips: [] } } satisfies Omit<PreviewDto, "version">,
+  preview: { width: 100, height: 100, fps: 30, duration: 2, elements, nodes: [], clips: [] } satisfies Omit<PreviewDto, "version">,
 });
-export const state = (version = 1): StateDto => ({ title: "video.xml", version, previewVersion: version, status: "ready", error: null, diagnostics: [] });
+export const state = (version = 1): StateDto => ({ title: "video.xml", version, status: "ready", error: null, diagnostics: [] });
 
 interface SharedPreview {
   preview: PreviewDto;
@@ -65,8 +65,8 @@ export const patch = (state: StateDto, before: SharedPreview, after: SharedPrevi
     version: b.version,
     scene: { width: b.width, height: b.height, fps: b.fps, duration: b.duration },
     elements: collectionPatch(a.elements, b.elements),
-    nodes: collectionPatch(a.timeline.nodes, b.timeline.nodes),
-    clips: collectionPatch(a.timeline.clips, b.timeline.clips),
+    nodes: collectionPatch(a.nodes, b.nodes),
+    clips: collectionPatch(a.clips, b.clips),
     resources: Object.fromEntries(Object.entries(after.resources).filter(([key]) => !Object.hasOwn(before.resources, key))),
   };
 };

@@ -5,8 +5,8 @@ mod socket;
 mod watch;
 
 use crate::preview::{
-    Diagnostic, Session,
-    delta::{Published, Resources},
+    Session,
+    delta::{Published, Resources, Update, publish},
     dto::{Event, PreviewState},
 };
 use anyhow::{Context, Result};
@@ -44,7 +44,7 @@ struct Live {
     xml: String,
     writes: u64,
     script_error: Option<String>,
-    compile_error: Option<String>,
+    compiler_panic: Option<String>,
 }
 impl Live {
     fn snapshot(&self) -> String {
@@ -56,7 +56,7 @@ impl Live {
         .json()
     }
     fn refresh_error(&mut self) {
-        self.state.error = self.script_error.clone().or_else(|| self.compile_error.clone());
+        self.state.error = self.script_error.clone().or_else(|| self.compiler_panic.clone());
     }
 }
 
@@ -108,7 +108,6 @@ impl App {
                 state: PreviewState {
                     title,
                     version: 1,
-                    preview_version: 0,
                     status: "building",
                     error: None,
                     diagnostics: vec![],
@@ -117,7 +116,7 @@ impl App {
                 xml,
                 writes: 0,
                 script_error: None,
-                compile_error: None,
+                compiler_panic: None,
             })),
             events: broadcast::channel(backlog).0,
             cancel: CancellationToken::new(),
@@ -141,7 +140,7 @@ impl App {
         live.script_error = None;
         if live.xml != xml {
             live.xml = xml.clone();
-            live.compile_error = None;
+            live.compiler_panic = None;
             live.state.version += 1;
             live.state.status = "building";
             live.state.diagnostics.clear();
@@ -179,33 +178,23 @@ fn compile(app: App, path: PathBuf) {
         let Some((diagnostics, scene)) = result else {
             live.state.status = "error";
             live.state.diagnostics.clear();
-            live.compile_error = Some("preview compilation panicked twice".into());
+            live.compiler_panic = Some("preview compilation panicked twice".into());
             app.status(&mut live);
             continue;
         };
+        // The viewer shows the diagnostics themselves; `error` is for what has no place in the XML.
         live.state.diagnostics = diagnostics;
         live.state.status = if scene.is_some() { "ready" } else { "error" };
-        live.compile_error = scene
-            .is_none()
-            .then(|| live.state.diagnostics.iter().map(Diagnostic::to_string).collect::<Vec<_>>().join("\n"));
         live.refresh_error();
-        // Viewers have `live.scene`: send a patch on it, a snapshot when there is none, or only the status when nothing changed.
-        match scene.filter(|next| live.scene.as_ref().is_none_or(|shown| shown.preview.scene != next.preview.scene)) {
-            None => app.status(&mut live),
-            Some(next) => {
-                live.state.preview_version = version;
-                let patch = live.scene.as_ref().map(|before| next.patch(before));
-                live.scene = Some(next);
-                match patch {
-                    Some(patch) => app.send(Event::Patch {
-                        state: &live.state,
-                        patch: &patch,
-                    }),
-                    None => {
-                        let _ = app.events.send(live.snapshot().into());
-                    }
-                }
+        match scene.map(|next| publish(&mut live.scene, next)) {
+            Some(Update::Patch(patch)) => app.send(Event::Patch {
+                state: &live.state,
+                patch: &patch,
+            }),
+            Some(Update::Snapshot) => {
+                let _ = app.events.send(live.snapshot().into());
             }
+            Some(Update::Unchanged) | None => app.status(&mut live),
         }
         eprintln!("preview {} in {:.1}ms", live.state.status, started.elapsed().as_secs_f64() * 1000.0);
         for d in &live.state.diagnostics {
