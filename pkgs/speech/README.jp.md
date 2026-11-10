@@ -86,7 +86,7 @@ irodoru は1リクエスト最大1,000文字・生成長最大30秒です。文�
 ## 字幕・立ち絵と組み合わせる
 
 ```tsx
-import { Audio } from "@mekuru/audio";
+import { Audio } from "@mekuru/tsx";
 import { Speech } from "@mekuru/speech";
 import { Subtitle } from "@mekuru/narrator";
 

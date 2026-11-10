@@ -1,4 +1,4 @@
-import { wavSeconds } from "@mekuru/audio/wav";
+import { wavSeconds } from "@mekuru/tsx/wav";
 
 export interface VoicevoxOptions {
   speaker: number | string;

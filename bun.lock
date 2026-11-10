@@ -13,7 +13,6 @@
     "example": {
       "name": "mekuru-tutorial",
       "devDependencies": {
-        "@mekuru/audio": "workspace:*",
         "@mekuru/core": "workspace:*",
         "@mekuru/narrator": "workspace:*",
         "@mekuru/speech": "workspace:*",
@@ -23,16 +22,6 @@
         "ag-psd": "^31.0.3",
         "sharp": "^0.35.5",
         "typescript": "7.0.2",
-      },
-    },
-    "pkgs/audio": {
-      "name": "@mekuru/audio",
-      "version": "0.0.0",
-      "devDependencies": {
-        "@mekuru/tsx": "workspace:*",
-      },
-      "peerDependencies": {
-        "@mekuru/tsx": "workspace:^",
       },
     },
     "pkgs/core": {
@@ -60,7 +49,6 @@
         "mekuru-psd": "./src/mekuru-psd.ts",
       },
       "dependencies": {
-        "@mekuru/audio": "workspace:^",
         "ag-psd": "^31.0.3",
         "sharp": "^0.35.5",
       },
@@ -75,9 +63,6 @@
     "pkgs/speech": {
       "name": "@mekuru/speech",
       "version": "0.0.0",
-      "dependencies": {
-        "@mekuru/audio": "workspace:^",
-      },
       "devDependencies": {
         "@mekuru/tsx": "workspace:*",
       },
@@ -209,8 +194,6 @@
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.6.0", "", {}, "sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw=="],
 
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "3.1.2", "@jridgewell/sourcemap-codec": "1.6.0" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
-
-    "@mekuru/audio": ["@mekuru/audio@workspace:pkgs/audio"],
 
     "@mekuru/core": ["@mekuru/core@workspace:pkgs/core"],
 

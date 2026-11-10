@@ -1,9 +1,9 @@
 /** @jsxImportSource @mekuru/tsx */
 import { expect, mock, test } from "bun:test";
-import { Audio } from "@mekuru/audio";
+import { Audio } from "@mekuru/tsx";
 import { Speech } from "@mekuru/speech/irodoru";
 import { Voicevox, zunda } from "@mekuru/speech/voicevox";
-import { wav } from "../../../audio/test/fixture.ts";
+import { wav } from "../../../tsx/test/fixture.ts";
 import { mockFetch, say, tempProject } from "../shared/project.tsx";
 
 tempProject();

@@ -3,7 +3,7 @@ import { expect, mock, spyOn, test } from "bun:test";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { Speech, type SpeechProps } from "@mekuru/speech/irodoru";
-import { wav } from "../../../audio/test/fixture.ts";
+import { wav } from "../../../tsx/test/fixture.ts";
 import { mockFetch, say, tempProject } from "../shared/project.tsx";
 // The request part of irodoru/pkgs/server/openapi.json; refresh alongside API changes.
 import openapi from "./fixtures/openapi.json";

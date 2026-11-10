@@ -65,9 +65,8 @@ PNGは元のキャンバス寸法と座標を維持します。
 ## 台本で使う
 
 ```tsx
-import type { FC } from "@mekuru/tsx";
+import { Audio, readAudio, type FC } from "@mekuru/tsx";
 import { portrait } from "@mekuru/narrator";
-import { Audio, readAudio } from "@mekuru/audio";
 import type { LayerProps } from "./assets/character/portrait";
 
 const actor = portrait<LayerProps>({ src: "assets/character", x: "80%" });

@@ -1,7 +1,6 @@
-import type { At, FC, Length, Node } from "@mekuru/tsx";
+import { Audio, type At, type FC, type Length, type Node } from "@mekuru/tsx";
 import { portrait, Subtitle as NarratorSubtitle } from "@mekuru/narrator";
 
-import { Audio } from "@mekuru/audio";
 import { Speech, subtitleText } from "@mekuru/speech";
 import type { LayerProps } from "../tutorial/assets/character/zundamon/portrait";
 

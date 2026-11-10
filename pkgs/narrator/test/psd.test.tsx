@@ -4,7 +4,7 @@ import { join } from "node:path";
 import type { Layer } from "ag-psd";
 import sharp from "sharp";
 import { toXml, type Node } from "@mekuru/tsx";
-import { wav } from "../../audio/test/fixture.ts";
+import { wav } from "../../tsx/test/fixture.ts";
 import { portrait } from "../src/index.tsx";
 import { exportPsd } from "../src/psd.ts";
 import { pixel, psdFixture } from "./fixture.ts";

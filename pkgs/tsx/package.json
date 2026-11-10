@@ -7,12 +7,13 @@
     "directory": "pkgs/tsx"
   },
   "homepage": "https://github.com/kanade-k-1228/mekuru/blob/main/pkgs/tsx/README.md",
-  "description": "TSX types, JSX runtime and XML output for Mekuru Movie Maker",
+  "description": "TSX types, JSX runtime, XML output and audio resources for Mekuru Movie Maker",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./jsx-runtime": "./src/index.ts",
-    "./jsx-dev-runtime": "./src/index.ts"
+    "./jsx-dev-runtime": "./src/index.ts",
+    "./wav": "./src/wav.ts"
   },
   "files": [
     "src"

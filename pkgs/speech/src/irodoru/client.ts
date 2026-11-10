@@ -1,4 +1,4 @@
-import { joinWavs, wavSeconds } from "@mekuru/audio/wav";
+import { joinWavs, wavSeconds } from "@mekuru/tsx/wav";
 
 /** Synthesis fields use the names of irodoru's POST / request (pkgs/server/openapi.json). */
 export interface IrodoruOptions {

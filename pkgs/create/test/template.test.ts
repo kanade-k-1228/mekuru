@@ -3,7 +3,7 @@ import { mkdtemp, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { create, VERSION } from "../src/create.ts";
-import { wav } from "../../audio/test/fixture.ts";
+import { wav } from "../../tsx/test/fixture.ts";
 
 const runProject = async (dir: string, env: Record<string, string | undefined> = {}) => {
   // Use the workspace packages, including the unreleased version, in the generated project.
@@ -25,7 +25,6 @@ test("sample projects include speech and the selected upload commands", async ()
     await create(dir, { template: "sample", upload: ["youtube", "niconico"] });
     const pkg = await Bun.file(join(dir, "package.json")).json();
     expect(Object.keys(pkg.devDependencies)).toEqual([
-      "@mekuru/audio",
       "@mekuru/core",
       "@mekuru/narrator",
       "@mekuru/speech",

@@ -63,7 +63,7 @@ export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time })
 <Zundamon text="今日の天気" say="きょうのてんき" />
 ```
 
-`Speech.prepare` prepares one shared audio source for `Audio` and `Talk` (`Audio` is imported from `@mekuru/audio`). `line.display` is the subtitle string, with `\n` line breaks. `Subtitle` only adds styles to ordinary `text`. `text` is the subtitle and `say` is what is spoken; without `say`, `text` is spoken. The outer `<dur>` bounds the whole line, so the children appear only while it is spoken. See [composing narrators](../../pkgs/narrator/README.md).
+`Speech.prepare` prepares one shared audio source for `Audio` and `Talk` (`Audio` is imported from `@mekuru/tsx`). `line.display` is the subtitle string, with `\n` line breaks. `Subtitle` only adds styles to ordinary `text`. `text` is the subtitle and `say` is what is spoken; without `say`, `text` is spoken. The outer `<dur>` bounds the whole line, so the children appear only while it is spoken. See [composing narrators](../../pkgs/narrator/README.md).
 
 ### Displaying code
 

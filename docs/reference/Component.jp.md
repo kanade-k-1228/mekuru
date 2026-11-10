@@ -63,7 +63,7 @@ export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time })
 <Zundamon text="今日の天気" say="きょうのてんき" />
 ```
 
-`Speech.prepare` で一度準備した音声素材を `Audio` と `Talk` に渡します（`Audio` は `@mekuru/audio` から import）。`line.display` は字幕の文字列で、`\n` で改行します。`Subtitle` は装飾だけを加える通常の `text` です。`text` は字幕、`say` は読み上げる文で、`say` を省くと `text` を読み上げます。外側の `<dur>` でセリフの長さを決めるので、子要素はそのセリフの間だけ表示されます。詳しくは [ナレータの組み立て](../../pkgs/narrator/README.jp.md) を参照してください。
+`Speech.prepare` で一度準備した音声素材を `Audio` と `Talk` に渡します（`Audio` は `@mekuru/tsx` から import）。`line.display` は字幕の文字列で、`\n` で改行します。`Subtitle` は装飾だけを加える通常の `text` です。`text` は字幕、`say` は読み上げる文で、`say` を省くと `text` を読み上げます。外側の `<dur>` でセリフの長さを決めるので、子要素はそのセリフの間だけ表示されます。詳しくは [ナレータの組み立て](../../pkgs/narrator/README.jp.md) を参照してください。
 
 ### コードを表示する
 
