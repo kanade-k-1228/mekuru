@@ -17,7 +17,7 @@ use crate::{
     schedule::{Schedule, SrcMap},
 };
 use std::{collections::BTreeMap, fmt::Write, path::Path};
-use tiny_skia::{LineCap, LineJoin, PathSegment, Transform};
+use tiny_skia::{LineCap, LineJoin, PathSegment};
 
 pub(crate) mod dto;
 pub use dto::*;
@@ -79,12 +79,12 @@ fn path_op(p: PaintedPath) -> Op {
     }
 }
 
-fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &mut Vec<Op>) {
+fn draw_op(op: &ViewOp, fonts: &FontBook, base_dir: &Path, ops: &mut Vec<Op>) {
+    let t = op.transform;
     let transform = (!t.is_identity()).then_some([t.sx, t.ky, t.kx, t.sy, t.tx, t.ty]);
-    let paths = match op {
-        ViewOp::Transformed(m, inner) => return draw_op(inner, t.pre_concat(*m), fonts, base_dir, ops),
-        ViewOp::Rect(_) | ViewOp::Circle(_) | ViewOp::Poly(_) => shapes::paths(op, 1.0),
-        ViewOp::Text(text) => {
+    let paths = match &op.shape {
+        shape @ (Shape::Rect(_) | Shape::Circle(_) | Shape::Poly(_)) => shapes::paths(shape, 1.0),
+        Shape::Text(text) => {
             let st = &text.style;
             let (font, path) = fonts.preview_font(st.font.as_deref());
             let font_src = path.as_deref().and_then(|path| {
@@ -117,7 +117,7 @@ fn draw_op(op: &ViewOp, t: Transform, fonts: &FontBook, base_dir: &Path, ops: &m
             });
             vec![]
         }
-        ViewOp::Image(img) => {
+        Shape::Image(img) => {
             let src = file_src(&img.path, base_dir);
             ops.push(Op::Image {
                 revision: session::revision(&base_dir.join(&src)),
@@ -158,8 +158,8 @@ fn scene(p: &Project, prepared: &prepare::Prepared, sched: &Schedule, session: &
         let mut drawings = vec![];
         let mut bounds = None;
         match &e.kind {
-            ElemKind::View(view) => {
-                for op in &view.ops {
+            ElemKind::View(ops) => {
+                for op in ops {
                     let drawing = session.draw(op, &p.fonts, &script.base_dir);
                     drawings.push(drawing.id);
                 }
@@ -253,7 +253,7 @@ fn timeline(p: &Project, sched: &Schedule, keys: &std::collections::HashMap<usiz
             labels[e.node] = label.clone();
         }
         let line = p.index.line(e.site.lo);
-        if matches!(&e.kind, ElemKind::View(v) if v.ops.is_empty()) {
+        if matches!(&e.kind, ElemKind::View(ops) if ops.is_empty()) {
             continue;
         }
         clips.push(Clip {

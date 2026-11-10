@@ -102,9 +102,9 @@ pub struct Elem {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ElemKind {
-    View(ViewSpec),
+    View(Vec<ViewOp>),
     Video(VideoSpec),
-    Audio(AudioSpec),
+    Audio(MediaSrc),
     DraftAudio,
 }
 
@@ -120,7 +120,7 @@ impl ElemKind {
     pub fn media(&self) -> Option<&MediaSrc> {
         match self {
             ElemKind::Video(v) => Some(&v.media),
-            ElemKind::Audio(a) => Some(&a.media),
+            ElemKind::Audio(media) => Some(media),
             ElemKind::View(_) | ElemKind::DraftAudio => None,
         }
     }
@@ -191,24 +191,19 @@ pub struct ImageSpec {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum ViewOp {
+pub enum Shape {
     Rect(RectSpec),
     Circle(CircleSpec),
     Poly(PolySpec),
     Text(TextSpec),
     Image(ImageSpec),
-    Transformed(Transform, Box<ViewOp>),
 }
 
-impl ViewOp {
-    pub fn transformed(self, t: Transform) -> ViewOp {
-        if t.is_identity() { self } else { ViewOp::Transformed(t, Box::new(self)) }
-    }
-}
-
+/// A shape drawn through `transform`.
 #[derive(Clone, Debug, PartialEq)]
-pub struct ViewSpec {
-    pub ops: Vec<ViewOp>,
+pub struct ViewOp {
+    pub shape: Shape,
+    pub transform: Transform,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -235,9 +230,4 @@ pub struct VideoSpec {
     pub y: f32,
     pub w: f32,
     pub h: f32,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct AudioSpec {
-    pub media: MediaSrc,
 }

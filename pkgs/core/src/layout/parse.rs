@@ -518,7 +518,7 @@ impl Ctx<'_> {
             "audio" => {
                 let mut media = at.media(self.base_dir, diags)?;
                 media.speeds = self.speeds(tag, diags);
-                Leaf::Audio(ElemKind::Audio(AudioSpec { media }))
+                Leaf::Audio(ElemKind::Audio(media))
             }
             _ => return None,
         })

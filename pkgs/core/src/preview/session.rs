@@ -54,10 +54,9 @@ impl Session {
 
     pub(super) fn draw(&mut self, op: &ViewOp, fonts: &FontBook, root: &Path) -> Drawing {
         fn dependency(op: &ViewOp, fonts: &FontBook) -> String {
-            match op {
-                ViewOp::Transformed(_, op) => dependency(op, fonts),
-                ViewOp::Text(_) => fonts.generation.to_string(),
-                ViewOp::Image(img) => format!("{:?}", file_stamp(&img.path)),
+            match &op.shape {
+                Shape::Text(_) => fonts.generation.to_string(),
+                Shape::Image(img) => format!("{:?}", file_stamp(&img.path)),
                 _ => String::new(),
             }
         }
@@ -70,7 +69,7 @@ impl Session {
         } else {
             self.stats.draw_misses += 1;
             let mut ops = vec![];
-            draw_op(op, Transform::identity(), fonts, root, &mut ops);
+            draw_op(op, fonts, root, &mut ops);
             let bytes = serde_json::to_vec(&ops).expect("drawing JSON");
             let drawing = Drawing {
                 id: sha256_hex(&bytes),
