@@ -6,7 +6,7 @@ import { clamp, observeSize } from "../util";
 import { buildLayout, RULER_H, SCROLLBAR_SIZE, viewport, zoomAround, zoomAt, type ViewState } from "./model";
 
 export const timelineViewAtom = atom<ViewState>({ zoom: 1, start: 0 });
-export const timelineWidthAtom = atom(800);
+const timelineWidthAtom = atom(800);
 export const timelineMetricsAtom = atom((get) => viewport(get(durationAtom), get(timelineWidthAtom), get(timelineViewAtom)));
 
 export const timelineLayoutAtom = atom((get) => buildLayout(get(timelineAtom)));

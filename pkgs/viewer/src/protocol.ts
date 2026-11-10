@@ -1,4 +1,4 @@
-export interface Diagnostic {
+interface Diagnostic {
   code: string;
   severity: "error" | "warning";
   line: number;
@@ -26,7 +26,7 @@ export interface SnapshotEvent {
   preview: PreviewDto | null;
   resources: Resources;
 }
-export interface StatusEvent {
+interface StatusEvent {
   type: "status";
   state: StateDto;
 }
@@ -54,7 +54,7 @@ export interface PreviewDto {
   elements: SceneElement[];
   timeline: TimelineDto;
 }
-export type Bounds = [number, number, number, number];
+type Bounds = [number, number, number, number];
 export type Fade = [start: number, end: number, fadeIn: number, fadeOut: number, level: number];
 export interface TextOp {
   kind: "text";

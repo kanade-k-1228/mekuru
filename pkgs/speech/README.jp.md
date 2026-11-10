@@ -49,11 +49,11 @@ await writeXml(".mekuru/main.xml", (
 ));
 ```
 
-キャラクターの設定は通常のオブジェクトや自作部品として共有します。`caption` は声質や話し方の説明、`reference_audio_base64` は Base64 エンコードした参照 WAV です。参照音声は省略でき、caption と併用できます。`Buffer.from(await Bun.file("voice.wav").arrayBuffer()).toString("base64")` で渡せます。参照音声は0.5秒以上、JSON 全体は64MiB以下にします。登録名を使う旧 `voice` は使用しません。
+キャラクターの設定は通常のオブジェクトや自作部品として共有します。`caption` は声質や話し方の説明、`reference_audio_base64` は Base64 エンコードした参照 WAV です。参照音声は省略でき、caption と併用できます。`Buffer.from(await Bun.file("voice.wav").arrayBuffer()).toString("base64")` で渡せます。参照音声は0.5秒以上、JSON 全体は64MiB以下にします。
 
 ### 生成設定
 
-エンジン共通の属性への変換は行わず、irodoru の API 名をそのまま使用します。`model` 属性は廃止されました。モデルは起動する Docker イメージの `latest-mf` / `latest-small` / `latest-anime` で選択します。同じ接続先でモデルを切り替えたら `.mekuru/cache/tts/` を削除して再生成してください。
+エンジン共通の属性への変換は行わず、irodoru の API 名をそのまま使用します。モデルは起動する Docker イメージの `latest-mf` / `latest-small` / `latest-anime` で選択します。同じ接続先でモデルを切り替えたら `.mekuru/cache/tts/` を削除して再生成してください。
 
 | 属性 | 既定値・意味 |
 | --- | --- |
@@ -107,21 +107,17 @@ const Narrator = async ({ text }: { text: string }) => {
 
 `subtitleText(text)` は音声合成なしでテキスト JSX を表示文字列に展開します。ルートの export は `Speech`・`SpeechProps`・`LineProps`・`PreparedLine`・`subtitleText` です。`@mekuru/speech/irodoru` からも `Speech` を import できます。VOICEVOX は専用のサブパスから import します。
 
-生成条件（model・seed・steps など）は WAV 内の `LIST/INFO/ICMT` チャンクに含まれます。クライアントは旧 `x-model`・`x-seed` などのヘッダーを要求せず、WAV のサンプルから長さを求めます。単一リクエストの WAV はメタデータを含めそのまま保存します。長文分割後の連結 WAV は音声のみを連結し、個別の生成条件は保持しません。
+生成条件（model・seed・steps など）は WAV 内の `LIST/INFO/ICMT` チャンクに含まれます。クライアントは WAV のサンプルから長さを求めます。単一リクエストの WAV はメタデータを含めそのまま保存します。長文分割後の連結 WAV は音声のみを連結し、個別の生成条件は保持しません。
 
 ## キャッシュとプレビュー
 
 音声は `.mekuru/cache/tts/` に保存します。キーには正規化した接続先・生成設定・分割後の読み上げテキスト・分割上限・キャッシュ形式バージョンを含めます。読み上げ内容が同じなら、表示名・配置・音量・字幕だけの変更・gap・len の変更では再合成しません。既定値の明示と省略は同じキャッシュになります。
 
-キャッシュ済み音声はサーバー停止中も利用でき、irodoru では一覧取得を行いません。VOICEVOX の名前解決はキャッシュがない場合だけ行います。同名のモデルや VOICEVOX の話者データを差し替えた場合は `.mekuru/cache/tts/` を削除して再生成してください。オフラインでリモートの変更は検出できません。irodoru の参照音声は内容をキーに含めるため、変更時に再生成します。旧形式のキャッシュは再利用しません。
+キャッシュ済み音声はサーバー停止中も利用でき、irodoru では一覧取得を行いません。VOICEVOX の名前解決はキャッシュがない場合だけ行います。同名のモデルや VOICEVOX の話者データを差し替えた場合は `.mekuru/cache/tts/` を削除して再生成してください。オフラインでリモートの変更は検出できません。irodoru の参照音声は内容をキーに含めるため、変更時に再生成します。
 
 生成中の同じセリフはリクエストを共有します。irodoru は接続先ごとに1件ずつ処理し、ローカルの待ち行列を抜けてから各リクエストに5分のタイムアウトを設定します。HTTP エラーや不正・空の WAV はキャッシュに保存せず、次回ビルドで再試行できます。
 
 未生成のセリフは `writeXml()` が推定長で先にプレビューを出し、生成完了後に WAV の長さへ更新します。`toXml()` は完成音声を待ちます。テキストは各パスで一度展開し、音声・字幕・立ち絵で共有します。
-
-## 移行
-
-VOICEVOX の `@mekuru/speech/voicevox`・`Voicevox.prepare()`・VOICEVOX 用プリセットは引き続き使えます。COEIROINK・Style-Bert-VITS2・VoiSona と汎用 `defineEngine`・`defineSpeech`・`prepare`・`cached` は削除しました。VOICEVOX の長文は複数の部品に分けてください（旧 `max-chars` は廃止）。irodoru の `voice` は `reference_audio_base64` に置き換えます。旧 `/api/tts`・`/api/health` は使いません。`model` 属性を削除し、サーバー起動時にモデルを指定します。
 
 ## VOICEVOX
 
