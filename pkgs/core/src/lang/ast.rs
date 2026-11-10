@@ -86,18 +86,3 @@ pub struct Attr {
     pub value_span: Span,
     pub span: Span,
 }
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum ValKind {
-    Num(f64, Unit),
-    Color([u8; 4]),
-    Str(String),
-    Bool(bool),
-    List(Vec<ValKind>),
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Unit {
-    None,
-    Pct,
-}

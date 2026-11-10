@@ -166,12 +166,8 @@ pub(super) fn lp(d: Dim) -> LengthPercentage {
     }
 }
 
-pub(super) fn padding(k: &ValKind) -> Result<taffy::Rect<LengthPercentage>, String> {
-    let items = match k {
-        ValKind::List(items) => items.as_slice(),
-        k => std::slice::from_ref(k),
-    };
-    let v: Vec<LengthPercentage> = items.iter().map(|k| dim(k).map(lp)).collect::<Result<_, _>>()?;
+pub(super) fn padding(s: &str) -> Result<taffy::Rect<LengthPercentage>, String> {
+    let v: Vec<LengthPercentage> = s.split_whitespace().map(|part| dim(part).map(lp)).collect::<Result<_, _>>()?;
     let [top, right, bottom, left] = match *v.as_slice() {
         [a] => [a; 4],
         [y, x] => [y, x, y, x],
