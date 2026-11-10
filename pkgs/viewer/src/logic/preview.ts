@@ -33,7 +33,7 @@ const reuse = <T extends { key: string }>(before: T[], incoming: T[]): T[] => {
   return next.length === before.length && next.every((entry, i) => entry === before[i]) ? before : next;
 };
 
-/** Applies an event atomically, keeping unchanged elements, timeline and resources by reference; throws instead of returning a partial state. */
+/** Applies an event atomically, keeping unchanged elements, nodes, clips and resources by reference; throws instead of returning a partial state. */
 export const applyEvent = ({ preview, resources }: PreviewState, event: SnapshotEvent | PatchEvent): PreviewState => {
   let next: PreviewDto | null;
   if (event.type === "snapshot") {
@@ -42,17 +42,17 @@ export const applyEvent = ({ preview, resources }: PreviewState, event: Snapshot
       next = {
         ...next,
         elements: reuse(preview.elements, next.elements),
-        timeline: equal(preview.timeline, next.timeline) ? preview.timeline : next.timeline,
+        nodes: reuse(preview.nodes, next.nodes),
+        clips: reuse(preview.clips, next.clips),
       };
   } else {
     if (!preview || preview.version !== event.baseVersion || event.version <= event.baseVersion) throw new Error("preview version mismatch; reconnecting");
-    const nodes = applyCollection(preview.timeline.nodes, event.nodes);
-    const clips = applyCollection(preview.timeline.clips, event.clips);
     next = {
       ...event.scene,
       version: event.version,
       elements: applyCollection(preview.elements, event.elements),
-      timeline: nodes === preview.timeline.nodes && clips === preview.timeline.clips ? preview.timeline : { nodes, clips },
+      nodes: applyCollection(preview.nodes, event.nodes),
+      clips: applyCollection(preview.clips, event.clips),
     };
   }
   const kept: Resources = {};

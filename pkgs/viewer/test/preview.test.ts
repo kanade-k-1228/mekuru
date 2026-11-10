@@ -9,7 +9,7 @@ const present = ({ preview }: PreviewState): PreviewDto => {
   return preview;
 };
 
-test("patches atomically, keeping unchanged elements, resources and timeline references", () => {
+test("patches atomically, keeping unchanged elements, resources, nodes and clips references", () => {
   const a = sharePreview(compilation(), null);
   const s1 = applyEvent(empty, snapshot(state(), a));
   const first = present(s1);
@@ -20,12 +20,14 @@ test("patches atomically, keeping unchanged elements, resources and timeline ref
   expect(second.elements[0]).not.toBe(first.elements[0]);
   expect(s2.resources.A).toBe(s1.resources.A);
   expect(s2.resources[second.elements[0].drawings[1]]).toEqual(resources.C);
-  expect(second.timeline).toBe(first.timeline);
+  expect(second.nodes).toBe(first.nodes);
+  expect(second.clips).toBe(first.clips);
   const c = sharePreview(compilation(3, b.preview.elements, {}), b);
   const s3 = applyEvent(s2, patch(state(3), b, c));
   const third = present(s3);
   expect(third.elements).toBe(second.elements);
-  expect(third.timeline).toBe(second.timeline);
+  expect(third.nodes).toBe(second.nodes);
+  expect(third.clips).toBe(second.clips);
   // A reconnect also preserves objects despite JSON decoding new copies.
   const again = present(applyEvent(s3, structuredClone(snapshot(state(3), c))));
   expect(again.elements).toBe(third.elements);

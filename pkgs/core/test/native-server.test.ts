@@ -136,7 +136,7 @@ test("native patches reconstruct the reconnect snapshot, retain failures and rec
     const recovered = await connection.next();
     expect(recovered.type).toBe("status");
     expect(recovered.state.status).toBe("ready");
-    expect(recovered.state.previewVersion).toBe(patch.version);
+    expect((await snapshot()).preview?.version).toBe(patch.version);
     // Even a large structural replacement is a patch on the acknowledged scene.
     await save(previewXml(1, 0, "ja"));
     await connection.next();

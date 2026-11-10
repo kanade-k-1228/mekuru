@@ -8,7 +8,6 @@ interface Diagnostic {
 export interface StateDto {
   title: string;
   version: number;
-  previewVersion: number;
   status: "building" | "ready" | "error";
   error: string | null;
   diagnostics: Diagnostic[];
@@ -35,7 +34,7 @@ export interface PatchEvent {
   state: StateDto;
   baseVersion: number;
   version: number;
-  scene: Pick<PreviewDto, "width" | "height" | "fps" | "duration">;
+  scene: Dimensions;
   elements: CollectionPatch<SceneElement>;
   nodes: CollectionPatch<TimelineNode>;
   clips: CollectionPatch<TimelineClip>;
@@ -45,14 +44,18 @@ export type PreviewEvent = SnapshotEvent | StatusEvent | PatchEvent;
 /** Browser-to-server JSON message over /api/ws. */
 export type PreviewCommand = { type: "resync" };
 
-export interface PreviewDto {
-  version: number;
+export interface Dimensions {
   width: number;
   height: number;
   fps: number;
   duration: number;
+}
+/** A scene; a patch updates `elements`, `nodes` and `clips` by key. */
+export interface PreviewDto extends Dimensions {
+  version: number;
   elements: SceneElement[];
-  timeline: TimelineDto;
+  nodes: TimelineNode[];
+  clips: TimelineClip[];
 }
 type Bounds = [number, number, number, number];
 export type Fade = [start: number, end: number, fadeIn: number, fadeOut: number, level: number];
@@ -128,9 +131,4 @@ export interface TimelineClip {
   label: string;
   estimated: boolean;
   freezes: [start: number, end: number][];
-}
-
-export interface TimelineDto {
-  nodes: TimelineNode[];
-  clips: TimelineClip[];
 }

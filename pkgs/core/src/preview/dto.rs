@@ -2,14 +2,22 @@ pub use crate::analysis::Diagnostic;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};
 
+/// A scene: its size and length, and the collections a patch updates by key.
 #[derive(Clone, PartialEq, Serialize)]
 pub struct Preview {
+    #[serde(flatten)]
+    pub dimensions: Dimensions,
+    pub elements: Vec<Element>,
+    pub nodes: Vec<TimelineNode>,
+    pub clips: Vec<Clip>,
+}
+
+#[derive(Clone, Copy, PartialEq, Serialize)]
+pub struct Dimensions {
     pub width: u32,
     pub height: u32,
     pub fps: f64,
     pub duration: f64,
-    pub elements: Vec<Element>,
-    pub timeline: Timeline,
 }
 
 #[derive(Clone, PartialEq, Serialize)]
@@ -84,11 +92,6 @@ pub struct MediaMap {
     pub(super) segments: Vec<[f64; 4]>,
 }
 
-#[derive(Clone, PartialEq, Serialize, Default)]
-pub struct Timeline {
-    pub(super) nodes: Vec<TimelineNode>,
-    pub(super) clips: Vec<Clip>,
-}
 #[derive(Clone, PartialEq, Serialize)]
 pub struct TimelineNode {
     pub(super) key: String,
@@ -135,13 +138,6 @@ pub struct Patch {
 }
 
 #[derive(Serialize)]
-pub struct Dimensions {
-    pub(super) width: u32,
-    pub(super) height: u32,
-    pub(super) fps: f64,
-    pub(super) duration: f64,
-}
-#[derive(Serialize)]
 pub struct CollectionPatch<T> {
     pub(super) upsert: Vec<T>,
     pub(super) remove: Vec<String>,
@@ -154,7 +150,6 @@ pub struct CollectionPatch<T> {
 pub(crate) struct PreviewState {
     pub(crate) title: String,
     pub(crate) version: u64,
-    pub(crate) preview_version: u64,
     pub(crate) status: &'static str,
     pub(crate) error: Option<String>,
     pub(crate) diagnostics: Vec<Diagnostic>,

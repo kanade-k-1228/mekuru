@@ -1,7 +1,7 @@
 import { atom, type Store } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import { timeAtom } from "../playback";
-import { durationAtom, timelineAtom } from "../server";
+import { clipsAtom, durationAtom, nodesAtom } from "../server";
 import { clamp, observeSize } from "../util";
 import { buildLayout, RULER_H, SCROLLBAR_SIZE, viewport, zoomAround, zoomAt, type ViewState } from "./model";
 
@@ -9,7 +9,7 @@ export const timelineViewAtom = atom<ViewState>({ zoom: 1, start: 0 });
 const timelineWidthAtom = atom(800);
 export const timelineMetricsAtom = atom((get) => viewport(get(durationAtom), get(timelineWidthAtom), get(timelineViewAtom)));
 
-export const timelineLayoutAtom = atom((get) => buildLayout(get(timelineAtom)));
+export const timelineLayoutAtom = atom((get) => buildLayout({ nodes: get(nodesAtom), clips: get(clipsAtom) }));
 
 const followAtom = atom(null, (get, set, time: number) => {
   const view = get(timelineViewAtom);

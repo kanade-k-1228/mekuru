@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { createStore } from "jotai";
 import { compilation, Events, install, patch, sharePreview, snapshot, state } from "./fixtures.ts";
 import { previewSocketUrl } from "../src/logic/preview";
-import { connAtom, elementsAtom, previewErrorAtom, previewAtom, serverAtom, timelineAtom } from "../src/logic/server";
+import { clipsAtom, connAtom, elementsAtom, nodesAtom, previewErrorAtom, previewAtom, serverAtom } from "../src/logic/server";
 import { timeAtom, playingAtom } from "../src/logic/playback";
 import { timelineLayoutAtom, timelineViewAtom } from "../src/logic/timeline/atoms";
 
@@ -54,14 +54,16 @@ test("status keeps scene subscriptions and playback; duration shrink clamps the 
     const a = sharePreview(compilation(), null);
     Events.all[0].receive(snapshot(state(), a));
     const elements = store.get(elementsAtom);
-    const timeline = store.get(timelineAtom);
+    const nodes = store.get(nodesAtom);
+    const clips = store.get(clipsAtom);
     const layout = store.get(timelineLayoutAtom);
     store.set(timeAtom, 1.8);
     store.set(playingAtom, true);
     store.set(timelineViewAtom, { zoom: 4, start: 0.3 });
     Events.all[0].receive({ type: "status", state: { ...state(2), status: "error", error: "invalid XML" } });
     expect(store.get(elementsAtom)).toBe(elements);
-    expect(store.get(timelineAtom)).toBe(timeline);
+    expect(store.get(nodesAtom)).toBe(nodes);
+    expect(store.get(clipsAtom)).toBe(clips);
     expect(store.get(timelineLayoutAtom)).toBe(layout);
     expect(store.get(timeAtom)).toBe(1.8);
     expect(store.get(playingAtom)).toBe(true);
