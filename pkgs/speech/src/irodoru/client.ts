@@ -32,7 +32,6 @@ const splitText = (text: string, max: number): string[] => {
 };
 
 export const requestFor = (props: IrodoruOptions & { url?: string; "max-chars"?: number }, text: string) => {
-  if ("model" in props) throw new Error("irodoru no longer accepts model; select the model when starting the server (Docker image tag)");
   const url = new URL(props.url ?? process.env.MEKURU_IRODORU_URL ?? "http://127.0.0.1:8080");
   if (!["http:", "https:"].includes(url.protocol) || url.search || url.hash || url.username || url.password) {
     throw new Error("irodoru url must be an HTTP(S) base URL without credentials, query or fragment");

@@ -228,14 +228,7 @@ test("near-limit output warns about incomplete speech, but an explicit target du
   expect(warning).toHaveBeenCalledTimes(1);
 });
 
-test("removed model selection fails locally instead of silently using a different server model", async () => {
-  const sent = serve();
-  // @ts-expect-error Models are now selected when starting the server, not per request.
-  await expect(say(<Speech text="こんにちは" model="anime" />)).rejects.toThrow("select the model when starting the server");
-  expect(sent).toHaveLength(0);
-});
-
-test("WAV with embedded generation conditions needs no legacy response headers and is cached intact", async () => {
+test("WAV with embedded generation conditions is measured from its samples and cached intact", async () => {
   const metadata = Buffer.from(`${JSON.stringify({ model: "anime", seed: 42, num_steps: 4 })}\0`);
   const list = Buffer.alloc(20 + metadata.length + (metadata.length % 2));
   list.write("LIST", 0);

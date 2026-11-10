@@ -62,10 +62,8 @@ test("the default project runs its irodoru sample without a registered voice", a
     async fetch(request) {
       const url = new URL(request.url);
       if (url.pathname === "/" && request.method === "POST") {
-        const body = (await request.json()) as { model?: string; seed: number; voice?: string; caption: string; text: string };
-        expect(body.model).toBeUndefined();
+        const body = (await request.json()) as { seed: number; caption: string; text: string };
         expect(body.seed).toBe(1);
-        expect(body.voice).toBeUndefined();
         expect(body.caption).toBeTruthy();
         spoken.push(body.text);
         return new Response(wav(4800));

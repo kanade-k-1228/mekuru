@@ -49,11 +49,11 @@ await writeXml(".mekuru/main.xml", (
 ));
 ```
 
-Reuse ordinary objects or your own components for characters. `caption` describes the voice and delivery. `reference_audio_base64` takes an optional Base64-encoded WAV and may be combined with `caption`. Use `Buffer.from(await Bun.file("voice.wav").arrayBuffer()).toString("base64")`. References must be at least 0.5 seconds; the entire JSON request must fit within 64 MiB. The old registered-name `voice` field is no longer supported.
+Reuse ordinary objects or your own components for characters. `caption` describes the voice and delivery. `reference_audio_base64` takes an optional Base64-encoded WAV and may be combined with `caption`. Use `Buffer.from(await Bun.file("voice.wav").arrayBuffer()).toString("base64")`. References must be at least 0.5 seconds; the entire JSON request must fit within 64 MiB.
 
 ### Synthesis settings
 
-Props use irodoru's API field names, without translating them into engine-neutral controls. The `model` prop is removed: select `latest-mf`, `latest-small`, or `latest-anime` in the server's Docker command. After switching models at the same URL, delete `.mekuru/cache/tts/` to regenerate audio.
+Props use irodoru's API field names, without translating them into engine-neutral controls. Select the model with the server's Docker image: `latest-mf`, `latest-small`, or `latest-anime`. After switching models at the same URL, delete `.mekuru/cache/tts/` to regenerate audio.
 
 | Prop | Default / meaning |
 | --- | --- |
@@ -107,21 +107,17 @@ Call `Speech.prepare()` inside an async component under `<mekuru>`, during `writ
 
 `subtitleText(text)` expands text-only JSX to display text without synthesis. Root exports are `Speech`, `SpeechProps`, `LineProps`, `PreparedLine`, and `subtitleText`. `@mekuru/speech/irodoru` also exports `Speech`; VOICEVOX uses its own subpath.
 
-Generation conditions (model, seed, steps, etc.) are embedded in the WAV's `LIST/INFO/ICMT` chunk. The client requires no legacy `x-model` / `x-seed` headers and measures duration from WAV samples. A single-request WAV is saved unchanged, including metadata. Joined WAVs from split lines contain the combined audio without per-part generation metadata.
+Generation conditions (model, seed, steps, etc.) are embedded in the WAV's `LIST/INFO/ICMT` chunk. The client measures duration from WAV samples. A single-request WAV is saved unchanged, including metadata. Joined WAVs from split lines contain the combined audio without per-part generation metadata.
 
 ## Cache and preview
 
 Audio lives in `.mekuru/cache/tts/`. The cache key includes the normalized server URL, synthesis settings, split text, split limit, and cache format version. Changing labels, placement, gain, subtitle-only text, `gap`, or `len` does not regenerate speech when the spoken text stays the same. Explicit default settings and omitted defaults share a cache entry.
 
-Cached audio works with the server offline. irodoru does not perform discovery; VOICEVOX resolves named speakers only on cache misses. Replacing a model or VOICEVOX speaker data under the same name requires deleting `.mekuru/cache/tts/` to regenerate; these remote changes cannot be detected offline. irodoru reference audio contents are part of the key, so changing them regenerates speech. Older cache entries are not reused by this version.
+Cached audio works with the server offline. irodoru does not perform discovery; VOICEVOX resolves named speakers only on cache misses. Replacing a model or VOICEVOX speaker data under the same name requires deleting `.mekuru/cache/tts/` to regenerate; these remote changes cannot be detected offline. irodoru reference audio contents are part of the key, so changing them regenerates speech.
 
 Identical in-flight lines share one synthesis. irodoru requests run one at a time per base URL, with a five-minute timeout per request starting after the local queue. HTTP failures or invalid/empty WAV responses never become cache entries, and a later build can retry.
 
 For uncached lines, `writeXml()` first writes estimated duration for immediate preview, then updates it with the WAV duration when synthesis finishes. `toXml()` waits for final audio. Text is expanded once per pass and shared by the audio, subtitle, and portrait.
-
-## Migration
-
-`@mekuru/speech/voicevox`, `Voicevox.prepare()`, and VOICEVOX presets remain available. COEIROINK, Style-Bert-VITS2, VoiSona, and the generic `defineEngine` / `defineSpeech` / `prepare` / `cached` APIs are removed. Split long VOICEVOX lines into separate components (the old `max-chars` prop is removed). For irodoru, replace registered-name `voice` with `reference_audio_base64`, remove the `model` prop, and select the model when starting the server. The old `/api/tts` and `/api/health` endpoints are no longer used.
 
 ## VOICEVOX
 

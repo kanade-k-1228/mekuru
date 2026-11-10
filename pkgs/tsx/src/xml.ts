@@ -46,8 +46,6 @@ export const writeXml = async (path: string, video: unknown): Promise<void> => {
       await Promise.all(build.waits);
       await save();
     } finally {
-      build.draft = false;
-      build.waits.clear();
       await rm(tmp, { force: true });
     }
   });
