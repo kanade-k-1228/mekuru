@@ -1,4 +1,4 @@
-use super::ast::{Attr, Unit, ValKind};
+use super::ast::Attr;
 use super::diag::{Diag, did_you_mean};
 use super::lex;
 use super::span::Span;
@@ -73,23 +73,13 @@ impl<'a> Attrs<'a> {
         self.get(key).map_or(self.span, |a| a.span)
     }
 
-    pub fn val(&self, key: &str, diags: &mut Vec<Diag>) -> Option<(ValKind, Span)> {
+    /// The value of `key` as `f` reads it; a value it rejects is E303.
+    pub fn conv<T>(&self, key: &str, diags: &mut Vec<Diag>, f: impl Fn(&str) -> Result<T, String>) -> Option<T> {
         let a = self.get(key)?;
-        match lex::value(&a.value) {
-            Ok(k) => Some((k, a.value_span)),
-            Err(m) => {
-                diags.push(Diag::new("E303", a.value_span, format!("`{key}`: {m}")));
-                None
-            }
-        }
-    }
-
-    pub fn conv<T>(&self, key: &str, diags: &mut Vec<Diag>, f: impl Fn(&ValKind) -> Result<T, String>) -> Option<T> {
-        let (k, span) = self.val(key, diags)?;
-        match f(&k) {
+        match f(&a.value) {
             Ok(v) => Some(v),
             Err(m) => {
-                diags.push(Diag::new("E303", span, format!("`{key}`: {m}")));
+                diags.push(Diag::new("E303", a.value_span, format!("`{key}`: {m}")));
                 None
             }
         }
@@ -103,46 +93,37 @@ impl<'a> Attrs<'a> {
         a
     }
 
+    /// The number in `key` when `ok` accepts it.
+    fn number(&self, key: &str, diags: &mut Vec<Diag>, expected: &str, ok: impl Fn(f64) -> bool) -> Option<f64> {
+        self.conv(key, diags, |s| lex::number(s).filter(|n| ok(*n)).ok_or_else(|| expected.into()))
+    }
+
     pub fn num(&self, key: &str, diags: &mut Vec<Diag>) -> Option<f32> {
-        self.conv(key, diags, |k| match k {
-            ValKind::Num(n, Unit::None) => Ok(*n as f32),
-            _ => Err("expected a number".into()),
-        })
+        self.number(key, diags, "expected a number", |_| true).map(|n| n as f32)
     }
 
     pub fn int(&self, key: &str, diags: &mut Vec<Diag>) -> Option<i32> {
-        self.conv(key, diags, |k| match k {
-            ValKind::Num(n, Unit::None) if n.fract() == 0.0 => Ok(*n as i32),
-            _ => Err("expected an integer".into()),
-        })
+        self.number(key, diags, "expected an integer", |n| n.fract() == 0.0).map(|n| n as i32)
     }
 
     pub fn ratio(&self, key: &str, diags: &mut Vec<Diag>) -> Option<f32> {
-        self.conv(key, diags, |k| match k {
-            ValKind::Num(n, Unit::None) if *n >= 0.0 => Ok(*n as f32),
-            _ => Err("expected a number such as 0.5".into()),
-        })
+        self.number(key, diags, "expected a number such as 0.5", |n| n >= 0.0).map(|n| n as f32)
     }
 
     pub fn frames(&self, key: &str, diags: &mut Vec<Diag>) -> Option<i64> {
-        self.conv(key, diags, |k| match k {
-            ValKind::Num(n, Unit::None) => frames(*n).ok_or_else(|| "expected frames: a whole number from 0, such as 30".into()),
-            _ => Err("expected frames: a whole number from 0, such as 30".into()),
-        })
+        let expected = "expected frames: a whole number from 0, such as 30";
+        self.number(key, diags, expected, |n| frames(n).is_some()).map(|n| n as i64)
     }
 
     pub fn at(&self, diags: &mut Vec<Diag>) -> Option<Ref> {
-        self.conv("at", diags, |k| {
-            let r = match k {
-                ValKind::Str(s) => s.split_once(':').and_then(|(id, q)| {
-                    Some(Ref {
-                        target: None,
-                        id: id.to_string(),
-                        pos: frames(lex::number(q)?)?,
-                    })
-                }),
-                _ => None,
-            };
+        self.conv("at", diags, |s| {
+            let r = s.split_once(':').and_then(|(id, q)| {
+                Some(Ref {
+                    target: None,
+                    id: id.to_string(),
+                    pos: frames(lex::number(q)?)?,
+                })
+            });
             r.ok_or_else(|| "expected `id:frame`, such as `intro:0` (`delay` puts it off by frames)".into())
         })
     }
@@ -152,32 +133,31 @@ impl<'a> Attrs<'a> {
     }
 
     pub fn color(&self, key: &str, diags: &mut Vec<Diag>) -> Option<Rgba> {
-        self.conv(key, diags, |k| match k {
-            ValKind::Color(c) => Ok(*c),
-            _ => Err("expected a color such as #7FD1AE".into()),
+        self.conv(key, diags, |s| {
+            lex::parse_color(s).ok_or_else(|| "expected a color such as #7FD1AE (write #rgb, #rrggbb or #rrggbbaa)".into())
         })
     }
 
     pub fn flag(&self, key: &str, diags: &mut Vec<Diag>) -> Option<bool> {
-        self.conv(key, diags, |k| match k {
-            ValKind::Bool(b) => Ok(*b),
+        self.conv(key, diags, |s| match s {
+            "true" => Ok(true),
+            "false" => Ok(false),
             _ => Err("expected true or false".into()),
         })
     }
 
     /// What the word in `key` means, with `options` pairing each word with its meaning.
     pub fn pick<T: Copy>(&self, key: &str, diags: &mut Vec<Diag>, options: &[(&str, T)]) -> Option<T> {
-        self.conv(key, diags, |k| {
-            let found = options.iter().find(|(w, _)| matches!(k, ValKind::Str(s) if s == w));
+        self.conv(key, diags, |s| {
             let words: Vec<&str> = options.iter().map(|(w, _)| *w).collect();
+            let found = options.iter().find(|(w, _)| *w == s);
             found.map(|&(_, v)| v).ok_or_else(|| format!("expected one of {}", words.join(", ")))
         })
     }
 
     pub fn anchor(&self, placed: bool, diags: &mut Vec<Diag>) -> Option<Anchor> {
-        let a = self.conv("anchor", diags, |k| match k {
-            ValKind::Str(s) => Anchor::parse(s).ok_or_else(|| format!("unknown anchor `{s}` (use one of {})", Anchor::NAMES.join(", "))),
-            _ => Err("expected an anchor".into()),
+        let a = self.conv("anchor", diags, |s| {
+            Anchor::parse(s).ok_or_else(|| format!("unknown anchor `{s}` (use one of {})", Anchor::NAMES.join(", ")))
         })?;
         if !placed {
             diags.push(Diag::new("W357", self.span("anchor"), "`anchor` only applies with `x` / `y`"));
@@ -230,10 +210,7 @@ impl<'a> Attrs<'a> {
 
     pub fn points(&self, key: &str, diags: &mut Vec<Diag>) -> Option<Vec<(Dim, Dim)>> {
         let a = self.get(key)?;
-        let one = |s: &str| match lex::value(s) {
-            Ok(k) => dim(&k).ok().filter(|d| !matches!(d, Dim::Auto)),
-            Err(_) => None,
-        };
+        let one = |s: &str| dim(s).ok().filter(|d| !matches!(d, Dim::Auto));
         let pts: Option<Vec<_>> = a
             .value
             .split(',')
@@ -254,11 +231,11 @@ fn frames(n: f64) -> Option<i64> {
     (n >= 0.0 && n.fract() == 0.0 && n < 1e15).then_some(n as i64)
 }
 
-pub fn dim(k: &ValKind) -> Result<Dim, String> {
-    match k {
-        ValKind::Num(n, Unit::None) => Ok(Dim::Px(*n as f32)),
-        ValKind::Num(n, Unit::Pct) => Ok(Dim::Frac(*n as f32 / 100.0)),
-        ValKind::Str(s) if s == "auto" => Ok(Dim::Auto),
-        _ => Err("expected a length (px, or % of the parent)".into()),
-    }
+pub fn dim(s: &str) -> Result<Dim, String> {
+    let read = || match s.strip_suffix('%') {
+        _ if s == "auto" => Some(Dim::Auto),
+        Some(pct) => lex::number(pct).map(|n| Dim::Frac(n as f32 / 100.0)),
+        None => lex::number(s).map(|n| Dim::Px(n as f32)),
+    };
+    read().ok_or_else(|| "expected a length (px, or % of the parent)".into())
 }
