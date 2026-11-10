@@ -1,9 +1,10 @@
 use mekuru_compiler::{
     Project,
     ir::{Elem, ElemKind, RectSpec, ViewOp},
+    lang::diag::Diag,
     media::probe::MediaProbe,
     prepare::{MediaAsset, Prepared},
-    schedule::{ElemTime, Schedule},
+    schedule::{ElemTime, Schedule, SrcMap, schedule},
 };
 use std::path::Path;
 
@@ -17,7 +18,6 @@ fn media(p: &Project) -> Prepared {
     let media = p.script.elems.iter().filter(|e| e.kind.media().is_some());
     Prepared {
         media: media.map(|e| (e.id, MediaAsset { probe, pcm: None })).collect(),
-        diags: vec![],
     }
 }
 
@@ -25,25 +25,60 @@ fn project(body: &str) -> Project {
     Project::from_source(Path::new("test.xml"), None, format!(r#"<mekuru fps="1"><seq>{body}</seq></mekuru>"#), false)
 }
 
-fn compile(body: &str) -> (Project, Schedule) {
+/// A project without errors, its schedule and what scheduling reported.
+struct Compiled {
+    p: Project,
+    s: Schedule,
+    diags: Vec<Diag>,
+}
+
+fn compile(body: &str) -> Compiled {
     let p = project(body);
     assert!(!p.has_errors(), "{:?}", p.diags);
-    let sched = p.schedule(&media(&p));
-    (p, sched)
+    let mut diags = vec![];
+    let s = schedule(&p.script, &media(&p), &mut diags);
+    Compiled { p, s, diags }
 }
 
-fn codes(p: &Project) -> Vec<&str> {
-    p.diags.iter().map(|d| d.code).collect()
+/// `compile`, with nothing reported.
+fn clean(body: &str) -> Compiled {
+    let c = compile(body);
+    assert!(c.diags.is_empty(), "{:?}", c.diags);
+    c
 }
 
-fn id(p: &Project, id: &str) -> usize {
-    let found: Vec<_> = p.script.elems.iter().filter(|e| e.source_id.as_deref() == Some(id)).collect();
-    assert_eq!(found.len(), 1, "expected one element {id}");
-    found[0].id
+impl Compiled {
+    fn elem(&self, id: &str) -> &ElemTime {
+        &self.s.elems[named(&self.p, id).id]
+    }
+    fn marked(&self, marker: &str) -> &ElemTime {
+        &self.s.elems[marked_elem(&self.p, marker).id]
+    }
+    fn span(&self, id: &str) -> (i64, i64) {
+        let t = self.elem(id);
+        (t.start, t.end)
+    }
+    fn src(&self, id: &str) -> &SrcMap {
+        self.elem(id).src.as_ref().expect(id)
+    }
+    fn freezes(&self, id: &str) -> Vec<(f64, f64)> {
+        self.src(id).freezes().collect()
+    }
+    /// Where each audio clip plays, how long, and from where in its source.
+    fn clips(&self) -> Vec<(f64, f64, f64)> {
+        self.s.audio.iter().map(|a| (a.at, a.len, a.src)).collect()
+    }
+    fn has(&self, code: &str) -> bool {
+        self.diags.iter().any(|d| d.code == code)
+    }
 }
 
-fn elem<'a>(p: &Project, s: &'a Schedule, id: &str) -> &'a ElemTime {
-    &s.elems[self::id(p, id)]
+/// Each body is an error with its code.
+fn rejects(cases: &[(&str, &str)]) {
+    for (body, code) in cases {
+        let p = project(body);
+        assert!(p.diags.iter().any(|d| d.code == *code), "{body}: {:?}", p.diags);
+    }
 }
 
 /// The innermost element whose source contains `marker`.
@@ -52,17 +87,14 @@ fn marked_elem<'a>(p: &'a Project, marker: &str) -> &'a Elem {
     p.script.elems.iter().filter(has).min_by_key(|e| e.site.hi - e.site.lo).expect(marker)
 }
 
-fn marked<'a>(p: &Project, s: &'a Schedule, marker: &str) -> &'a ElemTime {
-    &s.elems[marked_elem(p, marker).id]
-}
-
-fn clean(s: &Schedule) {
-    assert!(s.diags.is_empty(), "{:?}", s.diags);
+/// The element written with `id`.
+fn named<'a>(p: &'a Project, id: &str) -> &'a Elem {
+    marked_elem(p, &format!(r#"id="{id}""#))
 }
 
 #[test]
 fn sequence_waits_for_what_has_a_length_and_not_for_what_has_none() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <rect id="background" w="100" h="100"/>
         <dur len="3"><stack><rect id="first" w="10" h="10"/></stack></dur>
@@ -73,17 +105,16 @@ fn sequence_waits_for_what_has_a_length_and_not_for_what_has_none() {
         </seq>
     "#,
     );
-    clean(&s);
-    assert_eq!(s.total, 7);
+    assert_eq!(c.s.total, 7);
     for (id, start, end) in [("background", 0, 7), ("first", 0, 3), ("caption", 3, 7), ("second", 4, 6), ("third", 6, 7)] {
-        let t = elem(&p, &s, id);
+        let t = c.elem(id);
         assert_eq!((t.start, t.end), (start, end), "{id}");
     }
 }
 
 #[test]
 fn a_group_lasts_until_the_last_thing_in_it_ends() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <stack id="scene">
             <rect id="note" w="10" h="10"/>
@@ -94,15 +125,14 @@ fn a_group_lasts_until_the_last_thing_in_it_ends() {
         <dur len="1"><rect id="next" w="10" h="10"/></dur>
     "#,
     );
-    clean(&s);
-    assert_eq!((elem(&p, &s, "note").start, elem(&p, &s, "note").end), (0, 4));
-    assert_eq!(elem(&p, &s, "next").start, 4);
-    assert_eq!(s.total, 5);
+    assert_eq!(c.span("note"), (0, 4));
+    assert_eq!(c.elem("next").start, 4);
+    assert_eq!(c.s.total, 5);
 }
 
 #[test]
 fn hold_keeps_media_waiting_at_a_source_position() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <stack>
             <video id="movie" src="movie.mp4"><hold at="2"><dur len="3"/></hold></video>
@@ -111,23 +141,19 @@ fn hold_keeps_media_waiting_at_a_source_position() {
         </stack>
     "#,
     );
-    clean(&s);
-    assert_eq!(s.total, 13);
-    let map = elem(&p, &s, "movie").src.as_ref().unwrap();
+    assert_eq!(c.s.total, 13);
+    let map = c.src("movie");
     assert_eq!(map.freezes().collect::<Vec<_>>(), vec![(2.0, 5.0)]);
     assert_eq!(map.at(4.0), 2.0);
     assert_eq!(map.at(6.0), 3.0);
-    assert_eq!(elem(&p, &s, "freeze").start, 2);
-    assert_eq!(elem(&p, &s, "cue").start, 7);
-    assert_eq!(
-        s.audio.iter().map(|a| (a.at, a.len, a.src)).collect::<Vec<_>>(),
-        vec![(0.0, 2.0, 0.0), (5.0, 8.0, 2.0)]
-    );
+    assert_eq!(c.elem("freeze").start, 2);
+    assert_eq!(c.elem("cue").start, 7);
+    assert_eq!(c.clips(), vec![(0.0, 2.0, 0.0), (5.0, 8.0, 2.0)]);
 }
 
 #[test]
 fn holds_at_one_position_wait_for_the_longest_and_holds_at_others_add_up() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <stack>
             <video id="movie" src="movie.mp4">
@@ -139,16 +165,15 @@ fn holds_at_one_position_wait_for_the_longest_and_holds_at_others_add_up() {
         </stack>
     "#,
     );
-    clean(&s);
-    assert_eq!(s.total, 16);
-    let map = elem(&p, &s, "movie").src.as_ref().unwrap();
+    assert_eq!(c.s.total, 16);
+    let map = c.src("movie");
     assert_eq!(map.freezes().collect::<Vec<_>>(), vec![(2.0, 5.0), (9.0, 11.0), (15.0, 16.0)]);
-    assert_eq!(elem(&p, &s, "movie").end, 16);
+    assert_eq!(c.elem("movie").end, 16);
 }
 
 #[test]
 fn a_reference_to_the_source_end_precedes_its_hold_but_media_completion_waits() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <stack>
             <video id="movie" src="movie.mp4">
@@ -161,16 +186,15 @@ fn a_reference_to_the_source_end_precedes_its_hold_but_media_completion_waits() 
         <dur len="1"><rect id="after" w="10" h="10"/></dur>
         "#,
     );
-    clean(&s);
-    assert_eq!(elem(&p, &s, "cue").start, 7);
-    assert_eq!(elem(&p, &s, "movie").end, 10);
-    assert_eq!(elem(&p, &s, "after").start, 10);
-    assert_eq!(s.total, 11);
+    assert_eq!(c.elem("cue").start, 7);
+    assert_eq!(c.elem("movie").end, 10);
+    assert_eq!(c.elem("after").start, 10);
+    assert_eq!(c.s.total, 11);
 }
 
 #[test]
 fn hold_lasts_as_long_as_what_is_in_it() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <stack>
             <video id="life" src="life.mp4">
@@ -186,69 +210,63 @@ fn hold_lasts_as_long_as_what_is_in_it() {
         </stack>
     "#,
     );
-    clean(&s);
-    let t = |id| (elem(&p, &s, id).start, elem(&p, &s, id).end);
-    assert_eq!((t("talk"), t("more"), t("label")), ((4, 7), (7, 8), (4, 8)));
-    assert_eq!(elem(&p, &s, "life").src.as_ref().unwrap().freezes().collect::<Vec<_>>(), vec![(4.0, 8.0)]);
-    assert_eq!(elem(&p, &s, "after").start, 9);
-    assert_eq!(s.total, 14);
+    assert_eq!((c.span("talk"), c.span("more"), c.span("label")), ((4, 7), (7, 8), (4, 8)));
+    assert_eq!(c.freezes("life"), vec![(4.0, 8.0)]);
+    assert_eq!(c.elem("after").start, 9);
+    assert_eq!(c.s.total, 14);
 }
 
 #[test]
 fn hold_is_cut_by_its_own_dur_and_with_its_media() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <stack>
             <video id="v" src="v.mp4"><hold at="2"><dur len="3"><dur len="5"><rect id="note" w="10" h="10"/></dur></dur></hold></video>
         </stack>
     "#,
     );
-    clean(&s);
-    assert_eq!((elem(&p, &s, "note").start, elem(&p, &s, "note").end), (2, 5));
-    assert_eq!(elem(&p, &s, "v").src.as_ref().unwrap().freezes().collect::<Vec<_>>(), vec![(2.0, 5.0)]);
-    assert_eq!(s.total, 13);
-    let (p, s) = compile(
+    assert_eq!(c.span("note"), (2, 5));
+    assert_eq!(c.freezes("v"), vec![(2.0, 5.0)]);
+    assert_eq!(c.s.total, 13);
+    let c = compile(
         r#"
         <dur len="3"><stack>
             <video id="v" src="v.mp4"><hold at="2"><dur len="5"><rect id="note" w="10" h="10"/></dur></hold></video>
         </stack></dur>
     "#,
     );
-    assert_eq!((elem(&p, &s, "note").start, elem(&p, &s, "note").end), (2, 3));
-    assert_eq!(elem(&p, &s, "v").end, 3);
-    assert_eq!(s.total, 3);
-    let (p, s) = compile(
+    assert_eq!(c.span("note"), (2, 3));
+    assert_eq!(c.elem("v").end, 3);
+    assert_eq!(c.s.total, 3);
+    let c = compile(
         r#"
         <dur len="1"><stack>
             <video id="v" src="v.mp4"><hold at="2"><dur len="5"><rect id="note" w="10" h="10"/></dur></hold></video>
         </stack></dur>
     "#,
     );
-    let note = elem(&p, &s, "note");
+    let note = c.elem("note");
     assert_eq!(note.start, note.end);
-    assert!(s.diags.iter().all(|d| !d.is_error()), "{:?}", s.diags);
+    assert!(c.diags.iter().all(|d| !d.is_error()), "{:?}", c.diags);
 }
 
 #[test]
 fn hold_goes_in_media_and_has_a_length() {
-    for (body, code) in [
+    rejects(&[
         (r#"<stack><hold at="1"><dur len="1"/></hold></stack>"#, "E107"),
         (r#"<stack><video src="v.mp4"><dur len="1"><rect w="1" h="1"/></dur></video></stack>"#, "E107"),
         (r#"<stack><video src="v.mp4"><hold at="1"/></video></stack>"#, "E320"),
         (r#"<stack><video src="v.mp4"><hold at="1"><rect w="1" h="1"/></hold></video></stack>"#, "E320"),
         (r#"<stack><video src="v.mp4"><hold at="1"><dur len="fill"/></hold></video></stack>"#, "E303"),
         (r#"<stack><video src="v.mp4"><hold><dur len="1"/></hold></video></stack>"#, "E302"),
-    ] {
-        let p = project(body);
-        assert!(codes(&p).contains(&code), "{body}: {:?}", p.diags);
-    }
-    let (_, s) = compile(r#"<stack><video src="v.mp4"><hold at="12"><dur len="1"/></hold></video></stack>"#);
-    assert!(s.diags.iter().any(|d| d.code == "E504"), "{:?}", s.diags);
+    ]);
+    let c = compile(r#"<stack><video src="v.mp4"><hold at="12"><dur len="1"/></hold></video></stack>"#);
+    assert!(c.has("E504"), "{:?}", c.diags);
 }
 
 #[test]
 fn hold_in_a_repeat_comes_round_with_its_media() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <dur len="27"><stack>
             <repeat>
@@ -260,8 +278,7 @@ fn hold_in_a_repeat_comes_round_with_its_media() {
         </stack></dur>
     "#,
     );
-    clean(&s);
-    let note = marked(&p, &s, r#"w="11""#);
+    let note = c.marked(r#"w="11""#);
     for (t, shown) in [(4.0, false), (6.0, true), (11.0, false), (19.0, true), (25.0, false)] {
         assert_eq!(note.active(t), shown, "{t}");
     }
@@ -269,7 +286,7 @@ fn hold_in_a_repeat_comes_round_with_its_media() {
 
 #[test]
 fn media_in_a_repeat_keeps_its_holds_speeds_and_cuts_every_round() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <dur len="20"><stack>
             <repeat>
@@ -278,12 +295,11 @@ fn media_in_a_repeat_keeps_its_holds_speeds_and_cuts_every_round() {
         </stack></dur>
     "#,
     );
-    clean(&s);
-    let note = marked(&p, &s, r#"w="11""#);
+    let note = c.marked(r#"w="11""#);
     for (t, shown) in [(2.0, true), (4.0, false), (10.0, true), (12.0, false), (18.0, true)] {
         assert_eq!(note.active(t), shown, "{t}");
     }
-    let mut clips = s.audio.iter().map(|a| (a.at, a.len, a.src)).collect::<Vec<_>>();
+    let mut clips = c.clips();
     clips.sort_by(|a, b| a.0.total_cmp(&b.0));
     assert_eq!(
         clips,
@@ -300,7 +316,7 @@ fn media_in_a_repeat_keeps_its_holds_speeds_and_cuts_every_round() {
 
 #[test]
 fn cut_skips_a_part_of_the_source() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <stack>
             <video id="v" src="v.mp4"><cut from="2" to="5"/></video>
@@ -309,20 +325,19 @@ fn cut_skips_a_part_of_the_source() {
         </stack>
     "#,
     );
-    clean(&s);
-    assert_eq!(s.total, 7);
-    let map = elem(&p, &s, "v").src.as_ref().unwrap();
+    assert_eq!(c.s.total, 7);
+    let map = c.src("v");
     assert_eq!((map.at(1.0), map.at(3.0)), (1.0, 6.0));
-    assert_eq!((elem(&p, &s, "after").start, elem(&p, &s, "inside").start), (3, 2));
+    assert_eq!((c.elem("after").start, c.elem("inside").start), (3, 2));
     assert_eq!(
-        s.audio.iter().map(|a| (a.at, a.len, a.src, a.rate)).collect::<Vec<_>>(),
+        c.s.audio.iter().map(|a| (a.at, a.len, a.src, a.rate)).collect::<Vec<_>>(),
         vec![(0.0, 2.0, 0.0, 1.0), (2.0, 5.0, 5.0, 1.0)]
     );
 }
 
 #[test]
 fn speed_plays_a_part_faster_or_slower() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <stack>
             <video id="v" src="v.mp4"><speed from="2" to="6" rate="2"/><speed from="8" rate="0.5"/></video>
@@ -330,31 +345,30 @@ fn speed_plays_a_part_faster_or_slower() {
         </stack>
     "#,
     );
-    clean(&s);
-    assert_eq!(s.total, 10);
-    let map = elem(&p, &s, "v").src.as_ref().unwrap();
+    assert_eq!(c.s.total, 10);
+    let map = c.src("v");
     assert_eq!((map.at(3.0), map.at(5.0), map.at(8.0)), (4.0, 7.0, 9.0));
-    assert_eq!(elem(&p, &s, "r").start, 4);
-    let clips = s.audio.iter().map(|a| (a.at, a.len, a.src, a.rate)).collect::<Vec<_>>();
+    assert_eq!(c.elem("r").start, 4);
+    let clips = c.s.audio.iter().map(|a| (a.at, a.len, a.src, a.rate)).collect::<Vec<_>>();
     assert_eq!(
         clips,
         vec![(0.0, 2.0, 0.0, 1.0), (2.0, 2.0, 2.0, 2.0), (4.0, 2.0, 6.0, 1.0), (6.0, 4.0, 8.0, 0.5)]
     );
-    let (p, s) = compile(r#"<stack><video id="v" src="v.mp4"><speed rate="2"/></video></stack>"#);
-    assert_eq!(elem(&p, &s, "v").end, 5);
-    let (p, s) = compile(
+    let c = compile(r#"<stack><video id="v" src="v.mp4"><speed rate="2"/></video></stack>"#);
+    assert_eq!(c.elem("v").end, 5);
+    let c = compile(
         r#"
         <stack>
             <video id="v" src="v.mp4"><speed from="2" to="6" rate="2"/><speed from="4" to="8" rate="2"/><cut from="7" to="9"/></video>
         </stack>
     "#,
     );
-    assert_eq!(elem(&p, &s, "v").end, 5);
+    assert_eq!(c.elem("v").end, 5);
 }
 
 #[test]
 fn media_gets_to_a_position_on_the_first_frame_after_it_plays_there() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <stack>
             <video id="v" src="v.mp4"><speed rate="3"/><hold at="5"><dur len="2"><rect id="note" w="10" h="10"/></dur></hold></video>
@@ -362,18 +376,16 @@ fn media_gets_to_a_position_on_the_first_frame_after_it_plays_there() {
         </stack>
     "#,
     );
-    clean(&s);
-    let t = |id| (elem(&p, &s, id).start, elem(&p, &s, id).end);
-    assert_eq!((t("note"), elem(&p, &s, "cue").start, elem(&p, &s, "v").end, s.total), ((2, 4), 5, 6, 6));
-    let map = elem(&p, &s, "v").src.as_ref().unwrap();
+    assert_eq!((c.span("note"), c.elem("cue").start, c.elem("v").end, c.s.total), ((2, 4), 5, 6, 6));
+    let map = c.src("v");
     assert_eq!(map.freezes().map(|(a, b)| ((a * 3.0).round(), b)).collect::<Vec<_>>(), vec![(5.0, 4.0)]);
-    let clips: Vec<_> = s.audio.iter().map(|a| (a.at, (a.len * 3.0).round(), a.src)).collect();
+    let clips: Vec<_> = c.s.audio.iter().map(|a| (a.at, (a.len * 3.0).round(), a.src)).collect();
     assert_eq!(clips, vec![(0.0, 5.0, 0.0), (4.0, 5.0, 5.0)]);
 }
 
 #[test]
 fn hold_waits_at_its_position_through_speeds_and_cuts() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <stack>
             <video id="v" src="v.mp4">
@@ -385,16 +397,15 @@ fn hold_waits_at_its_position_through_speeds_and_cuts() {
         </stack>
     "#,
     );
-    clean(&s);
-    assert_eq!(s.total, 9);
-    let map = elem(&p, &s, "v").src.as_ref().unwrap();
+    assert_eq!(c.s.total, 9);
+    let map = c.src("v");
     assert_eq!(map.freezes().collect::<Vec<_>>(), vec![(1.0, 3.0), (4.0, 5.0)]);
     assert_eq!((map.at(4.5), map.at(6.5)), (5.0, 7.0));
 }
 
 #[test]
 fn speed_and_cut_go_in_media_and_say_a_part() {
-    for (body, code) in [
+    rejects(&[
         (r#"<stack><cut from="1" to="2"/></stack>"#, "E107"),
         (r#"<stack><speed rate="2"/></stack>"#, "E107"),
         (r#"<stack><video src="v.mp4"><cut from="3" to="2"/></video></stack>"#, "E314"),
@@ -402,17 +413,14 @@ fn speed_and_cut_go_in_media_and_say_a_part() {
         (r#"<stack><video src="v.mp4"><speed rate="0"/></video></stack>"#, "E303"),
         (r#"<stack><video src="v.mp4"><speed rate="50%"/></video></stack>"#, "E303"),
         (r#"<stack><video src="v.mp4"><cut from="1" to="2" rate="2"/></video></stack>"#, "E301"),
-    ] {
-        let p = project(body);
-        assert!(codes(&p).contains(&code), "{body}: {:?}", p.diags);
-    }
-    let (_, s) = compile(r#"<stack><video src="v.mp4" from="1"><cut from="0" to="1"/></video></stack>"#);
-    assert!(s.diags.iter().any(|d| d.code == "E504"), "{:?}", s.diags);
+    ]);
+    let c = compile(r#"<stack><video src="v.mp4" from="1"><cut from="0" to="1"/></video></stack>"#);
+    assert!(c.has("E504"), "{:?}", c.diags);
 }
 
 #[test]
 fn parent_duration_cuts_media_and_a_reference_past_it_is_an_error() {
-    let (p, s) = compile(
+    let c = compile(
         r#"
         <dur len="3"><stack>
             <video id="movie" src="movie.mp4"/>
@@ -420,33 +428,32 @@ fn parent_duration_cuts_media_and_a_reference_past_it_is_an_error() {
         </stack></dur>
     "#,
     );
-    assert_eq!(s.total, 3);
-    assert_eq!(elem(&p, &s, "movie").end, 3);
-    let later = elem(&p, &s, "later");
+    assert_eq!(c.s.total, 3);
+    assert_eq!(c.elem("movie").end, 3);
+    let later = c.elem("later");
     assert_eq!(later.start, later.end);
-    assert!(s.diags.iter().any(|d| d.code == "E504"));
-    assert!(s.diags.iter().all(|d| d.code != "W556"), "{:?}", s.diags);
-    assert_eq!(s.audio[0].len, 3.0);
+    assert!(c.has("E504"));
+    assert!(c.diags.iter().all(|d| d.code != "W556"), "{:?}", c.diags);
+    assert_eq!(c.s.audio[0].len, 3.0);
 }
 
 #[test]
 fn a_reference_out_of_the_source_is_an_error() {
     for at in ["movie:0", "movie:11"] {
-        let (_, s) = compile(&format!(
+        let c = compile(&format!(
             r#"<stack><video id="movie" src="movie.mp4" from="1"/><dur len="1" at="{at}"><rect w="1" h="1"/></dur></stack>"#
         ));
-        assert!(s.diags.iter().any(|d| d.code == "E504"), "{at}: {:?}", s.diags);
+        assert!(c.has("E504"), "{at}: {:?}", c.diags);
     }
-    let (p, s) = compile(
+    let c = clean(
         r#"<dur len="30"><stack><repeat id="bgm"><audio src="bgm.mp3"/></repeat><dur len="1" at="bgm:25"><rect id="r" w="1" h="1"/></dur></stack></dur>"#,
     );
-    clean(&s);
-    assert_eq!(elem(&p, &s, "r").start, 25);
+    assert_eq!(c.elem("r").start, 25);
 }
 
 #[test]
 fn visual_repeat_reuses_first_round_until_parent_ends() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <dur len="5"><stack>
             <repeat>
@@ -458,10 +465,9 @@ fn visual_repeat_reuses_first_round_until_parent_ends() {
         </stack></dur>
     "#,
     );
-    clean(&s);
-    assert_eq!(s.total, 5);
-    let a = marked(&p, &s, r#"w="11""#);
-    let b = marked(&p, &s, r#"w="12""#);
+    assert_eq!(c.s.total, 5);
+    let a = c.marked(r#"w="11""#);
+    let b = c.marked(r#"w="12""#);
     for t in [0.5, 2.5, 4.5] {
         assert!(a.active(t));
         assert!(!b.active(t));
@@ -476,7 +482,7 @@ fn visual_repeat_reuses_first_round_until_parent_ends() {
 
 #[test]
 fn repeat_puts_its_children_on_top_of_each_other_and_a_round_lasts_until_the_last_ends() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <dur len="7"><stack>
             <repeat>
@@ -487,8 +493,7 @@ fn repeat_puts_its_children_on_top_of_each_other_and_a_round_lasts_until_the_las
         </stack></dur>
     "#,
     );
-    clean(&s);
-    let (a, b, c) = (marked(&p, &s, r#"w="11""#), marked(&p, &s, r#"w="12""#), marked(&p, &s, r#"w="13""#));
+    let (a, b, c) = (c.marked(r#"w="11""#), c.marked(r#"w="12""#), c.marked(r#"w="13""#));
     for (t, shown) in [
         (0.5, [true, true]),
         (1.5, [false, true]),
@@ -499,20 +504,19 @@ fn repeat_puts_its_children_on_top_of_each_other_and_a_round_lasts_until_the_las
         assert_eq!([a.active(t), b.active(t)], shown, "{t}");
         assert!(c.active(t), "{t}");
     }
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <dur len="5"><repeat><dur len="2"><rect w="11" h="10"/></dur></repeat></dur>
         <dur len="1"><rect id="next" w="10" h="10"/></dur>
     "#,
     );
-    clean(&s);
-    assert_eq!(elem(&p, &s, "next").start, 5);
-    assert!(marked(&p, &s, r#"w="11""#).active(4.0));
+    assert_eq!(c.elem("next").start, 5);
+    assert!(c.marked(r#"w="11""#).active(4.0));
 }
 
 #[test]
 fn slot_override_hides_visuals_only_and_restores_previous_holder() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <dur len="6"><stack>
             <stack slot="portrait"><rect id="base" w="10" h="10"/></stack>
@@ -524,27 +528,25 @@ fn slot_override_hides_visuals_only_and_restores_previous_holder() {
         </stack></dur>
     "#,
     );
-    clean(&s);
-    let base = elem(&p, &s, "base");
+    let base = c.elem("base");
     assert_eq!(base.hidden, vec![(2, 4)]);
     assert!(base.active(1.0));
     assert!(!base.active(3.0));
     assert!(base.active(4.0));
-    assert!(!elem(&p, &s, "override").active(3.5));
-    assert!(elem(&p, &s, "voice").active(3.5));
+    assert!(!c.elem("override").active(3.5));
+    assert!(c.elem("voice").active(3.5));
 }
 
 #[test]
 fn nested_layout_fades_multiply() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <dur len="8"><column fadein="2" fadeout="2">
             <dur len="8"><rect id="child" w="10" h="10" fadein="2" fadeout="2"/></dur>
         </column></dur>
     "#,
     );
-    clean(&s);
-    let child = elem(&p, &s, "child");
+    let child = c.elem("child");
     assert_eq!(child.envelope(1.0), 0.25);
     assert_eq!(child.envelope(4.0), 1.0);
     assert_eq!(child.envelope(7.0), 0.25);
@@ -552,7 +554,7 @@ fn nested_layout_fades_multiply() {
 
 #[test]
 fn loops_of_at_are_errors() {
-    let (_, cycle) = compile(
+    let cycle = compile(
         r#"
         <stack>
             <dur len="1" at="b:0"><rect id="a" w="10" h="10"/></dur>
@@ -561,10 +563,9 @@ fn loops_of_at_are_errors() {
     "#,
     );
     assert_eq!(cycle.diags.iter().filter(|d| d.code == "E510").count(), 2, "{:?}", cycle.diags);
-    let (_, hold) =
-        compile(r#"<stack><video id="movie" src="movie.mp4"><hold at="2"><dur len="1" at="movie:3"><rect w="1" h="1"/></dur></hold></video></stack>"#);
-    assert!(hold.diags.iter().any(|d| d.code == "E510"), "{:?}", hold.diags);
-    assert_eq!(hold.total, 0);
+    let hold = compile(r#"<stack><video id="movie" src="movie.mp4"><hold at="2"><dur len="1" at="movie:3"><rect w="1" h="1"/></dur></hold></video></stack>"#);
+    assert!(hold.has("E510"), "{:?}", hold.diags);
+    assert_eq!(hold.s.total, 0);
 }
 
 #[test]
@@ -582,20 +583,19 @@ fn start_waits_for_the_flow_with_delay_and_for_the_reference() {
     "#
         )
     };
-    let (p, s) = compile(&body(5, 0));
-    clean(&s);
-    assert_eq!(elem(&p, &s, "b").start, 5);
-    let (p, s) = compile(&body(5, 4));
-    assert_eq!(elem(&p, &s, "b").start, 6);
-    assert!(s.diags.iter().all(|d| d.code == "W550"), "{:?}", s.diags);
-    let (p, s) = compile(&body(1, 0));
-    assert_eq!(elem(&p, &s, "b").start, 2);
-    assert!(s.diags.iter().all(|d| d.code == "W550"), "{:?}", s.diags);
+    let c = clean(&body(5, 0));
+    assert_eq!(c.elem("b").start, 5);
+    let c = compile(&body(5, 4));
+    assert_eq!(c.elem("b").start, 6);
+    assert!(c.diags.iter().all(|d| d.code == "W550"), "{:?}", c.diags);
+    let c = compile(&body(1, 0));
+    assert_eq!(c.elem("b").start, 2);
+    assert!(c.diags.iter().all(|d| d.code == "W550"), "{:?}", c.diags);
 }
 
 #[test]
 fn group_fades_reach_everything_inside_with_audio() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <dur len="4"><stack id="scene" fadeout="2" opacity="0.5">
             <rect id="r" w="10" h="10"/>
@@ -603,18 +603,16 @@ fn group_fades_reach_everything_inside_with_audio() {
         </stack></dur>
     "#,
     );
-    clean(&s);
-    assert_eq!(elem(&p, &s, "r").envelope(3.0), 0.5);
-    let r = id(&p, "r");
-    assert_eq!(p.script.elems[r].opacity, 0.5);
-    let clip = &s.audio[0];
+    assert_eq!(c.elem("r").envelope(3.0), 0.5);
+    assert_eq!(named(&c.p, "r").opacity, 0.5);
+    let clip = &c.s.audio[0];
     let gain: f64 = clip.env.iter().map(|f| f.at(3.0)).product();
     assert_eq!(gain, 0.5);
 }
 
 #[test]
 fn repeat_plays_its_audio_in_every_round() {
-    let (_, s) = compile(
+    let c = clean(
         r#"
         <dur len="10"><stack>
             <repeat>
@@ -626,12 +624,11 @@ fn repeat_plays_its_audio_in_every_round() {
         </stack></dur>
     "#,
     );
-    clean(&s);
     assert_eq!(
-        s.audio.iter().map(|a| (a.at, a.len)).collect::<Vec<_>>(),
+        c.s.audio.iter().map(|a| (a.at, a.len)).collect::<Vec<_>>(),
         vec![(0.0, 2.0), (4.0, 2.0), (8.0, 2.0)]
     );
-    for a in &s.audio {
+    for a in &c.s.audio {
         let gain: f64 = a.env.iter().map(|f| f.at(a.at + 0.5)).product();
         assert_eq!(gain, 0.5);
     }
@@ -639,25 +636,21 @@ fn repeat_plays_its_audio_in_every_round() {
 
 #[test]
 fn repeated_music_plays_round_after_round_and_the_fades_of_the_repeat_reach_the_whole() {
-    let (_, s) = compile(
+    let c = clean(
         r#"
         <dur len="25"><stack>
             <repeat fadein="1" fadeout="2"><audio src="bgm.mp3"/></repeat>
         </stack></dur>
     "#,
     );
-    clean(&s);
-    assert_eq!(
-        s.audio.iter().map(|a| (a.at, a.len, a.src)).collect::<Vec<_>>(),
-        vec![(0.0, 10.0, 0.0), (10.0, 10.0, 0.0), (20.0, 5.0, 0.0)]
-    );
-    let gain = |k: usize, t: f64| s.audio[k].env.iter().map(|f| f.at(t)).product::<f64>();
+    assert_eq!(c.clips(), vec![(0.0, 10.0, 0.0), (10.0, 10.0, 0.0), (20.0, 5.0, 0.0)]);
+    let gain = |k: usize, t: f64| c.s.audio[k].env.iter().map(|f| f.at(t)).product::<f64>();
     assert_eq!((gain(0, 0.5), gain(1, 10.5), gain(2, 24.0)), (0.5, 1.0, 0.5));
 }
 
 #[test]
 fn nested_repeats_map_time_round_by_round() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <dur len="12"><stack>
             <repeat>
@@ -674,8 +667,7 @@ fn nested_repeats_map_time_round_by_round() {
         </stack></dur>
     "#,
     );
-    clean(&s);
-    let (first, a, b) = (marked(&p, &s, r#"w="11""#), marked(&p, &s, r#"w="12""#), marked(&p, &s, r#"w="13""#));
+    let (first, a, b) = (c.marked(r#"w="11""#), c.marked(r#"w="12""#), c.marked(r#"w="13""#));
     for (t, shown) in [(1.0, 0), (2.4, 1), (3.4, 2), (4.4, 1), (5.2, 2), (7.0, 0), (8.4, 1), (9.2, 2), (11.4, 2)] {
         let active = [first.active(t), a.active(t), b.active(t)];
         assert_eq!(active.iter().filter(|&&x| x).count(), 1, "{t}");
@@ -685,18 +677,18 @@ fn nested_repeats_map_time_round_by_round() {
 
 #[test]
 fn repeat_needs_something_with_a_length() {
-    for body in [
-        r#"<dur len="1"><stack><repeat><rect w="1" h="1"/></repeat></stack></dur>"#,
-        r#"<dur len="1"><stack><dur len="1"><repeat><rect w="1" h="1"/></repeat></dur></stack></dur>"#,
-    ] {
-        let p = project(body);
-        assert!(codes(&p).contains(&"E321"), "{body}: {:?}", p.diags);
-    }
+    rejects(&[
+        (r#"<dur len="1"><stack><repeat><rect w="1" h="1"/></repeat></stack></dur>"#, "E321"),
+        (
+            r#"<dur len="1"><stack><dur len="1"><repeat><rect w="1" h="1"/></repeat></dur></stack></dur>"#,
+            "E321",
+        ),
+    ]);
 }
 
 #[test]
 fn repeat_references_stay_in_their_clock_and_names_can_be_reused() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <dur len="13"><stack>
           <repeat id="loop"><stack>
@@ -711,27 +703,28 @@ fn repeat_references_stay_in_their_clock_and_names_can_be_reused() {
         </stack></dur>
     "#,
     );
-    clean(&s);
     for t in 0..13 {
-        assert_eq!(marked(&p, &s, "w=\"17\"").active(t as f64), matches!(t % 4, 1 | 2));
-        assert_eq!(marked(&p, &s, "w=\"19\"").active(t as f64), t % 3 == 2);
-        assert_eq!(elem(&p, &s, "outside").active(t as f64), t >= 6);
+        assert_eq!(c.marked("w=\"17\"").active(t as f64), matches!(t % 4, 1 | 2));
+        assert_eq!(c.marked("w=\"19\"").active(t as f64), t % 3 == 2);
+        assert_eq!(c.elem("outside").active(t as f64), t >= 6);
     }
-    for body in [
-        r#"<dur id="outside" len="10"><repeat><dur len="2" at="outside:0"/></repeat></dur>"#,
-        r#"<dur len="10"><stack><repeat><dur id="inside" len="2"/></repeat><rect at="inside:0"/></stack></dur>"#,
-        r#"<dur len="10"><repeat><stack><dur id="outer" len="4"/><repeat><dur at="outer:0" len="2"/></repeat></stack></repeat></dur>"#,
-    ] {
-        assert!(codes(&project(body)).contains(&"E318"), "{body}");
-    }
-    assert!(
-        codes(&project(
-            r#"<dur len="10"><repeat><stack><dur id="a" len="1"/><dur id="a" len="2"/></stack></repeat></dur>"#
-        ))
-        .contains(&"E319")
-    );
-    let (_, cycle) = compile(r#"<dur len="10"><repeat><stack><dur id="a" at="b:0" len="1"/><dur id="b" at="a:0" len="1"/></stack></repeat></dur>"#);
-    assert!(cycle.diags.iter().any(|d| d.code == "E510"));
+    rejects(&[
+        (r#"<dur id="outside" len="10"><repeat><dur len="2" at="outside:0"/></repeat></dur>"#, "E318"),
+        (
+            r#"<dur len="10"><stack><repeat><dur id="inside" len="2"/></repeat><rect at="inside:0"/></stack></dur>"#,
+            "E318",
+        ),
+        (
+            r#"<dur len="10"><repeat><stack><dur id="outer" len="4"/><repeat><dur at="outer:0" len="2"/></repeat></stack></repeat></dur>"#,
+            "E318",
+        ),
+        (
+            r#"<dur len="10"><repeat><stack><dur id="a" len="1"/><dur id="a" len="2"/></stack></repeat></dur>"#,
+            "E319",
+        ),
+    ]);
+    let cycle = compile(r#"<dur len="10"><repeat><stack><dur id="a" at="b:0" len="1"/><dur id="b" at="a:0" len="1"/></stack></repeat></dur>"#);
+    assert!(cycle.has("E510"));
 }
 
 #[test]
@@ -747,10 +740,8 @@ fn repeated_slots_match_explicit_rounds_and_do_not_hide_audio() {
         </stack></dur>"#
         )
     };
-    let (p, s) = compile(&scene(&repeat));
-    let (q, t) = compile(&scene(&expanded));
-    clean(&s);
-    clean(&t);
+    let c = clean(&scene(&repeat));
+    let d = clean(&scene(&expanded));
     let visible = |p: &Project, s: &Schedule, at: f64| {
         p.script
             .elems
@@ -767,20 +758,20 @@ fn repeated_slots_match_explicit_rounds_and_do_not_hide_audio() {
     };
     for frame in 0..28 {
         let at = frame as f64 / 2.0;
-        assert_eq!(visible(&p, &s, at), visible(&q, &t, at), "at {at}");
-        assert_eq!(visible(&p, &s, at).len(), 1, "one actor at {at}");
+        assert_eq!(visible(&c.p, &c.s, at), visible(&d.p, &d.s, at), "at {at}");
+        assert_eq!(visible(&c.p, &c.s, at).len(), 1, "one actor at {at}");
     }
-    assert_eq!(visible(&p, &s, 8.0), vec![17]); // a new round replaces the interruption
-    assert_eq!(visible(&p, &s, 10.0), vec![19]); // then restores it
-    assert_eq!(visible(&p, &s, 11.0), vec![13]); // then the idle portrait
+    assert_eq!(visible(&c.p, &c.s, 8.0), vec![17]); // a new round replaces the interruption
+    assert_eq!(visible(&c.p, &c.s, 10.0), vec![19]); // then restores it
+    assert_eq!(visible(&c.p, &c.s, 11.0), vec![13]); // then the idle portrait
     let audio = |s: &Schedule| s.audio.iter().map(|a| (a.at, a.len, a.src, a.rate, a.gain)).collect::<Vec<_>>();
-    assert_eq!(audio(&s), audio(&t));
-    assert_eq!(s.audio.len(), 4);
+    assert_eq!(audio(&c.s), audio(&d.s));
+    assert_eq!(c.s.audio.len(), 4);
 }
 
 #[test]
 fn nested_repeats_restart_slots_but_a_slot_on_repeat_covers_the_whole_run() {
-    let (p, s) = compile(
+    let c = clean(
         r#"<dur len="13"><stack>
         <rect id="idle" slot="actor" w="1" h="1"/>
         <repeat><seq>
@@ -791,29 +782,27 @@ fn nested_repeats_restart_slots_but_a_slot_on_repeat_covers_the_whole_run() {
         </seq></repeat>
     </stack></dur>"#,
     );
-    clean(&s);
-    let talk = marked(&p, &s, "w=\"17\"");
+    let talk = c.marked("w=\"17\"");
     for t in 0..13 {
         let speaking = t % 7 < 5 && t % 7 % 2 == 0;
         assert_eq!(talk.active(t as f64), speaking, "{t}");
-        assert_eq!(elem(&p, &s, "idle").active(t as f64), !speaking, "{t}");
+        assert_eq!(c.elem("idle").active(t as f64), !speaking, "{t}");
     }
-    let (p, s) = compile(
+    let c = clean(
         r#"<dur len="10"><stack>
         <repeat slot="actor"><dur len="2"><rect w="17" h="1"/></dur></repeat>
         <dur delay="3" len="7"><rect id="override" slot="actor" w="19" h="1"/></dur>
     </stack></dur>"#,
     );
-    clean(&s);
     for t in 3..10 {
-        assert!(!marked(&p, &s, "w=\"17\"").active(t as f64));
-        assert!(elem(&p, &s, "override").active(t as f64));
+        assert!(!c.marked("w=\"17\"").active(t as f64));
+        assert!(c.elem("override").active(t as f64));
     }
 }
 
 #[test]
 fn dur_gives_a_length_to_what_has_none_and_cuts_or_stretches_what_has_one() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <dur len="2"><rect id="a" w="10" h="10"/></dur>
         <dur len="3"><video id="v" src="v.mp4"/></dur>
@@ -821,24 +810,21 @@ fn dur_gives_a_length_to_what_has_none_and_cuts_or_stretches_what_has_one() {
         <dur len="1"/>
     "#,
     );
-    clean(&s);
-    let t = |id| (elem(&p, &s, id).start, elem(&p, &s, id).end);
-    assert_eq!((t("a"), t("v"), t("w")), ((0, 2), (2, 5), (5, 17)));
+    assert_eq!((c.span("a"), c.span("v"), c.span("w")), ((0, 2), (2, 5), (5, 17)));
     // past its end, the source stays on its last frame
-    assert_eq!(elem(&p, &s, "w").src.as_ref().unwrap().at(16.0), 10.0);
-    assert_eq!(s.total, 18);
+    assert_eq!(c.src("w").at(16.0), 10.0);
+    assert_eq!(c.s.total, 18);
     // each thing in it gets the length, and a media keeps its holds
     for body in [
         r#"<dur len="6"><video id="m" src="m.mp4"><hold at="1"><dur len="2"/></hold></video></dur>"#,
         r#"<dur len="6"><video id="m" src="m.mp4"><hold at="1"><dur len="2"/></hold></video><rect id="r" w="1" h="1"/></dur>"#,
     ] {
-        let (p, s) = compile(body);
-        clean(&s);
-        let m = elem(&p, &s, "m");
-        assert_eq!((m.start, m.end, s.total), (0, 6, 6), "{body}");
+        let c = clean(body);
+        let m = c.elem("m");
+        assert_eq!((m.start, m.end, c.s.total), (0, 6, 6), "{body}");
         assert_eq!(m.src.as_ref().unwrap().freezes().collect::<Vec<_>>(), vec![(1.0, 3.0)], "{body}");
         if body.contains("id=\"r\"") {
-            assert_eq!((elem(&p, &s, "r").start, elem(&p, &s, "r").end), (0, 6));
+            assert_eq!(c.span("r"), (0, 6));
         }
     }
 }
@@ -850,7 +836,7 @@ fn rect_in(p: &Project, e: usize) -> RectSpec {
 }
 
 fn rect_of(p: &Project, id: &str) -> RectSpec {
-    rect_in(p, self::id(p, id))
+    rect_in(p, named(p, id).id)
 }
 
 fn marked_rect(p: &Project, marker: &str) -> RectSpec {
@@ -859,7 +845,7 @@ fn marked_rect(p: &Project, marker: &str) -> RectSpec {
 
 #[test]
 fn dur_and_repeat_are_in_time_only_and_take_no_space() {
-    let (p, s) = compile(
+    let c = clean(
         r##"
         <row w="100" h="10" gap="10">
             <rect w="10" h="10" fill="#f00"/>
@@ -868,24 +854,22 @@ fn dur_and_repeat_are_in_time_only_and_take_no_space() {
         </row>
     "##,
     );
-    clean(&s);
-    let (b, c) = (rect_of(&p, "b"), marked_rect(&p, r#"w="11""#));
+    let (b, c) = (rect_of(&c.p, "b"), marked_rect(&c.p, r#"w="11""#));
     assert_eq!((b.x, b.w, c.x), (20.0, 59.0, 89.0));
-    let (p, s) = compile(
+    let c = clean(
         r##"
         <stack w="100" h="100" align="center">
             <dur len="1"><repeat><dur len="1"><rect w="50%" h="50%" fill="#f00"/></dur></repeat></dur>
         </stack>
     "##,
     );
-    clean(&s);
-    let d = marked_rect(&p, r#"w="50%""#);
+    let d = marked_rect(&c.p, r#"w="50%""#);
     assert_eq!((d.x, d.y, d.w, d.h), (25.0, 25.0, 50.0, 50.0));
 }
 
 #[test]
 fn slot_works_on_an_element() {
-    let (p, s) = compile(
+    let c = clean(
         r#"
         <dur len="4"><stack>
             <rect id="a" slot="face" w="10" h="10"/>
@@ -893,13 +877,12 @@ fn slot_works_on_an_element() {
         </stack></dur>
     "#,
     );
-    clean(&s);
-    assert_eq!(elem(&p, &s, "a").hidden, vec![(1, 3)]);
+    assert_eq!(c.elem("a").hidden, vec![(1, 3)]);
 }
 
 #[test]
 fn a_seq_in_a_row_takes_the_space_of_its_widest_child() {
-    let (p, s) = compile(
+    let c = clean(
         r##"
         <row gap="10">
             <rect w="10" h="10" fill="#f00"/>
@@ -911,14 +894,13 @@ fn a_seq_in_a_row_takes_the_space_of_its_widest_child() {
         </row>
     "##,
     );
-    clean(&s);
-    assert_eq!((elem(&p, &s, "s2").start, elem(&p, &s, "s2").end), (1, 2));
-    assert_eq!(rect_of(&p, "after").x, 60.0);
+    assert_eq!(c.span("s2"), (1, 2));
+    assert_eq!(rect_of(&c.p, "after").x, 60.0);
 }
 
 #[test]
 fn hold_is_drawn_over_the_parent_of_its_media() {
-    let (p, s) = compile(
+    let c = clean(
         r##"
         <row padding="10" w="300" h="100">
             <rect w="50" h="50" fill="#f00"/>
@@ -926,8 +908,7 @@ fn hold_is_drawn_over_the_parent_of_its_media() {
         </row>
     "##,
     );
-    clean(&s);
-    let r = rect_of(&p, "note");
+    let r = rect_of(&c.p, "note");
     assert_eq!((r.x, r.y), (150.0, 10.0));
 }
 
@@ -1012,22 +993,21 @@ fn rotate_zero_and_full_turns_draw_as_is() {
 
 #[test]
 fn rotate_cannot_turn_a_video() {
-    let p = stacked(r#"<column rotate="5"><video src="movie.mp4" w="10"/></column>"#);
-    assert!(p.diags.iter().any(|d| d.code == "E322"), "{:?}", p.diags);
+    rejects(&[(
+        r#"<dur len="1"><stack><column rotate="5"><video src="movie.mp4" w="10"/></column></stack></dur>"#,
+        "E322",
+    )]);
 }
 
 #[test]
 fn text_is_written_in_its_text_attribute() {
     assert!(!project(r#"<dur len="1"><text text="a&#10;b"/></dur>"#).has_errors());
-    for (body, code) in [
+    rejects(&[
         (r#"<dur len="1"><text/></dur>"#, "E302"),
         (r#"<dur len="1"><text text="a">b</text></dur>"#, "E107"),
         (r#"<dur len="1"><text text="a"><rect w="1" h="1"/></text></dur>"#, "E107"),
         (r#"<dur len="1">a</dur>"#, "E107"),
         (r#"<dur len="1"><text text="a" pre="true"/></dur>"#, "E301"),
         (r#"<dur len="1"><text text="a"/><br/></dur>"#, "E300"),
-    ] {
-        let p = project(body);
-        assert!(codes(&p).contains(&code), "{body}: {:?}", p.diags);
-    }
+    ]);
 }

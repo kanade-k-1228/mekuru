@@ -86,10 +86,6 @@ impl Project {
         has_errors(&self.diags)
     }
 
-    pub fn schedule(&self, prepared: &prepare::Prepared) -> schedule::Schedule {
-        schedule::schedule(&self.script, prepared)
-    }
-
     pub fn default_output(&self) -> PathBuf {
         let name = self.path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "out".into());
         let stem = name.trim_end_matches(".xml").trim_end_matches(".mekuru");

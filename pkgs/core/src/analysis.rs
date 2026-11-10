@@ -1,8 +1,9 @@
 use crate::{
     Project,
-    lang::diag::{Diag, has_errors},
+    ir::Script,
+    lang::diag::Diag,
     prepare::{self, Prepared},
-    schedule::Schedule,
+    schedule::{self, Schedule},
 };
 use std::path::Path;
 
@@ -25,10 +26,10 @@ pub struct Resolved {
     pub schedule: Schedule,
 }
 
+/// A project with every stage's diagnostics in `project.diags`.
 pub struct Compilation {
     pub project: Project,
     pub resolved: Option<Resolved>,
-    pub diagnostics: Vec<Diag>,
 }
 
 impl Compilation {
@@ -36,33 +37,24 @@ impl Compilation {
         Self::new(Project::from_source(path, root, source, true), prepare::inspect)
     }
 
-    pub fn new(project: Project, prepare: impl FnOnce(&crate::ir::Script) -> Prepared) -> Self {
-        let mut diagnostics = project.diags.clone();
+    pub fn new(mut project: Project, prepare: impl FnOnce(&Script, &mut Vec<Diag>) -> Prepared) -> Self {
         let resolved = (|| {
-            if has_errors(&diagnostics) {
+            if project.has_errors() {
                 return None;
             }
-            let prepared = prepare(&project.script);
-            diagnostics.extend(prepared.diags.iter().cloned());
-            if has_errors(&diagnostics) {
+            let prepared = prepare(&project.script, &mut project.diags);
+            if project.has_errors() {
                 return None;
             }
-            let schedule = project.schedule(&prepared);
-            diagnostics.extend(schedule.diags.iter().cloned());
-            if has_errors(&diagnostics) {
-                return None;
-            }
-            Some(Resolved { prepared, schedule })
+            let schedule = schedule::schedule(&project.script, &prepared, &mut project.diags);
+            (!project.has_errors()).then_some(Resolved { prepared, schedule })
         })();
-        Self {
-            project,
-            resolved,
-            diagnostics,
-        }
+        Self { project, resolved }
     }
 
     pub fn diagnostics(&self) -> Vec<Diagnostic> {
-        self.diagnostics
+        self.project
+            .diags
             .iter()
             .map(|d| Diagnostic {
                 code: d.code.into(),

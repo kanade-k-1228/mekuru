@@ -195,16 +195,4 @@ pub struct Schedule {
     pub nodes: Vec<NodeTime>,
     pub elems: Vec<ElemTime>,
     pub audio: Vec<AudioClip>,
-    pub diags: Vec<Diag>,
-}
-
-impl Schedule {
-    pub(super) fn failed(s: &Script, diags: Vec<Diag>) -> Schedule {
-        Schedule {
-            nodes: vec![NodeTime::default(); s.nodes.len()],
-            elems: vec![ElemTime::default(); s.elems.len()],
-            diags,
-            ..Schedule::default()
-        }
-    }
 }

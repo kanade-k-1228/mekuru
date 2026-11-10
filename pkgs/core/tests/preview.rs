@@ -394,7 +394,7 @@ fn preview_and_renderer_agree_on_a_static_scene() {
     let project = Project::from_source(path, None, STATIC.into(), false);
     assert!(!project.has_errors(), "{:?}", project.diags);
     let prepared = Prepared::default();
-    let schedule = project.schedule(&prepared);
+    let schedule = mekuru_compiler::schedule::schedule(&project.script, &prepared, &mut vec![]);
     let ctx = RenderCtx {
         project: &project,
         prepared: &prepared,
