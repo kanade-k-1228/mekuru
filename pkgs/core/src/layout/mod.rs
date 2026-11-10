@@ -1,6 +1,6 @@
 use crate::ir::{
-    AudioSpec, CircleSpec, Dash, Dur, Elem, ElemId, ElemKind, Hold, ImageSpec, MediaSrc, Node, NodeId, PolySpec, RectSpec, Script, Speed, Target, TextSpec,
-    Time, VideoSpec, ViewOp, ViewSpec, ancestors,
+    CircleSpec, Dash, Dur, Elem, ElemId, ElemKind, Hold, ImageSpec, MediaSrc, Node, NodeId, PolySpec, RectSpec, Script, Shape, Speed, Target, TextSpec, Time,
+    VideoSpec, ViewOp, ancestors,
 };
 use crate::lang::ast::{Document, Flow, Tag};
 use crate::lang::attrs::{Attrs, Dim, MEDIA, TIMES, Times, dim};
@@ -196,16 +196,16 @@ impl Out {
                 t,
                 z,
                 opacity,
-                kind: ElemKind::View(v),
+                kind: ElemKind::View(drawn),
                 ..
             } = &mut self.elems[e]
             && *t == Time::default()
             && (*z, *opacity) == (look.z, look.opacity)
         {
-            v.ops.extend(ops);
+            drawn.extend(ops);
             return;
         }
-        self.add(look, site, Time::default(), ElemKind::View(ViewSpec { ops }));
+        self.add(look, site, Time::default(), ElemKind::View(ops));
     }
 
     /// A new element, last in `look.node`.
@@ -277,7 +277,7 @@ impl Out {
             _ => {
                 let mut ops = vec![];
                 self.paint(n, ids, parent, bx, xf, &mut ops);
-                self.elem(n, look, ElemKind::View(ViewSpec { ops }));
+                self.elem(n, look, ElemKind::View(ops));
                 None
             }
         }
@@ -318,7 +318,8 @@ impl Out {
                 Dim::Auto => 0.0,
             };
             let pts = pts.iter().map(|&(px, py)| (parent.x + at(px, parent.w), parent.y + at(py, parent.h))).collect();
-            out.push(ViewOp::Poly(PolySpec { pts, ..spec.clone() }).transformed(xf));
+            let shape = Shape::Poly(PolySpec { pts, ..spec.clone() });
+            out.push(ViewOp { shape, transform: xf });
             return;
         }
         if n.transparent() {
@@ -349,33 +350,33 @@ impl Out {
             radius: d.radius,
         };
         let outline = d.stroke.or(if d.fill.is_none() { Some([255, 255, 255, 255]) } else { None });
-        let mut draw = |op: ViewOp| out.push(op.transformed(xf));
+        let mut draw = |shape: Shape| out.push(ViewOp { shape, transform: xf });
         match &n.kind {
             Kind::Leaf(Leaf::Text(spec)) => {
                 if d.fill.is_some() {
-                    draw(ViewOp::Rect(deco_rect(d.fill, None)));
+                    draw(Shape::Rect(deco_rect(d.fill, None)));
                 }
                 let pad = ids.id.map(|id| self.tree.layout(id).expect("laid out").padding);
                 let (pl, pr, pt) = pad.map_or((0.0, 0.0, 0.0), |p| (p.left, p.right, p.top));
                 let cw = (w - pl - pr).max(0.0);
-                draw(ViewOp::Text(TextSpec {
+                draw(Shape::Text(TextSpec {
                     x: x + pl,
                     y: y + pt,
                     width: Some(cw + 0.5),
                     ..spec.clone()
                 }));
             }
-            Kind::Leaf(Leaf::Image { path, .. }) => draw(ViewOp::Image(ImageSpec {
+            Kind::Leaf(Leaf::Image { path, .. }) => draw(Shape::Image(ImageSpec {
                 path: path.clone(),
                 x,
                 y,
                 w,
                 h,
             })),
-            Kind::Leaf(Leaf::Rect) => draw(ViewOp::Rect(deco_rect(d.fill, outline))),
+            Kind::Leaf(Leaf::Rect) => draw(Shape::Rect(deco_rect(d.fill, outline))),
             Kind::Leaf(Leaf::Circle) => {
                 let (rx, ry) = (w / 2.0, h / 2.0);
-                draw(ViewOp::Circle(CircleSpec {
+                draw(Shape::Circle(CircleSpec {
                     x: x + rx,
                     y: y + ry,
                     rx,
@@ -385,7 +386,7 @@ impl Out {
                     stroke_width: stroke_width(outline),
                 }));
             }
-            Kind::Group(_) if d.fill.is_some() || d.stroke.is_some() => draw(ViewOp::Rect(deco_rect(d.fill, d.stroke))),
+            Kind::Group(_) if d.fill.is_some() || d.stroke.is_some() => draw(Shape::Rect(deco_rect(d.fill, d.stroke))),
             _ => {}
         }
     }

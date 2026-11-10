@@ -1,5 +1,5 @@
 use super::Sprite;
-use crate::ir::{CircleSpec, Dash, PolySpec, RectSpec, ViewOp};
+use crate::ir::{CircleSpec, Dash, PolySpec, RectSpec, Shape};
 use crate::settings::Rgba;
 use tiny_skia::{FillRule, LineCap, LineJoin, Paint, Path, PathBuilder, Pixmap, Rect, Stroke, Transform};
 
@@ -86,11 +86,11 @@ pub fn rounded_rect(x: f32, y: f32, w: f32, h: f32, r: f32) -> Option<Path> {
 }
 
 /// The paths of a rect, circle or line at scale `s`; other ops draw no shape.
-pub fn paths(op: &ViewOp, s: f32) -> Vec<PaintedPath> {
-    match op {
-        ViewOp::Rect(r) => rect_paths(r, s),
-        ViewOp::Circle(c) => circle_paths(c, s),
-        ViewOp::Poly(l) => poly_paths(l, s),
+pub fn paths(shape: &Shape, s: f32) -> Vec<PaintedPath> {
+    match shape {
+        Shape::Rect(r) => rect_paths(r, s),
+        Shape::Circle(c) => circle_paths(c, s),
+        Shape::Poly(l) => poly_paths(l, s),
         _ => vec![],
     }
 }

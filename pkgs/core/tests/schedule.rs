@@ -1,6 +1,6 @@
 use mekuru_compiler::{
     Project,
-    ir::{Elem, ElemKind, RectSpec, ViewOp},
+    ir::{Elem, ElemKind, RectSpec, Shape, ViewOp},
     lang::diag::Diag,
     media::probe::MediaProbe,
     prepare::{MediaAsset, Prepared},
@@ -748,8 +748,8 @@ fn repeated_slots_match_explicit_rounds_and_do_not_hide_audio() {
             .iter()
             .filter(|e| e.kind.is_visual() && s.elems[e.id].active(at))
             .filter_map(|e| match &e.kind {
-                ElemKind::View(v) => v.ops.iter().find_map(|op| match op {
-                    ViewOp::Rect(r) => Some(r.w as i64),
+                ElemKind::View(ops) => ops.iter().find_map(|op| match &op.shape {
+                    Shape::Rect(r) => Some(r.w as i64),
                     _ => None,
                 }),
                 _ => None,
@@ -830,8 +830,8 @@ fn dur_gives_a_length_to_what_has_none_and_cuts_or_stretches_what_has_one() {
 }
 
 fn rect_in(p: &Project, e: usize) -> RectSpec {
-    let ElemKind::View(v) = &p.script.elems[e].kind else { panic!() };
-    let ViewOp::Rect(r) = &v.ops[0] else { panic!() };
+    let ElemKind::View(ops) = &p.script.elems[e].kind else { panic!() };
+    let Shape::Rect(r) = &ops[0].shape else { panic!() };
     r.clone()
 }
 
@@ -963,8 +963,8 @@ fn ops(p: &Project) -> Vec<&ViewOp> {
     p.script
         .elems
         .iter()
-        .filter_map(|e| if let ElemKind::View(v) = &e.kind { Some(v) } else { None })
-        .flat_map(|v| &v.ops)
+        .filter_map(|e| if let ElemKind::View(ops) = &e.kind { Some(ops) } else { None })
+        .flatten()
         .collect()
 }
 
@@ -975,7 +975,8 @@ fn rotate_turns_the_element_and_its_children_about_the_center() {
     let ops = ops(&p);
     assert_eq!(ops.len(), 2);
     for op in ops {
-        let ViewOp::Transformed(t, _) = op else { panic!("not rotated: {op:?}") };
+        let t = op.transform;
+        assert!(!t.is_identity(), "not rotated: {op:?}");
         let map = |x: f32, y: f32| (t.sx * x + t.kx * y + t.tx, t.ky * x + t.sy * y + t.ty);
         for ((x, y), (ex, ey)) in [((30.0, 30.0), (30.0, 30.0)), ((10.0, 20.0), (40.0, 10.0))] {
             let (mx, my) = map(x, y);
@@ -988,7 +989,7 @@ fn rotate_turns_the_element_and_its_children_about_the_center() {
 fn rotate_zero_and_full_turns_draw_as_is() {
     let p = stacked(r##"<rect w="10" h="10" fill="#f00" rotate="0"/><rect w="10" h="10" fill="#f00" rotate="360"/>"##);
     assert!(!p.has_errors(), "{:?}", p.diags);
-    assert!(ops(&p).iter().all(|op| matches!(op, ViewOp::Rect(_))));
+    assert!(ops(&p).iter().all(|op| matches!(op.shape, Shape::Rect(_)) && op.transform.is_identity()));
 }
 
 #[test]

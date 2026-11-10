@@ -1,7 +1,7 @@
 pub mod shapes;
 pub mod text;
 
-use crate::ir::{ElemId, ElemKind, ImageSpec, VideoSpec, ViewOp};
+use crate::ir::{ElemId, ElemKind, ImageSpec, Shape, VideoSpec, ViewOp};
 use crate::media::Fps;
 use crate::media::probe::VideoStream;
 use crate::media::video::VideoReader;
@@ -182,9 +182,8 @@ impl<'a> FrameRenderer<'a> {
         let s = self.target.scale;
         let elem = &self.ctx.project.script.elems[id];
         let sprite = match &elem.kind {
-            ElemKind::View(v) => {
-                let ops = v.ops.clone();
-                let parts = ops.iter().filter_map(|op| self.op_sprite(op, s, Transform::identity())).collect();
+            ElemKind::View(ops) => {
+                let parts = ops.iter().filter_map(|op| self.op_sprite(op, s)).collect();
                 composite(parts)
             }
             _ => None,
@@ -201,10 +200,10 @@ impl<'a> FrameRenderer<'a> {
         arc
     }
 
-    fn op_sprite(&mut self, op: &ViewOp, s: f32, t: Transform) -> Option<Sprite> {
-        let paths = match op {
-            ViewOp::Transformed(m, inner) => return self.op_sprite(inner, s, t.pre_concat(scaled(*m, s))),
-            ViewOp::Image(img) => {
+    fn op_sprite(&mut self, op: &ViewOp, s: f32) -> Option<Sprite> {
+        let t = scaled(op.transform, s);
+        let paths = match &op.shape {
+            Shape::Image(img) => {
                 return match image_sprite(img, s) {
                     Ok(sp) => transform_sprite(sp, t),
                     Err(e) => {
@@ -213,8 +212,8 @@ impl<'a> FrameRenderer<'a> {
                     }
                 };
             }
-            ViewOp::Rect(_) | ViewOp::Circle(_) | ViewOp::Poly(_) => shapes::paths(op, s),
-            ViewOp::Text(text) => {
+            shape @ (Shape::Rect(_) | Shape::Circle(_) | Shape::Poly(_)) => shapes::paths(shape, s),
+            Shape::Text(text) => {
                 let paths = text::text_paths(&self.ctx.project.fonts, text, s);
                 if paths.is_none() && !text.text.trim().is_empty() {
                     self.warnings

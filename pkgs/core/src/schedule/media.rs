@@ -12,9 +12,7 @@ pub(super) struct Clock {
 
 fn clock(e: &Elem, probe: Option<MediaProbe>, fps: Fps) -> Option<Clock> {
     let (from, to, len) = match &e.kind {
-        ElemKind::Video(VideoSpec { media: m, .. }) | ElemKind::Audio(AudioSpec { media: m }) => {
-            (m.from as f64, m.to, probe.map_or(0.0, |p| fps.of(p.duration)))
-        }
+        ElemKind::Video(VideoSpec { media: m, .. }) | ElemKind::Audio(m) => (m.from as f64, m.to, probe.map_or(0.0, |p| fps.of(p.duration))),
         ElemKind::DraftAudio | ElemKind::View(_) => return None,
     };
     Some(Clock {

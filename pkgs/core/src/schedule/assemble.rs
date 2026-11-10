@@ -46,7 +46,7 @@ pub(super) fn finish(s: &Script, intervals: &[(i64, i64)], periods: &[Option<i64
     for (eid, (e, (source, audible))) in s.elems.iter().zip(media).enumerate() {
         let (start, end) = intervals[s.nodes.len() + eid];
         let parent = nodes[e.node];
-        let draws = !matches!(&e.kind, ElemKind::View(v) if v.ops.is_empty());
+        let draws = !matches!(&e.kind, ElemKind::View(ops) if ops.is_empty());
         if e.kind.is_visual() && draws && end <= start && parent.end > parent.start {
             diags.push(Diag::new(
                 "W552",
