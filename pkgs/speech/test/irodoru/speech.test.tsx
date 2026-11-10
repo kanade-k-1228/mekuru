@@ -1,35 +1,14 @@
 /** @jsxImportSource @mekuru/tsx */
-import { afterEach, beforeEach, expect, mock, spyOn, test } from "bun:test";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { expect, mock, spyOn, test } from "bun:test";
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { toXml, type Node } from "@mekuru/tsx";
 import { Speech, type SpeechProps } from "@mekuru/speech/irodoru";
 import { wav } from "../../../audio/test/fixture.ts";
-// Snapshot of irodoru/pkgs/server/openapi.json; refresh alongside API changes.
+import { mockFetch, say, tempProject } from "../shared/project.tsx";
+// The request part of irodoru/pkgs/server/openapi.json; refresh alongside API changes.
 import openapi from "./fixtures/openapi.json";
 
-let dir: string;
-let cwd: string;
-let env: string | undefined;
-beforeEach(async () => {
-  cwd = process.cwd();
-  env = process.env.MEKURU_IRODORU_URL;
-  delete process.env.MEKURU_IRODORU_URL;
-  dir = await mkdtemp(join(tmpdir(), "mekuru-speech-"));
-  process.chdir(dir);
-});
-afterEach(async () => {
-  mock.restore();
-  process.chdir(cwd);
-  if (env === undefined) delete process.env.MEKURU_IRODORU_URL;
-  else process.env.MEKURU_IRODORU_URL = env;
-  await rm(dir, { recursive: true, force: true });
-});
-
-const say = (line: Node) => toXml(<mekuru>{line}</mekuru>);
-const mockFetch = (fn: (input: string | URL | Request, init?: RequestInit) => Promise<Response>) =>
-  spyOn(globalThis, "fetch").mockImplementation(fn as typeof fetch);
+const project = tempProject();
 const serve = () => {
   const sent: { url: string; body: Record<string, unknown> }[] = [];
   mockFetch(async (input, init) => {
@@ -48,54 +27,26 @@ const serve = () => {
 
 test("sends irodoru settings directly while keeping text, placement and playback controls local", async () => {
   const sent = serve();
+  const settings = {
+    reference_audio_base64: wav(24000).toString("base64"),
+    caption: "楽しそうに",
+    seed: 42,
+    num_steps: 20,
+    cfg_scale_text: 2,
+    cfg_scale_speaker: 4,
+    cfg_scale_caption: 6,
+    cfg_min_t: 0.2,
+    cfg_max_t: 0.8,
+    t_schedule: "sway",
+    sway_coeff: -0.5,
+    duration_scale: 1.2,
+    seconds: 2,
+    trim_tail: false,
+  } as const;
   const xml = await say(
-    <Speech
-      text={"API\n次"}
-      reading={{ API: "エーピーアイ" }}
-      name="案内"
-      reference_audio_base64={wav(24000).toString("base64")}
-      caption="楽しそうに"
-      seed={42}
-      num_steps={20}
-      cfg_scale_text={2}
-      cfg_scale_speaker={4}
-      cfg_scale_caption={6}
-      cfg_min_t={0.2}
-      cfg_max_t={0.8}
-      t_schedule="sway"
-      sway_coeff={-0.5}
-      duration_scale={1.2}
-      seconds={2}
-      trim_tail={false}
-      gap={4}
-      gain-db={-6}
-      id="intro"
-      at={0}
-      len={60}
-    />,
+    <Speech text={"API\n次"} reading={{ API: "エーピーアイ" }} name="案内" {...settings} gap={4} gain-db={-6} id="intro" at={0} len={60} />,
   );
-  expect(sent).toEqual([
-    {
-      url: "http://127.0.0.1:8080/",
-      body: {
-        text: "エーピーアイ 次",
-        reference_audio_base64: wav(24000).toString("base64"),
-        caption: "楽しそうに",
-        seed: 42,
-        num_steps: 20,
-        cfg_scale_text: 2,
-        cfg_scale_speaker: 4,
-        cfg_scale_caption: 6,
-        cfg_min_t: 0.2,
-        cfg_max_t: 0.8,
-        t_schedule: "sway",
-        sway_coeff: -0.5,
-        duration_scale: 1.2,
-        seconds: 2,
-        trim_tail: false,
-      },
-    },
-  ]);
+  expect(sent).toEqual([{ url: "http://127.0.0.1:8080/", body: { text: "エーピーアイ 次", ...settings } }]);
   expect(Object.keys(sent[0].body).toSorted()).toEqual(Object.keys(openapi.components.schemas.TTSRequest.properties).toSorted());
   expect(xml).toContain('label="案内: API 次"');
   expect(xml).toContain('volume="0.501"');
@@ -213,7 +164,7 @@ test("concurrent duplicate lines share one request; failures release the queue a
   fetchMock.mockRestore();
   mockFetch(async () => new Response(wav(4800)));
   await say(<Speech text="失敗" />);
-  const files = await readdir(join(dir, ".mekuru/cache/tts"), { recursive: true });
+  const files = await readdir(join(project.dir, ".mekuru/cache/tts"), { recursive: true });
   expect(files.filter((p) => p.endsWith(".wav"))).toHaveLength(3);
   expect(files.some((p) => p.endsWith(".part"))).toBe(false);
 });
@@ -250,5 +201,5 @@ test("WAV with embedded generation conditions is measured from its samples and c
   expect(xml).toContain('len="3"');
   const src = xml.match(/src="([^"]+\.wav)"/)?.[1];
   if (!src) throw new Error("missing cached WAV in XML");
-  expect(Buffer.from(await Bun.file(join(dir, src)).arrayBuffer())).toEqual(audio);
+  expect(Buffer.from(await Bun.file(join(project.dir, src)).arrayBuffer())).toEqual(audio);
 });

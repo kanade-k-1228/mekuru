@@ -1,123 +1,10 @@
 {
-  "openapi": "3.1.0",
-  "info": {
-    "title": "utoipa-axum",
-    "description": "Utoipa's axum bindings for seamless integration for the two",
-    "contact": {
-      "name": "Juha Kukkonen",
-      "email": "juha7kukkonen@gmail.com"
-    },
-    "license": {
-      "name": "MIT OR Apache-2.0",
-      "identifier": "MIT OR Apache-2.0"
-    },
-    "version": "0.3.0"
-  },
   "paths": {
-    "/": {
-      "post": {
-        "summary": "Generate one WAV (48 kHz, mono, 16-bit PCM).",
-        "description": "The resolved generation conditions (model, seed, steps and the other parameters)\nare embedded as JSON in the WAV's LIST/INFO ICMT chunk.",
-        "operationId": "tts",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TTSRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "headers": {
-              "content-disposition": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "Filename is SHA-256 of the embedded generation conditions"
-              }
-            },
-            "content": {
-              "audio/wav": {
-                "schema": {
-                  "$ref": "#/components/schemas/Wav"
-                }
-              }
-            }
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "413": {
-            "description": "Request body too large",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "415": {
-            "description": "Expected application/json",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Invalid JSON fields",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    "/": {}
   },
   "components": {
     "schemas": {
-      "ErrorBody": {
-        "type": "object",
-        "required": ["error"],
-        "properties": {
-          "error": {
-            "type": "string"
-          }
-        }
-      },
-      "Schedule": {
-        "type": "string",
-        "enum": ["linear", "sway"]
-      },
       "TTSRequest": {
-        "type": "object",
-        "description": "The JSON body. Omitted fields take the defaults applied in `TTSJob::try_from`.",
-        "required": ["text"],
         "properties": {
           "caption": {
             "type": ["string", "null"],
@@ -187,12 +74,7 @@
           "trim_tail": {
             "type": ["boolean", "null"]
           }
-        },
-        "additionalProperties": false
-      },
-      "Wav": {
-        "type": "string",
-        "format": "binary"
+        }
       }
     }
   }

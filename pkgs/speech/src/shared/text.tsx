@@ -1,23 +1,5 @@
 import { resolveText, type Node } from "@mekuru/tsx";
 
-const withReadings = (text: string, words: [string, string][]): string => {
-  if (words.length === 0) return text;
-  let out = "";
-  outer: for (let i = 0; i < text.length; ) {
-    for (const [word, as] of words) {
-      if (text.startsWith(word, i)) {
-        out += as;
-        i += word.length;
-        continue outer;
-      }
-    }
-    const c = String.fromCodePoint(text.codePointAt(i) ?? 0);
-    out += c;
-    i += c.length;
-  }
-  return out;
-};
-
 interface LineText {
   readonly say: string;
   readonly show: string;
@@ -26,10 +8,13 @@ interface LineText {
 
 /** Expand once, then project to spoken text, a timeline label, and the displayed string. "\n" breaks a line. */
 export const speechText = async (text: Node, reading: Readonly<Record<string, string>> = {}): Promise<LineText> => {
-  const words = Object.entries(reading)
-    .filter(([word]) => word)
-    .sort((a, b) => [...b[0]].length - [...a[0]].length);
-  const lines = (await resolveText(text)).split("\n").map((line) => ({ visible: line.trim(), spoken: withReadings(line, words).trim() }));
+  // At each position the longest word wins: the alternatives are tried in this order.
+  const words = Object.keys(reading)
+    .filter(Boolean)
+    .sort((a, b) => [...b].length - [...a].length)
+    .map((word) => word.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&"));
+  const spoken = (line: string) => (words.length ? line.replace(new RegExp(words.join("|"), "gu"), (word) => reading[word]) : line);
+  const lines = (await resolveText(text)).split("\n").map((line) => ({ visible: line.trim(), spoken: spoken(line).trim() }));
   const say = lines
     .map((line) => line.spoken)
     .join(" ")
