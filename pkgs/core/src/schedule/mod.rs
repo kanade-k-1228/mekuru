@@ -34,7 +34,8 @@ fn targets(s: &Script) -> impl Iterator<Item = Target> + '_ {
     (0..s.nodes.len()).map(Target::Node).chain((0..s.elems.len()).map(Target::Elem))
 }
 
-pub fn schedule(s: &Script, prepared: &Prepared) -> Schedule {
+/// When the times cannot be solved, the reason goes to `diags` and the schedule is empty.
+pub fn schedule(s: &Script, prepared: &Prepared, diags: &mut Vec<Diag>) -> Schedule {
     let fps = s.settings.rate();
     let media = s
         .elems
@@ -58,7 +59,7 @@ pub fn schedule(s: &Script, prepared: &Prepared) -> Schedule {
         s,
         media,
         holds,
-        diags: vec![],
+        diags,
         val: vec![],
         targets: vec![TargetState::default(); all],
         nodes: vec![NodeState::default(); s.nodes.len()],
@@ -67,7 +68,7 @@ pub fn schedule(s: &Script, prepared: &Prepared) -> Schedule {
     let (val, done) = g.solve();
     if done.contains(&false) {
         solver.loops(&g, &done);
-        return Schedule::failed(s, solver.diags);
+        return Schedule::default();
     }
     solver.val = val;
     solver.intervals();
@@ -92,7 +93,7 @@ struct Solver<'a> {
     s: &'a Script,
     media: Vec<MediaTiming>,
     holds: BTreeMap<ElemId, Vec<(i64, NodeId)>>,
-    diags: Vec<Diag>,
+    diags: &'a mut Vec<Diag>,
     val: Vec<i64>,
     targets: Vec<TargetState>,
     nodes: Vec<NodeState>,
@@ -415,12 +416,11 @@ impl<'a> Solver<'a> {
                 (source, audible)
             })
             .collect();
-        let mut schedule = assemble::finish(self.s, &intervals, &periods, media, &mut self.diags);
+        let schedule = assemble::finish(self.s, &intervals, &periods, media, self.diags);
         self.checks(&schedule.nodes);
         if schedule.total <= 0 {
             self.diags.push(Diag::new("W555", Span::default(), "the video is empty (total length is 0)"));
         }
-        schedule.diags = self.diags;
         schedule
     }
 

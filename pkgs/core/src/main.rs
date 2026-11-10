@@ -85,13 +85,13 @@ fn run(cli: Cli) -> Result<()> {
     let project = Project::load(&script, root.as_deref())?;
     let cache = project.cache();
     let printer = Printer::new();
-    let compilation = mekuru_compiler::analysis::Compilation::new(project, |script| {
+    let compilation = mekuru_compiler::analysis::Compilation::new(project, |script, diags| {
         printer.emit(Progress::Prepare);
-        prepare(script, &cache)
+        prepare(script, &cache, diags)
     });
     printer.done();
     let p = &compilation.project;
-    print_diags(p, &compilation.diagnostics);
+    print_diags(p, &p.diags);
     let Some(resolved) = &compilation.resolved else {
         bail!("cannot continue because of the errors above");
     };

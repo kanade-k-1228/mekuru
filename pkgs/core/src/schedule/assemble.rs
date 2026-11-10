@@ -91,13 +91,7 @@ pub(super) fn finish(s: &Script, intervals: &[(i64, i64)], periods: &[Option<i64
         }
         elems.push(et);
     }
-    Schedule {
-        total,
-        nodes,
-        elems,
-        audio,
-        diags: vec![],
-    }
+    Schedule { total, nodes, elems, audio }
 }
 
 fn hidden(s: &Script, intervals: &[(i64, i64)], repeats: &[Vec<Repeat>]) -> BTreeMap<Target, Vec<(i64, i64)>> {

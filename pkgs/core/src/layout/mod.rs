@@ -180,7 +180,7 @@ impl Out {
     }
 
     fn elem(&mut self, n: &VNode, look: Look, kind: ElemKind) -> ElemId {
-        let id = self.add(look.inside(&n.times), n.span, n.times.time(n.dur), n.times.id.clone(), kind);
+        let id = self.add(look.inside(&n.times), n.span, n.times.time(n.dur), kind);
         if let Some(name) = &n.times.id {
             self.names.push((name.clone(), Target::Elem(id), n.head));
         }
@@ -205,14 +205,13 @@ impl Out {
             v.ops.extend(ops);
             return;
         }
-        self.add(look, site, Time::default(), None, ElemKind::View(ViewSpec { ops }));
+        self.add(look, site, Time::default(), ElemKind::View(ViewSpec { ops }));
     }
 
     /// A new element, last in `look.node`.
-    fn add(&mut self, look: Look, site: Span, t: Time, source_id: Option<String>, kind: ElemKind) -> ElemId {
+    fn add(&mut self, look: Look, site: Span, t: Time, kind: ElemKind) -> ElemId {
         let id = self.elems.len();
         self.elems.push(Elem {
-            source_id,
             id,
             node: look.node,
             site,

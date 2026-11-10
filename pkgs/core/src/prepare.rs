@@ -16,7 +16,6 @@ pub struct MediaAsset {
 #[derive(Clone, Debug, Default)]
 pub struct Prepared {
     pub media: HashMap<ElemId, MediaAsset>,
-    pub diags: Vec<Diag>,
 }
 
 /// Where the PCM named `key` is kept in the project's `cache` folder.
@@ -24,8 +23,8 @@ pub fn pcm_path(cache: &Path, key: &str) -> PathBuf {
     cache.join("cache").join("pcm").join(&key[..2.min(key.len())]).join(format!("{key}.s16"))
 }
 
-pub fn prepare(script: &Script, cache: &Path) -> Prepared {
-    let mut out = inspect(script);
+pub fn prepare(script: &Script, cache: &Path, diags: &mut Vec<Diag>) -> Prepared {
+    let mut out = inspect(script, diags);
     let sources: std::collections::HashSet<_> = script
         .elems
         .iter()
@@ -45,14 +44,14 @@ pub fn prepare(script: &Script, cache: &Path) -> Prepared {
                         m.pcm = Some(pcm.clone());
                     }
                 }
-                Err(msg) => out.diags.push(Diag::new("E401", e.site, msg.clone())),
+                Err(msg) => diags.push(Diag::new("E401", e.site, msg.clone())),
             }
         }
     }
     out
 }
 
-pub fn inspect(script: &Script) -> Prepared {
+pub fn inspect(script: &Script, diags: &mut Vec<Diag>) -> Prepared {
     let fps = script.settings.rate();
     let mut out = Prepared::default();
     let mut paths: Vec<PathBuf> = script.elems.iter().filter_map(|e| Some(e.kind.media()?.path.clone())).collect();
@@ -68,16 +67,16 @@ pub fn inspect(script: &Script) -> Prepared {
         match &results[path] {
             Ok(probe) => {
                 if matches!(e.kind, ElemKind::Video(_)) && probe.video.is_none() {
-                    out.diags.push(Diag::new("E401", e.site, format!("{} has no video stream", path.display())));
+                    diags.push(Diag::new("E401", e.site, format!("{} has no video stream", path.display())));
                     continue;
                 }
                 if matches!(e.kind, ElemKind::Audio(_)) && !probe.has_audio {
-                    out.diags.push(Diag::new("E401", e.site, format!("{} has no audio stream", path.display())));
+                    diags.push(Diag::new("E401", e.site, format!("{} has no audio stream", path.display())));
                     continue;
                 }
                 let len = fps.of(probe.duration);
                 if m.from as f64 >= len {
-                    out.diags.push(Diag::new(
+                    diags.push(Diag::new(
                         "E403",
                         e.site,
                         format!("`from` (frame {}) is past the end of {} ({len:.2} frames)", m.from, path.display()),
@@ -85,7 +84,7 @@ pub fn inspect(script: &Script) -> Prepared {
                     continue;
                 }
                 if m.to.is_some_and(|t| t as f64 > len + 1.0) {
-                    out.diags.push(Diag::new(
+                    diags.push(Diag::new(
                         "W450",
                         e.site,
                         format!("`to` is past the end of {} ({len:.2} frames); clamped", path.display()),
@@ -100,7 +99,7 @@ pub fn inspect(script: &Script) -> Prepared {
                 } else {
                     format!("file not found: {}", path.display())
                 };
-                out.diags.push(Diag::new(code, e.site, msg));
+                diags.push(Diag::new(code, e.site, msg));
             }
         }
     }
