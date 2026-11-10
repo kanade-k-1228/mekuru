@@ -1,8 +1,7 @@
-use crate::audio::{Track, mix_wav};
+use crate::audio::{Track, mix};
 use crate::media::encode::{EncodeArgs, Encoder};
 use crate::media::pcm::{self, Pcm, RATE};
 use crate::prepare::pcm_path;
-use crate::progress::Progress;
 use crate::render::{FrameRenderer, RenderCtx, RenderTarget};
 use crate::schedule::{AudioClip, EPS, Fade};
 use crate::util::{TempFile, sha256_hex};
@@ -12,41 +11,25 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::time::Instant;
 
+#[derive(Clone, Copy, Debug)]
+pub enum Progress {
+    Prepare,
+    Mix,
+    Render,
+    Finalize,
+    Frames { done: u64, total: u64, elapsed: f64 },
+}
+
+/// What to render; `fps` and `to` default to the document's rate and end.
 #[derive(Clone, Debug)]
 pub struct RenderOptions {
     pub scale: f32,
     pub fps: Option<f64>,
     pub from: f64,
     pub to: Option<f64>,
-    pub preset: Option<String>,
-    pub crf: Option<u8>,
+    pub preset: String,
+    pub crf: u8,
     pub audio: bool,
-}
-
-impl Default for RenderOptions {
-    fn default() -> Self {
-        RenderOptions {
-            scale: 1.0,
-            fps: None,
-            from: 0.0,
-            to: None,
-            preset: None,
-            crf: None,
-            audio: true,
-        }
-    }
-}
-
-impl RenderOptions {
-    pub fn preview() -> Self {
-        RenderOptions {
-            scale: 0.5,
-            fps: Some(15.0),
-            preset: Some("ultrafast".into()),
-            crf: Some(30),
-            ..Default::default()
-        }
-    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -132,11 +115,11 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
     };
     let tmp = ctx.project.cache().join("tmp");
     std::fs::create_dir_all(&tmp)?;
-    let wav: Option<TempFile> = if opts.audio {
+    let mixed: Option<TempFile> = if opts.audio {
         progress(Progress::Mix);
-        let path = TempFile(tmp.join(format!("mix-{}.wav", std::process::id())));
+        let path = TempFile(tmp.join(format!("mix-{}.s16", std::process::id())));
         let samples = (seconds * RATE as f64).round() as u64;
-        let mix = mix_wav(&audio_tracks(ctx)?, from, samples, path.as_ref())?;
+        let mix = mix(&audio_tracks(ctx)?, from, samples, path.as_ref())?;
         if mix.clipped > 0 {
             stats
                 .warnings
@@ -148,14 +131,13 @@ pub fn render_video(ctx: &RenderCtx, out: &Path, opts: &RenderOptions, progress:
     };
 
     progress(Progress::Render);
-    let preset = opts.preset.clone().unwrap_or_else(|| st.encode.preset.clone());
     let args = EncodeArgs {
         w: target.width,
         h: target.height,
         fps: target.fps,
-        audio: wav.as_ref().map(AsRef::as_ref),
-        preset: &preset,
-        crf: opts.crf.unwrap_or(st.encode.crf),
+        audio: mixed.as_ref().map(AsRef::as_ref),
+        preset: &opts.preset,
+        crf: opts.crf,
         audio_bitrate: &st.encode.audio_bitrate,
     };
     let mut enc = Encoder::spawn(&args, out)?;

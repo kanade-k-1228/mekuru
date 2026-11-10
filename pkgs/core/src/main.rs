@@ -2,9 +2,8 @@ use anyhow::{Result, bail};
 use clap::Parser;
 use mekuru_compiler::Project;
 use mekuru_compiler::lang::diag::Diag;
-use mekuru_compiler::pipeline::{self, RenderOptions};
+use mekuru_compiler::pipeline::{self, Progress, RenderOptions};
 use mekuru_compiler::prepare::prepare;
-use mekuru_compiler::progress::Progress;
 use mekuru_compiler::render::RenderCtx;
 use std::cell::Cell;
 use std::io::{IsTerminal, Write};
@@ -95,14 +94,17 @@ fn run(cli: Cli) -> Result<()> {
     let Some(resolved) = &compilation.resolved else {
         bail!("cannot continue because of the errors above");
     };
-    let mut opts = if preview { RenderOptions::preview() } else { RenderOptions::default() };
-    opts.scale = scale.unwrap_or(opts.scale);
-    opts.fps = fps.or(opts.fps);
-    opts.from = from;
-    opts.to = to;
-    opts.preset = preset.or(opts.preset);
-    opts.crf = crf.or(opts.crf);
-    opts.audio = !no_audio;
+    // `--preview` is a fast, small render; what the command line says goes first, then the document.
+    let encode = &p.script.settings.encode;
+    let opts = RenderOptions {
+        scale: scale.unwrap_or(if preview { 0.5 } else { 1.0 }),
+        fps: fps.or(preview.then_some(15.0)),
+        from,
+        to,
+        preset: preset.unwrap_or_else(|| if preview { "ultrafast".into() } else { encode.preset.clone() }),
+        crf: crf.unwrap_or(if preview { 30 } else { encode.crf }),
+        audio: !no_audio,
+    };
     if !(0.05..=4.0).contains(&opts.scale) {
         bail!("--scale must be between 0.05 and 4");
     }

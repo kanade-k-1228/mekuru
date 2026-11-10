@@ -24,25 +24,9 @@ fn envelope(env: &[Fade], t: f64) -> f32 {
     env.iter().map(|f| f.at(t)).product::<f64>() as f32
 }
 
-fn write_wav_header(w: &mut impl Write, frames: u64) -> std::io::Result<()> {
-    let data = (frames * BYTES_PER_FRAME).min(u32::MAX as u64 - 36) as u32;
-    w.write_all(b"RIFF")?;
-    w.write_all(&(36 + data).to_le_bytes())?;
-    w.write_all(b"WAVEfmt ")?;
-    w.write_all(&16u32.to_le_bytes())?;
-    w.write_all(&1u16.to_le_bytes())?;
-    w.write_all(&(CHANNELS as u16).to_le_bytes())?;
-    w.write_all(&RATE.to_le_bytes())?;
-    w.write_all(&(RATE * BYTES_PER_FRAME as u32).to_le_bytes())?;
-    w.write_all(&(BYTES_PER_FRAME as u16).to_le_bytes())?;
-    w.write_all(&16u16.to_le_bytes())?;
-    w.write_all(b"data")?;
-    w.write_all(&data.to_le_bytes())
-}
-
-pub fn mix_wav(tracks: &[Track], from: f64, frames: u64, out: &Path) -> Result<MixStats> {
+/// Mixes `frames` samples from `from` seconds into `out` as raw PCM, the format of `media::pcm`.
+pub fn mix(tracks: &[Track], from: f64, frames: u64, out: &Path) -> Result<MixStats> {
     let mut w = BufWriter::with_capacity(1 << 20, std::fs::File::create(out)?);
-    write_wav_header(&mut w, frames)?;
     let mut readers: HashMap<PathBuf, PcmReader> = HashMap::new();
     let mut stats = MixStats::default();
     let mut acc = vec![0f32; BLOCK * CHANNELS];
