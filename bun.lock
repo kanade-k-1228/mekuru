@@ -19,7 +19,7 @@
         "@mekuru/tsx": "workspace:*",
         "@mekuru/upload": "workspace:*",
         "@types/bun": "1.4.4",
-        "ag-psd": "^31.0.3",
+        "ag-psd": "^34.1.0",
         "sharp": "^0.35.5",
         "typescript": "7.0.2",
       },
@@ -49,7 +49,7 @@
         "mekuru-psd": "./src/mekuru-psd.ts",
       },
       "dependencies": {
-        "ag-psd": "^31.0.3",
+        "ag-psd": "^34.1.0",
         "sharp": "^0.35.5",
       },
       "devDependencies": {
@@ -323,7 +323,7 @@
 
     "@vitejs/plugin-react": ["@vitejs/plugin-react@6.1.2", "", { "dependencies": { "@rolldown/pluginutils": "^1.0.1" }, "peerDependencies": { "@rolldown/plugin-babel": "^0.1.7 || ^0.2.0", "babel-plugin-react-compiler": "^1.0.0", "oxc-transform-react": "^0.152.0", "vite": "^8.0.0" }, "optionalPeers": ["@rolldown/plugin-babel", "babel-plugin-react-compiler", "oxc-transform-react"] }, "sha512-fhJNGUdscQa4HkI0xFxwonWyhnVReCPDbXI7FH7jmzpnVCrFQI7PRrhWecO263610vOrs9tr2Y4xcf8uAdFxbw=="],
 
-    "ag-psd": ["ag-psd@31.0.3", "", { "dependencies": { "base64-js": "1.5.1", "pako": "2.1.0" } }, "sha512-THDYK+WK1F5GOH4G0l4wkQRc0Cyq5tnxIwBezACKwa6idKygphnGgMISr4lmW6n0Q89ceoqpdPZQF3Y7TL1pgg=="],
+    "ag-psd": ["ag-psd@34.1.0", "", { "dependencies": { "base64-js": "1.5.1", "pako": "2.1.0" } }, "sha512-OamTuun+q681j5NvK8LxMX8oRHS//Ah9+3Xmt0uGXVMdzMz2JpLqBvtXXQdGpucdLE3fs8EzwsPyB/vc1aVSvw=="],
 
     "base64-js": ["base64-js@1.5.1", "", {}, "sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA=="],
 
