@@ -54,6 +54,7 @@ const at = (v: unknown): [string, string] => {
 };
 
 const attr = (tag: string, key: string, v: unknown): [string, string] | undefined => {
+  if (tag === "text" && key === "text" && Array.isArray(v)) return [key, v.join("\n")];
   if (key === "at") return tag === "hold" ? ["at", frames(v)] : at(v);
   if (typeof v === "boolean") return key === "grow" ? [key, v ? "1" : "0"] : v ? [key, "true"] : undefined;
   if (TIMES.has(key)) return [key, frames(v)];

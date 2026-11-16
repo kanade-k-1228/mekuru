@@ -1,10 +1,10 @@
-import { fps, frameCount, frames, isDraft, readAudio, waitFor, type At, type AudioSource, type Node, type Time } from "@mekuru/tsx";
+import { fps, frameCount, frames, isDraft, readAudio, waitFor, type At, type AudioSource, type Time } from "@mekuru/tsx";
 import { cacheFile, synthesized } from "./cache.ts";
-import { speechText } from "./text.tsx";
+import { speechText, type SpeechText } from "./text.tsx";
 
 /** Text and video timing only. Each synthesis API defines its own voice settings. */
 export interface LineProps {
-  text: Node;
+  text: SpeechText;
   name?: string;
   reading?: Readonly<Record<string, string>>;
   gap?: number;

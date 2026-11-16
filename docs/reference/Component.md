@@ -41,14 +41,14 @@ This component combines speech, a portrait, and subtitles into one line. Types a
 
 ```tsx
 // Excerpt from example/src/parts.tsx
-export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time }) => {
-  const line = await Speech.prepare({ ...voice, text: say ?? text });
+export const Zundamon: FC<Line> = async ({ text, talk, face, children, ...time }) => {
+  const line = await Speech.prepare({ ...voice, text: talk ?? text });
   return (
     <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
         <zundamon.Talk source={line.audio} face={face} />
-        <Subtitle text={say === undefined ? line.display : await subtitleText(text)} />
+        <Subtitle text={talk === undefined ? line.display : await subtitleText(text)} />
         {children}
       </stack>
     </dur>
@@ -60,10 +60,10 @@ export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time })
 <Zundamon face="smile" text="長さは、セリフに合わせて決まります。">
   <Label x={708} y={650} text="長さは自動！" />
 </Zundamon>
-<Zundamon text="今日の天気" say="きょうのてんき" />
+<Zundamon text={["今日の天気", "東京は晴れ"]} talk="きょうのてんき。とうきょうは、はれ。" />
 ```
 
-`Speech.prepare` prepares one shared audio source for `Audio` and `Talk` (`Audio` is imported from `@mekuru/tsx`). `line.display` is the subtitle string, with `\n` line breaks. `Subtitle` only adds styles to ordinary `text`. `text` is the subtitle and `say` is what is spoken; without `say`, `text` is spoken. The outer `<dur>` bounds the whole line, so the children appear only while it is spoken. See [composing narrators](../../pkgs/narrator/README.md).
+`Speech.prepare` prepares one shared audio source for `Audio` and `Talk` (`Audio` is imported from `@mekuru/tsx`). For a multiline subtitle, pass an array of lines to `text`. `Subtitle` only adds styles to ordinary `text`. `text` is the subtitle and `talk` is what is spoken; without `talk`, `text` is spoken. The outer `<dur>` bounds the whole line, so the children appear only while it is spoken. See [composing narrators](../../pkgs/narrator/README.md).
 
 ### Displaying code
 

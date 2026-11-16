@@ -125,6 +125,12 @@ test("components run, async ones too, and see whether this is the draft", async 
   ).toEqual(["<stack>", '<audio src="line.wav" label="こんにちは"/>', '<text text="a &amp; b&#10;&lt;c&gt;"/>', "</stack>"]);
 });
 
+test("text arrays preserve spaces, blank lines and XML escaping", async () => {
+  const lines = ["", " A&B ", "<C>", ""] as const;
+  expect(await body(<text text={lines} />)).toEqual(['<text text="&#10; A&amp;B &#10;&lt;C&gt;&#10;"/>']);
+  expect(await body(<text text={[]} />)).toEqual(await body(<text text="" />));
+});
+
 test("the video is one seq", async () => {
   const xml = await toXml(
     <mekuru fps={30}>

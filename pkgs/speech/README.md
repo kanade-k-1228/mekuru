@@ -72,7 +72,7 @@ Explicit defaults are sent to the server, except model-dependent `num_steps`. Th
 
 ### Text and timing
 
-- `text`: Required text or text-only JSX. Use `text`, not children. `\n` remains a subtitle line break and becomes a space in spoken text.
+- `text`: Accepts a string, an array of strings (one per subtitle line), or text-only JSX. Use `text`, not children. `\n` remains a subtitle line break and becomes a space in spoken text.
 - `reading`: Word-to-pronunciation dictionary. Longest match wins; displayed text stays unchanged.
 - `name`: Timeline speaker label; defaults to `"irodoru"` for `Speech`, or the speaker for `Voicevox`.
 - `gap`: Trailing silence in frames. Default: 0.3 seconds rounded to the nearest frame.
