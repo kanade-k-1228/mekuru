@@ -41,14 +41,14 @@ bun install
 
 ```tsx
 // example/src/parts.tsx（抜粋）
-export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time }) => {
-  const line = await Speech.prepare({ ...voice, text: say ?? text });
+export const Zundamon: FC<Line> = async ({ text, talk, face, children, ...time }) => {
+  const line = await Speech.prepare({ ...voice, text: talk ?? text });
   return (
     <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
         <zundamon.Talk source={line.audio} face={face} />
-        <Subtitle text={say === undefined ? line.display : await subtitleText(text)} />
+        <Subtitle text={talk === undefined ? line.display : await subtitleText(text)} />
         {children}
       </stack>
     </dur>
@@ -60,10 +60,10 @@ export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time })
 <Zundamon face="smile" text="長さは、セリフに合わせて決まります。">
   <Label x={708} y={650} text="長さは自動！" />
 </Zundamon>
-<Zundamon text="今日の天気" say="きょうのてんき" />
+<Zundamon text={["今日の天気", "東京は晴れ"]} talk="きょうのてんき。とうきょうは、はれ。" />
 ```
 
-`Speech.prepare` で一度準備した音声素材を `Audio` と `Talk` に渡します（`Audio` は `@mekuru/tsx` から import）。`line.display` は字幕の文字列で、`\n` で改行します。`Subtitle` は装飾だけを加える通常の `text` です。`text` は字幕、`say` は読み上げる文で、`say` を省くと `text` を読み上げます。外側の `<dur>` でセリフの長さを決めるので、子要素はそのセリフの間だけ表示されます。詳しくは [ナレータの組み立て](../../pkgs/narrator/README.jp.md) を参照してください。
+`Speech.prepare` で一度準備した音声素材を `Audio` と `Talk` に渡します（`Audio` は `@mekuru/tsx` から import）。字幕を複数行にするときは、`text` に1行ずつ文字列の配列で渡します。`Subtitle` は装飾だけを加える通常の `text` です。`text` は字幕、`talk` は読み上げる文で、`talk` を省くと `text` を読み上げます。外側の `<dur>` でセリフの長さを決めるので、子要素はそのセリフの間だけ表示されます。詳しくは [ナレータの組み立て](../../pkgs/narrator/README.jp.md) を参照してください。
 
 ### コードを表示する
 

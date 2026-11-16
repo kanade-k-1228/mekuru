@@ -20,6 +20,12 @@ test("dictionaries change only the spoken text, and lines break on \\n", async (
   expect(await display(text)).toBe('<text text="Mekuruと漢字、Bun&#10;APIです。"/>\n');
 });
 
+test("a string array gives the same subtitle, reading and timeline label as explicit line breaks", async () => {
+  const lines = ["漢字", "", "次"] as const;
+  expect(await speechText(lines, { 漢字: "かんじ" })).toEqual({ display: "漢字\n\n次", say: "かんじ  次", show: "漢字  次" });
+  expect(await subtitleText([])).toBe("");
+});
+
 test("arrays, fragments and numbers make one string", async () => {
   const text = <>{[null, false, <> 漢{"字"}</>, 123, "\n\n 次 "]}</>;
   expect(await speechText(text)).toMatchObject({ say: "漢字123  次", show: "漢字123  次" });

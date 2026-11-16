@@ -194,7 +194,7 @@ Paths are relative to the project folder. This example pauses for 60 frames at s
 - `<text text>`: text.
   - Always write the string in the `text` attribute. No element, `<text>` included, can contain text.
   - The string is shown as written. Spaces, indentation, and leading or trailing line breaks are neither collapsed nor removed.
-  - `\n` breaks a line: `text={"一行目\n二行目"}`. Inside a quoted attribute, `text="…"`, `\n` stays literal.
+  - In TSX, `text={["一行目", "二行目"]}` displays one line per item. A string can also contain line breaks: `text={"一行目\n二行目"}`. Inside a quoted attribute, `text="…"`, `\n` stays literal.
   - `w` and `max-w` set wrapping width. `align="center"` centers text.
   - `color`: text color. `stroke` and `stroke-width`: text outline. `background`, `radius`, and `padding`: text background.
   - E302: missing `text`. E107: text or tags inside.

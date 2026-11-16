@@ -1,7 +1,7 @@
 import { Audio, type At, type FC, type Length, type Node } from "@mekuru/tsx";
 import { portrait, Subtitle as NarratorSubtitle } from "@mekuru/narrator";
 
-import { Speech, subtitleText } from "@mekuru/speech";
+import { Speech, subtitleText, type LineProps } from "@mekuru/speech";
 import type { LayerProps } from "../tutorial/assets/character/zundamon/portrait";
 
 type Children = { children?: Node };
@@ -97,17 +97,17 @@ export const ZundamonStand = zundamon.Stand;
 
 const voice = { name: "ずんだもん", caption: "明るく元気な、高めの声", gap: 6, reading: READING };
 
-// text: subtitle. say: what is spoken (defaults to text). children: shown only during this line.
-type Line = Children & { id?: string; at?: At; face?: LayerProps["face"]; text: Node; say?: Node };
+// text: subtitle. talk: what is spoken (defaults to text). children: shown only during this line.
+type Line = Children & { id?: string; at?: At; face?: LayerProps["face"]; text: LineProps["text"]; talk?: Node };
 
-export const Zundamon: FC<Line> = async ({ text, say, face, children, ...time }) => {
-  const line = await Speech.prepare({ ...voice, text: say ?? text });
+export const Zundamon: FC<Line> = async ({ text, talk, face, children, ...time }) => {
+  const line = await Speech.prepare({ ...voice, text: talk ?? text });
   return (
     <dur len={line.audio.len} {...time}>
       <stack>
         <Audio source={line.audio} />
         <zundamon.Talk source={line.audio} face={face} />
-        <Subtitle text={say === undefined ? line.display : await subtitleText(text)} />
+        <Subtitle text={talk === undefined ? line.display : await subtitleText(text)} />
         {children}
       </stack>
     </dur>
